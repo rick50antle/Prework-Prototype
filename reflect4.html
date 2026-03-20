@@ -338,6 +338,15 @@
   .bs-paled .acct-col h4 {
     opacity: 0.5;
   }
+  @keyframes valFlash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.15; }
+  }
+  .acct-val-flash {
+    animation: valFlash 0.25s ease-in-out 3;
+    color: var(--accent) !important;
+    font-weight: 700 !important;
+  }
   .bs-empty-msg {
     font-family: 'Helvetica Neue', Arial, sans-serif;
     font-size: 12px;
@@ -586,6 +595,39 @@ function IdentityBar({ accounts }) {
   );
 }
 
+// ===== ANIMATED VALUE (old number flashes, then replaced by new) =====
+function AnimatedValue({ oldValue, newValue, shouldAnimate }) {
+  const [displayValue, setDisplayValue] = useState(newValue);
+  const [flashing, setFlashing] = useState(false);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    // Clean up any pending timer
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    if (shouldAnimate && oldValue !== newValue) {
+      // Show old value with flash
+      setDisplayValue(oldValue);
+      setFlashing(true);
+      // After 3 flashes (~750ms), swap to new value
+      timerRef.current = setTimeout(() => {
+        setDisplayValue(newValue);
+        setFlashing(false);
+      }, 750);
+    } else {
+      setDisplayValue(newValue);
+      setFlashing(false);
+    }
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [oldValue, newValue, shouldAnimate]);
+
+  return (
+    <span className={'acct-val' + (flashing ? ' acct-val-flash' : '')}>
+      {fmt(displayValue)}
+    </span>
+  );
+}
+
 // ===== ACCOUNTS GRID (progressive reveal) =====
 function AccountsGrid({ accounts, prevAccounts, revealedAccounts, newAccounts, affectedAccounts, isEmpty }) {
   const allAssets = ['cash', 'receivables', 'equipment'];
@@ -602,18 +644,23 @@ function AccountsGrid({ accounts, prevAccounts, revealedAccounts, newAccounts, a
   const totalE = eqs.reduce((s, k) => s + accounts[k], 0);
 
   function row(key) {
-    const isNew = newAccounts && newAccounts.has(key);
-    const isDimmed = affectedAccounts && affectedAccounts.size > 0 && !affectedAccounts.has(key);
-    const changed = prevAccounts && accounts[key] !== prevAccounts[key];
+    const isAffected = affectedAccounts && affectedAccounts.has(key);
+    const isDimmed = affectedAccounts && affectedAccounts.size > 0 && !isAffected;
+    const oldVal = prevAccounts ? prevAccounts[key] : accounts[key];
+    const newVal = accounts[key];
 
     let cls = 'acct-line';
-    if (isNew) cls += ' acct-new';
+    if (isAffected) cls += ' acct-new';
     if (isDimmed) cls += ' acct-dimmed';
 
     return (
-      <div className={cls} key={key} style={changed && !isDimmed ? { fontWeight: 600, color: '#00356b' } : {}}>
+      <div className={cls} key={key}>
         <span>{ACCT_LABELS[key]}</span>
-        <span className="acct-val">{fmt(accounts[key])}</span>
+        <AnimatedValue
+          oldValue={oldVal}
+          newValue={newVal}
+          shouldAnimate={isAffected && oldVal !== newVal}
+        />
       </div>
     );
   }
