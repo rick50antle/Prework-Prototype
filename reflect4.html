@@ -320,6 +320,29 @@
     padding-bottom: 4px;
   }
 
+  /* === PROGRESSIVE REVEAL === */
+  @keyframes acctPulse {
+    0%   { background-color: rgba(255, 215, 0, 0.35); }
+    100% { background-color: transparent; }
+  }
+  .acct-line.acct-new {
+    animation: acctPulse 1.8s ease-out forwards;
+    border-radius: 3px;
+  }
+  .acct-line.acct-dimmed {
+    opacity: 0.35;
+    transition: opacity 0.3s ease;
+  }
+  .bs-empty-msg {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 12px;
+    color: #aaa;
+    font-style: italic;
+    text-align: center;
+    padding: 16px 10px;
+    line-height: 1.5;
+  }
+
   @media (max-width: 900px) {
     .main-grid {
       grid-template-columns: 1fr;
@@ -512,6 +535,15 @@ const ACCT_LABELS = {
   contributed: 'Contributed Capital', retained: 'Retained Earnings'
 };
 
+// ===== PROGRESSIVE REVEAL HELPERS =====
+function getRevealedAccounts(upToTxnCount) {
+  const revealed = new Set();
+  for (let i = 0; i < upToTxnCount && i < TXNS.length; i++) {
+    Object.keys(TXNS[i].effects).forEach(k => revealed.add(k));
+  }
+  return revealed;
+}
+
 function fmt(n) {
   if (n === 0) return '$0';
   const abs = '$' + Math.abs(n).toLocaleString();
@@ -549,41 +581,81 @@ function IdentityBar({ accounts }) {
   );
 }
 
-// ===== ACCOUNTS GRID =====
-function AccountsGrid({ accounts, prevAccounts }) {
-  const assets = ['cash', 'receivables', 'equipment'];
-  const liabs = ['loan', 'payables'];
-  const eqs = ['contributed', 'retained'];
+// ===== ACCOUNTS GRID (progressive reveal) =====
+function AccountsGrid({ accounts, prevAccounts, revealedAccounts, newAccounts, affectedAccounts, isEmpty }) {
+  const allAssets = ['cash', 'receivables', 'equipment'];
+  const allLiabs = ['loan', 'payables'];
+  const allEqs = ['contributed', 'retained'];
+
+  // Only show accounts that have been revealed by transactions so far
+  const assets = revealedAccounts ? allAssets.filter(k => revealedAccounts.has(k)) : allAssets;
+  const liabs  = revealedAccounts ? allLiabs.filter(k => revealedAccounts.has(k))  : allLiabs;
+  const eqs    = revealedAccounts ? allEqs.filter(k => revealedAccounts.has(k))    : allEqs;
+
   const totalA = assets.reduce((s, k) => s + accounts[k], 0);
   const totalL = liabs.reduce((s, k) => s + accounts[k], 0);
   const totalE = eqs.reduce((s, k) => s + accounts[k], 0);
 
   function row(key) {
+    const isNew = newAccounts && newAccounts.has(key);
+    const isDimmed = affectedAccounts && affectedAccounts.size > 0 && !affectedAccounts.has(key);
     const changed = prevAccounts && accounts[key] !== prevAccounts[key];
+
+    let cls = 'acct-line';
+    if (isNew) cls += ' acct-new';
+    if (isDimmed) cls += ' acct-dimmed';
+
     return (
-      <div className="acct-line" key={key} style={changed ? { fontWeight: 600, color: '#00356b' } : {}}>
+      <div className={cls} key={key} style={changed && !isDimmed ? { fontWeight: 600, color: '#00356b' } : {}}>
         <span>{ACCT_LABELS[key]}</span>
         <span className="acct-val">{fmt(accounts[key])}</span>
       </div>
     );
   }
 
+  // Empty state: entity exists but no transactions yet
+  if (isEmpty) {
+    return (
+      <div className="accounts-grid">
+        <div className="acct-col">
+          <h4>Assets</h4>
+          <div className="bs-empty-msg">The entity exists but has no recorded activity yet.</div>
+        </div>
+        <div className="acct-col">
+          <h4>Liabilities</h4>
+        </div>
+        <div className="acct-col">
+          <h4>Equities</h4>
+        </div>
+      </div>
+    );
+  }
+
+  function colBody(items) {
+    if (items.length === 0) return <div className="bs-empty-msg">None yet</div>;
+    return items.map(row);
+  }
+  function colTotal(items, total) {
+    if (items.length === 0) return null;
+    return <div className="acct-total"><span>Total</span><span>{fmt(total)}</span></div>;
+  }
+
   return (
     <div className="accounts-grid">
       <div className="acct-col">
         <h4>Assets</h4>
-        {assets.map(row)}
-        <div className="acct-total"><span>Total</span><span>{fmt(totalA)}</span></div>
+        {colBody(assets)}
+        {colTotal(assets, totalA)}
       </div>
       <div className="acct-col">
         <h4>Liabilities</h4>
-        {liabs.map(row)}
-        <div className="acct-total"><span>Total</span><span>{fmt(totalL)}</span></div>
+        {colBody(liabs)}
+        {colTotal(liabs, totalL)}
       </div>
       <div className="acct-col">
         <h4>Equities</h4>
-        {eqs.map(row)}
-        <div className="acct-total"><span>Total</span><span>{fmt(totalE)}</span></div>
+        {colBody(eqs)}
+        {colTotal(eqs, totalE)}
       </div>
     </div>
   );
@@ -793,6 +865,17 @@ function TransactionSequencer() {
   const currentAccounts = getAccounts(txnsProcessed);
   const prevAccounts = txnsProcessed > 0 ? getAccounts(txnsProcessed - 1) : null;
 
+  // Progressive reveal: which accounts are visible, which are new, which are affected
+  const revealedAccounts = getRevealedAccounts(txnsProcessed);
+  const prevRevealed = txnsProcessed > 0 ? getRevealedAccounts(txnsProcessed - 1) : new Set();
+  const newAccounts = new Set();
+  revealedAccounts.forEach(k => { if (!prevRevealed.has(k)) newAccounts.add(k); });
+  const currentTxnIndex = stage.type === 'txn' ? stage.txnIndex : -1;
+  const affectedAccounts = currentTxnIndex >= 0
+    ? new Set(Object.keys(TXNS[currentTxnIndex].effects))
+    : new Set();
+  const isEmpty = txnsProcessed === 0;
+
   // Collect decomposition entries
   let isEntries = [], cfsEntries = [], sceEntries = [];
   for (let i = 0; i < txnsProcessed; i++) {
@@ -825,7 +908,14 @@ function TransactionSequencer() {
         {/* LEFT COLUMN: opening balance sheet */}
         <div className="bs-open">
           <div className="bs-col-header">Opening Balance Sheet</div>
-          <AccountsGrid accounts={OPENING} prevAccounts={null} />
+          <AccountsGrid
+            accounts={OPENING}
+            prevAccounts={null}
+            revealedAccounts={revealedAccounts}
+            newAccounts={null}
+            affectedAccounts={null}
+            isEmpty={isEmpty}
+          />
         </div>
 
         {/* CENTER COLUMN */}
@@ -897,7 +987,14 @@ function TransactionSequencer() {
           <div className={'bs-col-header' + (txnsProcessed >= totalTxns ? ' closing' : '')}>
             {txnsProcessed >= totalTxns ? 'Closing Balance Sheet' : 'Balance Sheet (current)'}
           </div>
-          <AccountsGrid accounts={currentAccounts} prevAccounts={prevAccounts} />
+          <AccountsGrid
+            accounts={currentAccounts}
+            prevAccounts={prevAccounts}
+            revealedAccounts={revealedAccounts}
+            newAccounts={newAccounts}
+            affectedAccounts={affectedAccounts}
+            isEmpty={isEmpty}
+          />
         </div>
 
       </div>{/* /main-grid */}
