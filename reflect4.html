@@ -1021,9 +1021,15 @@ function TransactionSequencer() {
             <button className="btn-back" disabled={isFirst} onClick={() => setStep(s => s - 1)}>
               &larr; Back
             </button>
-            <button className="btn-next" disabled={isLast} onClick={() => setStep(s => s + 1)}>
-              {isLast ? 'Complete' : 'Next \u2192'}
-            </button>
+            {isLast ? (
+              <button className="btn-next" onClick={() => { window.location.href = 'reflect4-prompts.html'; }}>
+                Continue to Reflection &rarr;
+              </button>
+            ) : (
+              <button className="btn-next" onClick={() => setStep(s => s + 1)}>
+                Next &rarr;
+              </button>
+            )}
           </div>
         </div>
 
