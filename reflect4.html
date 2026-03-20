@@ -321,17 +321,22 @@
   }
 
   /* === PROGRESSIVE REVEAL === */
-  @keyframes acctPulse {
-    0%   { background-color: rgba(255, 215, 0, 0.35); }
-    100% { background-color: transparent; }
-  }
   .acct-line.acct-new {
-    animation: acctPulse 1.8s ease-out forwards;
+    background-color: rgba(255, 215, 0, 0.28);
     border-radius: 3px;
+    padding: 3px 4px;
+    margin: 0 -4px;
   }
   .acct-line.acct-dimmed {
     opacity: 0.35;
     transition: opacity 0.3s ease;
+  }
+  .bs-paled .acct-line {
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+  }
+  .bs-paled .acct-col h4 {
+    opacity: 0.5;
   }
   .bs-empty-msg {
     font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -635,27 +640,20 @@ function AccountsGrid({ accounts, prevAccounts, revealedAccounts, newAccounts, a
     if (items.length === 0) return <div className="bs-empty-msg">None yet</div>;
     return items.map(row);
   }
-  function colTotal(items, total) {
-    if (items.length === 0) return null;
-    return <div className="acct-total"><span>Total</span><span>{fmt(total)}</span></div>;
-  }
 
   return (
     <div className="accounts-grid">
       <div className="acct-col">
         <h4>Assets</h4>
         {colBody(assets)}
-        {colTotal(assets, totalA)}
       </div>
       <div className="acct-col">
         <h4>Liabilities</h4>
         {colBody(liabs)}
-        {colTotal(liabs, totalL)}
       </div>
       <div className="acct-col">
         <h4>Equities</h4>
         {colBody(eqs)}
-        {colTotal(eqs, totalE)}
       </div>
     </div>
   );
@@ -906,7 +904,7 @@ function TransactionSequencer() {
       <div className="main-grid">
 
         {/* LEFT COLUMN: opening balance sheet */}
-        <div className="bs-open">
+        <div className={'bs-open' + (txnsProcessed > 0 ? ' bs-paled' : '')}>
           <div className="bs-col-header">Opening Balance Sheet</div>
           <AccountsGrid
             accounts={OPENING}
