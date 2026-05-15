@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accounting Pre-Work</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* ===== ACTIVITY HUB-SPECIFIC STYLES ===== */
+
+  /* Intro framing */
+  .hub-intro {
+    margin: 24px 0 8px;
+  }
+  .hub-intro p {
+    font-size: 16px;
+    margin-bottom: 14px;
+  }
+  .hub-intro p:last-child { margin-bottom: 0; }
+
+  /* Section heading inside hub */
+  .hub-section-heading {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #888;
+    margin: 44px 0 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  /* Activity tile */
+  .activity-tile {
+    display: block;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px 22px 18px;
+    margin-bottom: 14px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+  }
+  .activity-tile:hover {
+    border-color: var(--primary-light);
+    box-shadow: 0 2px 12px rgba(0, 53, 107, 0.07);
+  }
+  .activity-tile:active { transform: translateY(1px); }
+
+  .tile-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  .tile-num {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    min-width: 64px;
+  }
+  .tile-title {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+    line-height: 1.3;
+    flex-grow: 1;
+  }
+  .tile-arrow {
+    color: #ccc;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: color 0.15s, transform 0.15s;
+  }
+  .activity-tile:hover .tile-arrow {
+    color: var(--primary-light);
+    transform: translateX(2px);
+  }
+
+  .tile-desc {
+    font-size: 14.5px;
+    color: #444;
+    line-height: 1.6;
+    margin: 8px 0 12px;
+    padding-left: 76px;
+  }
+  .tile-desc em {
+    color: #2a2a2a;
+  }
+
+  .tile-badges {
+    padding-left: 76px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .lo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--primary-faint);
+    border: 1px solid #dce4ee;
+    border-radius: 12px;
+    padding: 2px 10px 2px 8px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11.5px;
+    color: var(--primary);
+    line-height: 1.4;
+  }
+  .lo-badge .lo-num {
+    font-weight: 700;
+    font-size: 10.5px;
+    background: white;
+    border: 1px solid #c7d3e3;
+    border-radius: 8px;
+    padding: 0 5px;
+    color: var(--primary);
+  }
+  .lo-badge.foundation {
+    background: #fbf6ee;
+    border-color: #e8dcc4;
+    color: #7a5a17;
+  }
+  .lo-badge.foundation .lo-num {
+    background: white;
+    border-color: #ddc99e;
+    color: #7a5a17;
+  }
+
+  /* Coming soon variant */
+  .activity-tile.coming-soon {
+    background: #fafafa;
+    border: 1px dashed #d6d6d6;
+    cursor: default;
+    opacity: 0.85;
+  }
+  .activity-tile.coming-soon:hover {
+    border-color: #d6d6d6;
+    box-shadow: none;
+  }
+  .activity-tile.coming-soon .tile-num {
+    color: #999;
+  }
+  .activity-tile.coming-soon .tile-title {
+    color: #555;
+  }
+  .activity-tile.coming-soon .tile-arrow {
+    display: none;
+  }
+  .coming-pill {
+    display: inline-block;
+    background: #f0e9d8;
+    border: 1px solid #e0d3a8;
+    border-radius: 10px;
+    padding: 1px 9px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #8a6a1f;
+    margin-left: 6px;
+    vertical-align: 2px;
+  }
+  .activity-tile.coming-soon .tile-desc {
+    color: #666;
+  }
+  .activity-tile.coming-soon .lo-badge {
+    background: white;
+    border-color: #e0e0e0;
+    color: #777;
+  }
+  .activity-tile.coming-soon .lo-badge .lo-num {
+    border-color: #d6d6d6;
+    color: #888;
+  }
+
+  /* Sequence rail */
+  .sequence-flow {
+    background: var(--primary-faint);
+    border: 1px solid #dce4ee;
+    border-radius: 6px;
+    padding: 16px 22px;
+    margin: 18px 0 4px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    color: var(--primary);
+    line-height: 1.7;
+  }
+  .sequence-flow strong {
+    font-weight: 600;
+  }
+  .sequence-flow .arrow {
+    color: var(--primary-light);
+    margin: 0 6px;
+    font-weight: 400;
+  }
+
+  /* Working title flag */
+  .working-title-note {
+    display: inline-block;
+    background: #fff8e1;
+    border: 1px solid #f0d878;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #7a5a17;
+    margin-left: 10px;
+    vertical-align: 4px;
+  }
+
+  /* Hub closing */
+  .hub-closing {
+    font-style: italic;
+    color: #555;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 14.5px;
+    line-height: 1.65;
+  }
+  .hub-closing p { margin-bottom: 12px; }
+  .hub-closing p:last-child { margin-bottom: 0; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .tile-num {
+      min-width: 0;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .tile-header {
+      flex-wrap: wrap;
+      gap: 0;
+    }
+    .tile-desc, .tile-badges {
+      padding-left: 0;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="nav">
+  <div class="nav-left">
+    <a href="index.html" class="nav-home" id="navHome">Prework</a>
+    <span class="nav-sep">&#8250;</span>
+    <span class="nav-current" id="navCurrent">Using the Identity</span>
+  </div>
+  <div class="nav-right">
+    <div class="nav-modules" id="navModules">
+      <button class="nav-btn" onclick="toggleModuleNav()">Modules &#9662;</button>
+      <div class="nav-dropdown" id="moduleDropdown"></div>
+    </div>
+    <button class="nav-btn" onclick="toggleGlossary()" title="Glossary">&#128214; Glossary</button>
+  </div>
+</nav>
+
+<!-- Progress Bar -->
+<div class="progress-strip">
+  <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+</div>
+
+<!-- Banner -->
+<div class="banner">
+  <div class="banner-logo" id="bannerLogo"></div>
+  <div class="banner-text">
+    <h1 id="courseTitle">Accounting Pre-Work</h1>
+    <div class="author" id="authorLine"></div>
+    <div class="institution" id="institutionLine"></div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="content">
+
+  <!-- Module header -->
+  <div class="module-header">
+    <div class="module-label">Activities &middot; After Module 1</div>
+    <h2>Using the Identity<span class="working-title-note">Working title</span></h2>
+    <p class="module-subtitle">You&rsquo;ve discovered the accounting identity &mdash; how do you use it?</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Intro framing -->
+  <div class="hub-intro">
+    <p class="prose">
+      In Module 1 you built the architecture from the ground up &mdash; sorted, recorded, decomposed, named, and read a snapshot. The decision case at the close of Module 1 ended on a particular feeling: the snapshot showed a great deal, but it could not show everything. <em>What does the entity have on its books, and what does it leave off? What is happening to those numbers between snapshots?</em>
+    </p>
+    <p class="prose">
+      Those are this module&rsquo;s two questions. The order matters: you can only track what has been recorded, so recognition comes first. Then change.
+    </p>
+
+    <div class="sequence-flow">
+      <strong>The two beats:</strong>
+      see what gets in &mdash; and what stays out
+      <span class="arrow">&rarr;</span>
+      track what&rsquo;s changing between snapshots
+    </div>
+  </div>
+
+  <!-- BEAT 1: RECOGNITION -->
+  <div class="hub-section-heading">Beat 1 &mdash; Recognition: What Gets In</div>
+
+  <p class="prose" style="font-size: 14.5px; color: #555; margin-bottom: 14px;">
+    The records that sit inside the architecture are selective. Some economic facts get in; others stay out, no matter how important they are. What pushes a fact across that line?
+  </p>
+
+  <a class="activity-tile" href="../../where-the-line-falls.html">
+    <div class="tile-header">
+      <span class="tile-num">Activity 1</span>
+      <span class="tile-title">Where the Line Falls</span>
+      <span class="tile-arrow">&rarr;</span>
+    </div>
+    <p class="tile-desc">
+      Three contrast pairs, each asking what makes the difference between something the records pick up and something they do not. A cash sale next to a self-declared &ldquo;great idea.&rdquo; An established warranty next to a new-product warranty. A brand acquired in a transaction next to a brand built internally. The line moves with evidence &mdash; and what falls below the line tells you something important about what financial statements can and cannot show, and why the architecture you inherited looks the way it does.
+    </p>
+    <div class="tile-badges">
+      <span class="lo-badge"><span class="lo-num">LO 4</span> Recognition</span>
+      <span class="lo-badge"><span class="lo-num">LO 6</span> Treatment factors</span>
+    </div>
+  </a>
+
+  <!-- BEAT 2: CHANGE OVER TIME -->
+  <div class="hub-section-heading">Beat 2 &mdash; Change Over Time: Tracking What Moves</div>
+
+  <p class="prose" style="font-size: 14.5px; color: #555; margin-bottom: 14px;">
+    A single snapshot is one balance sheet at one date. The architecture only earns its keep if you can use it to track <em>change</em> &mdash; what moved between this snapshot and the next, and why. Three decomposition statements answer three different versions of that question.
+  </p>
+
+  <div class="activity-tile coming-soon">
+    <div class="tile-header">
+      <span class="tile-num">Activity 2</span>
+      <span class="tile-title">What Made the Third Bucket Change<span class="coming-pill">Planned</span></span>
+    </div>
+    <p class="tile-desc">
+      The third bucket on this period&rsquo;s balance sheet differs from the third bucket on the last one. <em>What happened in between?</em> The statement of changes in equities decomposes that single number into the moves that produced it: new contributions from owners, retained activity from operations, distributions paid out. The decomposition is where the information lives &mdash; the ending balance alone tells you almost nothing.
+    </p>
+    <div class="tile-badges">
+      <span class="lo-badge"><span class="lo-num">LO 11</span> Decomposition adds information</span>
+      <span class="lo-badge"><span class="lo-num">LO 12</span> Statement structure</span>
+    </div>
+  </div>
+
+  <div class="activity-tile coming-soon">
+    <div class="tile-header">
+      <span class="tile-num">Activity 3</span>
+      <span class="tile-title">Inside the Operating Piece<span class="coming-pill">Planned</span></span>
+    </div>
+    <p class="tile-desc">
+      Of the moves that change the third bucket, the operating piece &mdash; what the entity earned and spent in its activities &mdash; is the one most readers want to see decomposed further. The income statement nests inside the statement of changes in equities and breaks the operating piece into revenues and expenses. The single &ldquo;net income&rdquo; line sitting in the equities statement becomes a story about how the entity got there.
+    </p>
+    <div class="tile-badges">
+      <span class="lo-badge"><span class="lo-num">LO 10</span> Aggregation absorbs conventions</span>
+      <span class="lo-badge"><span class="lo-num">LO 12</span> Nesting of statements</span>
+    </div>
+  </div>
+
+  <div class="activity-tile coming-soon">
+    <div class="tile-header">
+      <span class="tile-num">Activity 4</span>
+      <span class="tile-title">What Cash Did, and Why It&rsquo;s a Different Story<span class="coming-pill">Planned</span></span>
+    </div>
+    <p class="tile-desc">
+      Cash changed too &mdash; but it&rsquo;s a different change, decomposed differently. The cash flow statement explains how much cash moved in operating, investing, and financing categories. Compared with net income, it tells you how much of the income story was actually backed by cash and how much was shaped by accrual conventions. Both statements are needed precisely because they answer different questions.
+    </p>
+    <div class="tile-badges">
+      <span class="lo-badge"><span class="lo-num">LO 13</span> Statements as connected sequence</span>
+    </div>
+  </div>
+
+  <!-- Closing prose -->
+  <div class="hub-closing">
+    <p>
+      Module 1 asked you to build the architecture and read a snapshot. This module asks you to put the architecture to work &mdash; first by noticing what the system captures and what it leaves out, then by tracking what changes between snapshots. The decomposition statements you&rsquo;ll meet here are not forms to memorize; they are answers to questions you are now in a position to ask.
+    </p>
+    <p>
+      <strong>This module is in early draft.</strong> The recognition activity above is built. The change-over-time activities are scaffolded but not yet built &mdash; their final placement and depth depend on decisions still in progress about the broader course architecture.
+    </p>
+  </div>
+
+  <!-- Prev / Next navigation -->
+  <div class="module-nav">
+    <a href="module1-activities.html" class="prev">
+      <span class="nav-direction">&larr; Previous</span>
+      <span class="nav-label">Module 1: Working Through the Architecture</span>
+    </a>
+    <a href="module2.html" class="next">
+      <span class="nav-direction">Next &rarr;</span>
+      <span class="nav-label">Module 2: Why Accounting Systems Exist</span>
+    </a>
+  </div>
+
+</div><!-- /content -->
+
+<!-- Glossary overlay -->
+<div class="glossary-backdrop" id="glossaryBackdrop" onclick="toggleGlossary()"></div>
+<div class="glossary-overlay" id="glossaryOverlay">
+  <div class="glossary-header">
+    <h3>Glossary</h3>
+    <button class="glossary-close" onclick="toggleGlossary()" title="Close">&times;</button>
+  </div>
+  <div class="glossary-search">
+    <input id="glossarySearchInput" type="text" placeholder="Search terms&hellip;" oninput="filterGlossary(this.value)">
+  </div>
+  <div class="glossary-list" id="glossaryList"></div>
+</div>
+
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<script>
+  applyConfig();
+  /* This page is not yet in the MODULES array (its placement in the global module
+     numbering is still open). Calling buildModuleDropdown with a non-matching
+     value renders the dropdown without highlighting any current entry. */
+  buildModuleDropdown(0);
+  renderGlossary();
+  updateProgressBar();
+</script>
+
+</body>
+</html>
