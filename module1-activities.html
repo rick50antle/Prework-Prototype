@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accounting Pre-Work</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* ===== ACTIVITY HUB-SPECIFIC STYLES ===== */
+
+  /* Intro framing */
+  .hub-intro {
+    margin: 24px 0 8px;
+  }
+  .hub-intro p {
+    font-size: 16px;
+    margin-bottom: 14px;
+  }
+  .hub-intro p:last-child { margin-bottom: 0; }
+
+  /* Section heading inside hub */
+  .hub-section-heading {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #888;
+    margin: 44px 0 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  /* Activity tile */
+  .activity-tile {
+    display: block;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px 22px 18px;
+    margin-bottom: 14px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+  }
+  .activity-tile:hover {
+    border-color: var(--primary-light);
+    box-shadow: 0 2px 12px rgba(0, 53, 107, 0.07);
+  }
+  .activity-tile:active { transform: translateY(1px); }
+
+  .tile-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  .tile-num {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    min-width: 64px;
+  }
+  .tile-title {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+    line-height: 1.3;
+    flex-grow: 1;
+  }
+  .tile-arrow {
+    color: #ccc;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: color 0.15s, transform 0.15s;
+  }
+  .activity-tile:hover .tile-arrow {
+    color: var(--primary-light);
+    transform: translateX(2px);
+  }
+
+  .tile-desc {
+    font-size: 14.5px;
+    color: #444;
+    line-height: 1.6;
+    margin: 8px 0 12px;
+    padding-left: 76px;
+  }
+  .tile-desc em {
+    color: #2a2a2a;
+  }
+
+  .tile-badges {
+    padding-left: 76px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .lo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--primary-faint);
+    border: 1px solid #dce4ee;
+    border-radius: 12px;
+    padding: 2px 10px 2px 8px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11.5px;
+    color: var(--primary);
+    line-height: 1.4;
+  }
+  .lo-badge .lo-num {
+    font-weight: 700;
+    font-size: 10.5px;
+    background: white;
+    border: 1px solid #c7d3e3;
+    border-radius: 8px;
+    padding: 0 5px;
+    color: var(--primary);
+  }
+  .lo-badge.foundation {
+    background: #fbf6ee;
+    border-color: #e8dcc4;
+    color: #7a5a17;
+  }
+  .lo-badge.foundation .lo-num {
+    background: white;
+    border-color: #ddc99e;
+    color: #7a5a17;
+  }
+
+  /* Coming soon variant */
+  .activity-tile.coming-soon {
+    background: #fafafa;
+    border: 1px dashed #d6d6d6;
+    cursor: default;
+    opacity: 0.85;
+  }
+  .activity-tile.coming-soon:hover {
+    border-color: #d6d6d6;
+    box-shadow: none;
+  }
+  .activity-tile.coming-soon .tile-num {
+    color: #999;
+  }
+  .activity-tile.coming-soon .tile-title {
+    color: #555;
+  }
+  .activity-tile.coming-soon .tile-arrow {
+    display: none;
+  }
+  .coming-pill {
+    display: inline-block;
+    background: #f0e9d8;
+    border: 1px solid #e0d3a8;
+    border-radius: 10px;
+    padding: 1px 9px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #8a6a1f;
+    margin-left: 6px;
+    vertical-align: 2px;
+  }
+  .activity-tile.coming-soon .tile-desc {
+    color: #666;
+  }
+  .activity-tile.coming-soon .lo-badge {
+    background: white;
+    border-color: #e0e0e0;
+    color: #777;
+  }
+  .activity-tile.coming-soon .lo-badge .lo-num {
+    border-color: #d6d6d6;
+    color: #888;
+  }
+
+  /* Sequence rail */
+  .sequence-flow {
+    background: var(--primary-faint);
+    border: 1px solid #dce4ee;
+    border-radius: 6px;
+    padding: 16px 22px;
+    margin: 18px 0 4px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    color: var(--primary);
+    line-height: 1.7;
+  }
+  .sequence-flow strong {
+    font-weight: 600;
+  }
+  .sequence-flow .arrow {
+    color: var(--primary-light);
+    margin: 0 6px;
+    font-weight: 400;
+  }
+
+  /* Hub closing */
+  .hub-closing {
+    font-style: italic;
+    color: #555;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 14.5px;
+    line-height: 1.65;
+  }
+  .hub-closing p { margin-bottom: 12px; }
+  .hub-closing p:last-child { margin-bottom: 0; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .tile-num {
+      min-width: 0;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .tile-header {
+      flex-wrap: wrap;
+      gap: 0;
+    }
+    .tile-desc, .tile-badges {
+      padding-left: 0;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="nav">
+  <div class="nav-left">
+    <a href="index.html" class="nav-home" id="navHome">Prework</a>
+    <span class="nav-sep">&#8250;</span>
+    <span class="nav-current" id="navCurrent">Module 1: Working Through the Architecture</span>
+  </div>
+  <div class="nav-right">
+    <div class="nav-modules" id="navModules">
+      <button class="nav-btn" onclick="toggleModuleNav()">Modules &#9662;</button>
+      <div class="nav-dropdown" id="moduleDropdown"></div>
+    </div>
+    <button class="nav-btn" onclick="toggleGlossary()" title="Glossary">&#128214; Glossary</button>
+  </div>
+</nav>
+
+<!-- Progress Bar -->
+<div class="progress-strip">
+  <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+</div>
+
+<!-- Banner -->
+<div class="banner">
+  <div class="banner-logo" id="bannerLogo"></div>
+  <div class="banner-text">
+    <h1 id="courseTitle">Accounting Pre-Work</h1>
+    <div class="author" id="authorLine"></div>
+    <div class="institution" id="institutionLine"></div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="content">
+
+  <!-- Module header -->
+  <div class="module-header">
+    <div class="module-label">Module 1 &middot; Activities</div>
+    <h2>Working Through the Architecture</h2>
+    <p class="module-subtitle">Seven activities that build the system, then put it to use</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Intro framing -->
+  <div class="hub-intro">
+    <p class="prose">
+      You have watched the orientation video and seen the roadmap. Now it is your turn to do some of the work the system does. The seven activities below build the architecture of an accounting system in the order it would have to be built &mdash; what an entity has and owes, what happens when transactions disturb that picture, what kind of information lives in the gap between the two sides, what the conventional names for that gap are &mdash; and then put the architecture to use across both halves of a real $25 decision.
+    </p>
+    <p class="prose">
+      Activities 1 through 4 take about 5 to 10 minutes each; Activities 5, 6, and 7 take about 15 to 20 minutes each. Each step depends on the one before it, so it is best worked through in order.
+    </p>
+
+    <div class="sequence-flow">
+      <strong>The arc:</strong>
+      sort what you see
+      <span class="arrow">&rarr;</span>
+      record what changes
+      <span class="arrow">&rarr;</span>
+      look inside the gap
+      <span class="arrow">&rarr;</span>
+      meet the names
+      <span class="arrow">&rarr;</span>
+      invest side
+      <span class="arrow">&rarr;</span>
+      donate side
+      <span class="arrow">&rarr;</span>
+      decide
+    </div>
+  </div>
+
+  <!-- THE SEVEN ACTIVITIES -->
+  <div class="hub-section-heading">The Seven Activities</div>
+
+  <a class="activity-tile" href="../../sort-assets-liabilities.html">
+    <div class="tile-header">
+      <span class="tile-num">Activity 1</span>
+      <span class="tile-title">Sort Assets and Liabilities</span>
+      <span class="tile-arrow">&rarr;</span>
+    </div>
+    <p class="tile-desc">
+      Eight everyday items, two bins. You are given standing conditions about an entity &mdash; cash on hand, an outstanding loan, a building, a wage owed for hours already worked &mdash; and you sort each one as the entity&rsquo;s asset or its liability. The activity establishes the two-side architecture before the identity is named.
+    </p>
+    <div class="tile-badges">
+      <span class="lo-badge foundation"><span class="lo-num">F</span> Foundation</span>
+      <span class="lo-badge"><span class="lo-num">LO 4</span> Recognition (sets up)</span>
+    </div>
+  </a>
+
+  <a class="activity-tile" href="../../track-transactions.html">
+    <div class="tile-header">
+      <span class="tile-num">Activity 2</span>
+      <span class="tile-title">Track Six Transactions</span>
+      <span class="tile-arrow">&rarr;</span>
+    </div>
+    <p class="tile-desc">
+      Six events, recorded one at a time. Three pair cleanly: cash in, loan in, equipment out, loan out. Three do not: an owner&rsquo;s contribution, a service rendered for cash, an expense paid out. The unpaired events open a gap, and the architecture answers it: <em>Assets &minus; Liabilities = the third bucket.</em> The identity emerges by necessity, not decree.
+    </p>
+    <div class="tile-badges">
+      <span class="lo-badge"><span class="lo-num">LO 9</span> Working the identity</span>
+      <span class="lo-badge"><span class="lo-num">LO 8</span> Third bucket emerges</span>
+      <span class="lo-badge"><span class="lo-num">LO 2</span> Architecture holds</span>
+    </div>
+  </a>
+
+  <a class="activity-tile" href="../../inside-the-third-bucket.html">
+    <div class="tile-header">
+      <span class="tile-num">Activity 3</span>
+      <span class="tile-title">Inside the Third Bucket</span>
+      <span class="tile-arrow">&rarr;</span>
+    </div>
+    <p class="tile-desc">
+      The third bucket is one number on the balance sheet, but its interior carries information. In Part 1 you decompose a $34,000 third bucket into <em>net assets arising from owner contributions</em> and <em>net assets earned and retained,</em> then contrast it with another entity that has the same total but a very different mix. In Part 2 you do the same for a small foundation &mdash; only now the sub-buckets are <em>without donor restrictions</em> and <em>with donor restrictions.</em> Same architecture, two different decomposition vocabularies.
+    </p>
+    <div class="tile-badges">
+      <span class="lo-badge"><span class="lo-num">LO 8</span> Decomposition (any entity)</span>
+      <span class="lo-badge"><span class="lo-num">LO 11</span> Decomposition adds information</span>
+    </div>
+  </a>
+
+  <a class="activity-tile" href="../../naming-the-third-bucket.html">
+    <div class="tile-header">
+      <span class="tile-num">Activity 4</span>
+      <span class="tile-title">Naming the Third Bucket</span>
+      <span class="tile-arrow">&rarr;</span>
+    </div>
+    <p class="tile-desc">
+      You have built and decomposed the third bucket using descriptive labels &mdash; what each piece <em>means.</em> Real records use specific conventional names for the same architecture. Click-to-reveal cards pair the descriptive label you used with the formal name a real balance sheet uses: <em>Equities,</em> <em>Common Stock,</em> <em>Additional Paid-in Capital,</em> <em>Retained Earnings,</em> <em>Balance Sheet</em> on the for-profit side; <em>Net Assets</em> with and without donor restrictions, and the <em>Statement of Financial Position,</em> on the nonprofit side. The names land on what you already own.
+    </p>
+    <div class="tile-badges">
+      <span class="lo-badge"><span class="lo-num">LO 8</span> Nomenclature for the architecture</span>
+    </div>
+  </a>
+
+  <a class="activity-tile" href="../prework-intro/metals-prework-intro-invest-or-donate.html">
+    <div class="tile-header">
+      <span class="tile-num">Activity 5</span>
+      <span class="tile-title">The Three Businesses</span>
+      <span class="tile-arrow">&rarr;</span>
+    </div>
+    <p class="tile-desc">
+      The for-profit side of the $25. Three businesses on the same balance-sheet date, all with $500 in total assets but composed differently and arriving by different paths. You read what each one&rsquo;s architecture lets you say: where the residual came from, what the income statement adds, and where the evidence test leaves real value off the records. Closes with the first of three closing reflections.
+    </p>
+    <div class="tile-badges">
+      <span class="lo-badge"><span class="lo-num">LO 11</span> Decomposition adds information</span>
+      <span class="lo-badge"><span class="lo-num">LO 4</span> Recognition</span>
+    </div>
+  </a>
+
+  <a class="activity-tile" href="../prework-intro/metals-prework-part2-one-donation-three-nonprofits.html">
+    <div class="tile-header">
+      <span class="tile-num">Activity 6</span>
+      <span class="tile-title">The Three Nonprofits</span>
+      <span class="tile-arrow">&rarr;</span>
+    </div>
+    <p class="tile-desc">
+      The donate side of the same $25. Three nonprofits, again $500 each, with different stories. The identity carries over; the residual is now Net Assets, decomposed into Without and With Donor Restrictions. The Statement of Activities does an extra job. Two recognition decisions specific to nonprofits put the evidence test on display &mdash; most contributed services stay outside the records, and a collection an organization chooses not to capitalize produces nothing on either statement at all.
+    </p>
+    <div class="tile-badges">
+      <span class="lo-badge"><span class="lo-num">LO 8</span> Architecture across entity types</span>
+      <span class="lo-badge"><span class="lo-num">LO 11</span> Decomposition adds information</span>
+    </div>
+  </a>
+
+  <a class="activity-tile" href="../prework-intro/metals-prework-reflections.html">
+    <div class="tile-header">
+      <span class="tile-num">Activity 7</span>
+      <span class="tile-title">Decision</span>
+      <span class="tile-arrow">&rarr;</span>
+    </div>
+    <p class="tile-desc">
+      Both halves in view at once. A handful of short reflections name what the for-profit and nonprofit pictures share, where they diverge, and what both leave out. Then a final beat: with $25 in your hand and the analysis behind you, what do you do? The records can inform the call. They cannot make it.
+    </p>
+    <div class="tile-badges">
+      <span class="lo-badge"><span class="lo-num">LO 8</span> Architecture across entity types</span>
+    </div>
+  </a>
+
+  <!-- COMING NEXT -->
+  <div class="hub-section-heading">Coming Next</div>
+
+  <p class="prose" style="font-size: 14.5px; color: #666; margin-bottom: 14px;">
+    Module 1 builds the architecture and asks you to read what it shows. The next module asks how you put it to use.
+  </p>
+
+  <div class="activity-tile coming-soon">
+    <div class="tile-header">
+      <span class="tile-num">Up Next</span>
+      <span class="tile-title">Using the Identity<span class="coming-pill">In progress</span></span>
+    </div>
+    <p class="tile-desc">
+      The architecture you just built is one snapshot of one entity at one date. The next module asks two questions in order. <em>Recognition first:</em> what does the system actually capture, and what does it leave out? Where the line falls between what gets in and what stays out turns on evidence, history, and tradeoffs. <em>Then change:</em> the snapshot only makes sense if things are moving, and tracking what changes is what motivates the income statement, the statement of changes in equities, and the cash flow statement &mdash; not as forms to memorize, but as answers to questions you will be asking.
+    </p>
+    <div class="tile-badges">
+      <span class="lo-badge"><span class="lo-num">LO 4</span> Recognition</span>
+      <span class="lo-badge"><span class="lo-num">LO 6</span> Treatment factors</span>
+      <span class="lo-badge"><span class="lo-num">LO 10</span> Aggregation absorbs conventions</span>
+      <span class="lo-badge"><span class="lo-num">LO 12</span> Decomposition statement structure</span>
+      <span class="lo-badge"><span class="lo-num">LO 13</span> Statements as connected sequence</span>
+    </div>
+  </div>
+
+  <!-- Closing prose -->
+  <div class="hub-closing">
+    <p>
+      What you will <em>not</em> get from these seven activities is a vocabulary lesson or a procedure to memorize. The architecture is built from the ground up, then put to use on a real $25 decision &mdash; and the conventional names land only after you have built what they refer to. The architecture comes to rest on something you own, not on something you have been told to memorize.
+    </p>
+  </div>
+
+  <!-- Prev / Next navigation -->
+  <div class="module-nav">
+    <a href="index.html" class="prev">
+      <span class="nav-direction">&larr; Previous</span>
+      <span class="nav-label">Welcome and Orientation</span>
+    </a>
+    <a href="using-the-identity.html" class="next">
+      <span class="nav-direction">Next &rarr;</span>
+      <span class="nav-label">Using the Identity</span>
+    </a>
+  </div>
+
+</div><!-- /content -->
+
+<!-- Glossary overlay -->
+<div class="glossary-backdrop" id="glossaryBackdrop" onclick="toggleGlossary()"></div>
+<div class="glossary-overlay" id="glossaryOverlay">
+  <div class="glossary-header">
+    <h3>Glossary</h3>
+    <button class="glossary-close" onclick="toggleGlossary()" title="Close">&times;</button>
+  </div>
+  <div class="glossary-search">
+    <input id="glossarySearchInput" type="text" placeholder="Search terms&hellip;" oninput="filterGlossary(this.value)">
+  </div>
+  <div class="glossary-list" id="glossaryList"></div>
+</div>
+
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<script>
+  applyConfig();
+  buildModuleDropdown(1);
+  renderGlossary();
+  markModuleVisited(1);
+  updateProgressBar();
+</script>
+
+</body>
+</html>
