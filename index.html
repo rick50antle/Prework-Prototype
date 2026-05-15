@@ -4,218 +4,66 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Accounting Pre-Work</title>
+<link rel="stylesheet" href="shared.css">
 <style>
-  :root {
-    --primary: #00356b;
-    --primary-light: #286dc0;
-    --primary-faint: #f0f4f8;
-    --accent: #bd5319;
-  }
+  /* ===== INDEX-ONLY STYLES =====
+     Shared elements (nav, banner, info-box, glossary, etc.) come from shared.css.
+     This block holds only the welcome page's bespoke pieces:
+       $25 hook, welcome subtitle, video placeholder, transcript box,
+       experienced-student callout, expandable roadmap, bridge prose.
+  ============================================= */
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: Georgia, 'Times New Roman', serif;
-    color: #2a2a2a;
-    background: #fafafa;
-    line-height: 1.7;
-  }
-
-  /* ===== NAV BAR ===== */
-  .nav {
-    background: white;
-    border-bottom: 1px solid #e0e0e0;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 44px;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    font-size: 13px;
-    position: sticky;
-    top: 0;
-    z-index: 50;
-  }
-  .nav-left {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .nav-home {
-    color: var(--primary);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 13px;
-  }
-  .nav-home:hover { text-decoration: underline; }
-  .nav-sep { color: #ccc; font-size: 11px; }
-  .nav-current {
-    color: #888;
-    font-size: 13px;
-  }
-  .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .nav-btn {
-    background: none;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 4px 10px;
-    font-family: inherit;
-    font-size: 12px;
-    color: #555;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .nav-btn:hover { background: #f5f5f5; border-color: #bbb; }
-
-  /* Module dropdown */
-  .nav-modules {
-    position: relative;
-  }
-  .nav-dropdown {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background: white;
-    border: 1px solid #ddd;
+  /* === Section 1: $25 hook === */
+  .hook {
+    text-align: center;
+    padding: 36px 26px 32px;
+    margin: 12px 0 28px;
+    background: #fffaf3;
+    border: 1px solid #f0dcc0;
+    border-left: 4px solid var(--accent);
     border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-    min-width: 280px;
-    padding: 6px 0;
-    margin-top: 4px;
-    z-index: 60;
   }
-  .nav-modules.open .nav-dropdown { display: block; }
-  .nav-dropdown a {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 16px;
-    text-decoration: none;
+  .hook-amount {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 72px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 14px;
+    letter-spacing: -1.5px;
+  }
+  .hook-text {
+    font-size: 17px;
+    line-height: 1.65;
     color: #2a2a2a;
-    font-size: 13px;
-    transition: background 0.1s;
-  }
-  .nav-dropdown a:hover { background: var(--primary-faint); }
-  .nav-dropdown a.current { font-weight: 600; color: var(--primary); }
-  .nav-dd-num {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: #eee;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 600;
-    color: #888;
-    flex-shrink: 0;
-  }
-  .nav-dropdown a.current .nav-dd-num {
-    background: var(--accent);
-    color: white;
-  }
-  .nav-dropdown a.completed .nav-dd-num {
-    background: #22c55e;
-    color: white;
-  }
-
-  /* ===== PROGRESS BAR ===== */
-  .progress-strip {
-    height: 3px;
-    background: #eee;
-  }
-  .progress-fill {
-    height: 100%;
-    background: var(--accent);
-    transition: width 0.4s ease;
-  }
-
-  /* ===== BANNER ===== */
-  .banner {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-    color: white;
-    padding: 40px 40px 36px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-  .banner-logo {
-    width: 56px; height: 56px;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.15);
-    background-size: contain;
-    background-repeat: no-repeat;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: Georgia, serif;
-    font-size: 30px;
-    font-weight: bold;
-    overflow: hidden;
-  }
-  .banner-logo img {
-    width: 100%; height: 100%;
-    object-fit: contain;
-  }
-  .banner-text h1 {
-    font-size: 28px;
-    font-weight: normal;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    letter-spacing: 0.3px;
-  }
-  .banner-text .author {
-    font-size: 14px;
-    opacity: 0.7;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    margin-top: 2px;
-  }
-  .banner-text .institution {
-    font-size: 12px;
-    opacity: 0.55;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    margin-top: 1px;
-  }
-
-  /* ===== CONTENT ===== */
-  .content {
-    max-width: 720px;
+    max-width: 620px;
     margin: 0 auto;
-    padding: 40px 24px 80px;
   }
+  .hook-text strong { color: var(--primary); }
 
-  /* Welcome block */
+  /* === Welcome block === */
   .welcome {
     text-align: center;
-    padding: 24px 0 40px;
+    padding: 8px 0 28px;
   }
   .welcome-subtitle {
     font-size: 20px;
     font-style: italic;
     color: #555;
-    margin-bottom: 8px;
+    margin-bottom: 16px;
   }
   .welcome-text {
     font-size: 15px;
     color: #777;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     padding: 0 20px;
     display: none;
   }
   .welcome-text.visible { display: block; }
 
-  /* Mascot */
   .mascot {
     text-align: center;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
     display: none;
   }
   .mascot.visible { display: block; }
@@ -224,11 +72,11 @@
     opacity: 0.65;
   }
 
-  /* Video */
+  /* === Video === */
   .video-placeholder {
     background: #111;
     border-radius: 8px;
-    padding: 72px 40px;
+    padding: 64px 40px;
     text-align: center;
     margin: 0 auto 12px;
     max-width: 600px;
@@ -261,30 +109,124 @@
     font-size: 13px;
   }
 
-  /* Divider */
-  .divider {
+  /* === Transcript toggle === */
+  .transcript-toggle {
+    display: block;
+    margin: 12px auto 0;
+    background: none;
     border: none;
-    border-top: 1px solid #e0e0e0;
-    margin: 40px 0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    color: #888;
+    cursor: pointer;
+    padding: 4px 8px;
+    transition: color 0.2s;
+  }
+  .transcript-toggle:hover { color: #555; }
+  .transcript-toggle::before {
+    content: '\25B6';
+    display: inline-block;
+    font-size: 9px;
+    margin-right: 6px;
+    transition: transform 0.2s;
+    vertical-align: middle;
+  }
+  .transcript-toggle.open::before { transform: rotate(90deg); }
+  .transcript-box {
+    display: none;
+    max-width: 600px;
+    margin: 16px auto 0;
+    padding: 24px 28px;
+    background: #f7f7f7;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    text-align: left;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: #333;
+    max-height: 480px;
+    overflow-y: auto;
+  }
+  .transcript-box.open { display: block; }
+  .transcript-box p { margin-bottom: 14px; }
+  .transcript-box p:last-child { margin-bottom: 0; }
+  .transcript-box .beat-label {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--primary-light);
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+  .transcript-box .beat-pending {
+    color: #aaa;
+    font-style: italic;
   }
 
-  /* Section headers */
+  /* === Section headers (welcome page only) === */
   h2 {
     font-family: 'Helvetica Neue', Arial, sans-serif;
     font-size: 20px;
     color: var(--primary);
-    margin: 0 0 20px;
+    margin: 0 0 16px;
     font-weight: 600;
   }
 
-  /* Prose */
-  .prose {
-    margin-bottom: 18px;
-    font-size: 16px;
+  /* === Customization-dimensions list === */
+  .dimensions {
+    list-style: none;
+    margin: 8px 0 18px;
+    padding: 0;
+  }
+  .dimensions li {
+    padding: 6px 0 6px 22px;
+    position: relative;
+    font-size: 15.5px;
+  }
+  .dimensions li::before {
+    content: '\2014';
+    position: absolute;
+    left: 0;
+    color: var(--primary-light);
   }
 
-  /* Roadmap */
-  .roadmap { margin: 20px 0 0; }
+  /* === Experienced-student callout === */
+  .callout-experienced {
+    background: #fffaf3;
+    border: 1px solid #f0dcc0;
+    border-left: 4px solid var(--accent);
+    border-radius: 5px;
+    padding: 22px 26px 20px;
+    margin: 28px 0 12px;
+  }
+  .callout-experienced .callout-label {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .callout-experienced h3 {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 16px;
+    color: var(--primary);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .callout-experienced p {
+    font-size: 15px;
+    line-height: 1.65;
+    margin-bottom: 10px;
+  }
+  .callout-experienced p:last-child { margin-bottom: 0; }
+
+  /* === Roadmap (vertical dot-line) === */
+  .roadmap { margin: 8px 0 0; }
   .roadmap-item {
     display: flex;
     align-items: flex-start;
@@ -340,170 +282,187 @@
     font-style: italic;
   }
 
-  /* Info boxes */
-  .info-box {
-    background: var(--primary-faint);
-    border-radius: 5px;
-    padding: 20px 24px;
-    margin: 14px 0;
-    border: 1px solid #dce4ee;
+  /* === Optional add-on (demoted Toolkit) === */
+  .roadmap-divider {
+    margin: 10px 0 14px 14px;
+    padding-top: 16px;
+    border-top: 1px dashed #d0d0d0;
   }
-  .info-box h3 {
+  .roadmap-divider-label {
     font-family: 'Helvetica Neue', Arial, sans-serif;
-    font-size: 15px;
-    color: var(--primary);
-    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
   }
-  .info-box p {
-    font-size: 14.5px;
-    line-height: 1.6;
+  .roadmap-item.optional .roadmap-dot {
+    background: white;
+    border: 2px solid var(--primary-light);
+    width: 10px; height: 10px;
+    box-sizing: border-box;
+  }
+  .roadmap-item.optional .roadmap-module {
+    color: #999;
+  }
+  .roadmap-item.optional .roadmap-title {
+    color: #555;
+    font-weight: 500;
+  }
+  .roadmap-item.optional .roadmap-desc {
+    color: #888;
+    font-style: normal;
   }
 
-  /* Transition */
+  /* === Expandable modules === */
+  .roadmap-text {
+    position: relative;
+    padding-right: 70px;
+  }
+  .roadmap-expand-toggle {
+    position: absolute;
+    top: -2px;
+    right: 0;
+    background: none;
+    border: 1px solid transparent;
+    color: #888;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    padding: 4px 9px 4px 10px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .roadmap-expand-toggle:hover {
+    color: var(--primary);
+    background: var(--primary-faint);
+    border-color: #dce4ee;
+  }
+  .roadmap-expand-toggle .chevron {
+    display: inline-block;
+    transition: transform 0.2s;
+    font-size: 9px;
+    margin-left: 2px;
+  }
+  .roadmap-item.expanded .roadmap-expand-toggle .chevron {
+    transform: rotate(180deg);
+  }
+  .roadmap-item.expanded .roadmap-expand-toggle .toggle-label.show { display: none; }
+  .roadmap-item.expanded .roadmap-expand-toggle .toggle-label.hide { display: inline; }
+  .roadmap-expand-toggle .toggle-label.hide { display: none; }
+
+  .roadmap-activities {
+    display: none;
+    margin: 12px 0 4px;
+    padding-left: 0;
+    border-left: 1px solid #e0e0e0;
+  }
+  .roadmap-item.expanded .roadmap-activities {
+    display: block;
+  }
+  .roadmap-activity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px 8px 14px;
+    margin-left: -1px;
+    border-left: 2px solid transparent;
+    text-decoration: none;
+    color: #444;
+    font-size: 14px;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+  }
+  .roadmap-activity:hover {
+    color: var(--primary);
+    background: var(--primary-faint);
+    border-left-color: var(--primary-light);
+  }
+  .roadmap-activity-dot {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    opacity: 0.65;
+  }
+  .roadmap-activity-text {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    flex-grow: 1;
+  }
+  .roadmap-activity.coming {
+    color: #888;
+    cursor: default;
+  }
+  .roadmap-activity.coming:hover {
+    color: #888;
+    background: transparent;
+    border-left-color: transparent;
+  }
+  .roadmap-activity.coming .roadmap-activity-dot {
+    background: white;
+    border: 1px solid #ccc;
+    opacity: 1;
+  }
+  .roadmap-activity .coming-tag {
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #8a6a1f;
+    padding: 1px 9px;
+    background: #f0e9d8;
+    border: 1px solid #e0d3a8;
+    border-radius: 10px;
+  }
+
+  /* === Transition === */
   .transition {
     font-style: italic;
-    color: #666;
+    color: #555;
     margin: 36px 0 0;
     padding-top: 20px;
     border-top: 1px solid #e0e0e0;
     font-size: 15px;
+    line-height: 1.7;
   }
   .transition a { color: var(--primary); text-decoration: none; }
   .transition a:hover { text-decoration: underline; }
 
-  /* Transcript toggle */
-  .transcript-toggle {
-    display: block;
-    margin: 12px auto 0;
-    background: none;
-    border: none;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    font-size: 13px;
-    color: #888;
-    cursor: pointer;
-    padding: 4px 8px;
-    transition: color 0.2s;
-  }
-  .transcript-toggle:hover { color: #555; }
-  .transcript-toggle::before {
-    content: '\25B6';
-    display: inline-block;
-    font-size: 9px;
-    margin-right: 6px;
-    transition: transform 0.2s;
-    vertical-align: middle;
-  }
-  .transcript-toggle.open::before { transform: rotate(90deg); }
-  .transcript-box {
-    display: none;
-    max-width: 600px;
-    margin: 16px auto 0;
-    padding: 24px 28px;
-    background: #f7f7f7;
-    border: 1px solid #e8e8e8;
-    border-radius: 6px;
-    text-align: left;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 14.5px;
-    line-height: 1.7;
-    color: #333;
-    max-height: 400px;
-    overflow-y: auto;
-  }
-  .transcript-box.open { display: block; }
-  .transcript-box p { margin-bottom: 14px; }
-  .transcript-box p:last-child { margin-bottom: 0; }
-
-  /* ===== GLOSSARY OVERLAY ===== */
-  .glossary-overlay {
-    display: none;
-    position: fixed;
-    top: 0; right: 0; bottom: 0;
-    width: 360px;
-    background: white;
-    border-left: 1px solid #ddd;
-    box-shadow: -4px 0 20px rgba(0,0,0,0.08);
-    z-index: 100;
+  /* === Next-link === */
+  .next-link {
+    display: flex;
     flex-direction: column;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-  }
-  .glossary-overlay.open {
-    display: flex;
-  }
-  .glossary-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    text-decoration: none;
     padding: 16px 20px;
-    border-bottom: 1px solid #eee;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    transition: border-color 0.15s, background 0.15s;
+    text-align: right;
+    min-width: 260px;
   }
-  .glossary-header h3 {
-    font-size: 16px;
+  .next-link:hover {
+    border-color: var(--primary-light);
+    background: var(--primary-faint);
+  }
+  .next-link .next-label {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
     font-weight: 600;
-    color: var(--primary);
-  }
-  .glossary-close {
-    background: none;
-    border: none;
-    font-size: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
     color: #999;
-    cursor: pointer;
-    padding: 4px 8px;
-    line-height: 1;
+    margin-bottom: 4px;
   }
-  .glossary-close:hover { color: #555; }
-  .glossary-search {
-    padding: 12px 20px;
-    border-bottom: 1px solid #eee;
-  }
-  .glossary-search input {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 13px;
-    font-family: inherit;
-  }
-  .glossary-search input:focus { outline: none; border-color: var(--primary); }
-  .glossary-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 0;
-  }
-  .glossary-item {
-    padding: 12px 20px;
-    border-bottom: 1px solid #f5f5f5;
-  }
-  .glossary-term {
-    font-size: 14px;
-    font-weight: 600;
+  .next-link .next-title {
+    font-size: 15px;
     color: var(--primary);
-    margin-bottom: 3px;
-  }
-  .glossary-def {
-    font-size: 13px;
-    color: #555;
-    line-height: 1.5;
-  }
-  .glossary-item.hidden { display: none; }
-
-  /* Glossary backdrop for mobile */
-  .glossary-backdrop {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.3);
-    z-index: 99;
-  }
-  .glossary-backdrop.open { display: block; }
-
-  /* ===== RESPONSIVE ===== */
-  @media (max-width: 600px) {
-    .banner { padding: 24px 20px 20px; }
-    .banner-text h1 { font-size: 22px; }
-    .content { padding: 28px 16px 60px; }
-    .glossary-overlay { width: 100%; }
-    .nav { padding: 0 12px; }
+    font-weight: 500;
   }
 </style>
 </head>
@@ -514,37 +473,12 @@
   <div class="nav-left">
     <a href="index.html" class="nav-home" id="navHome">Prework</a>
     <span class="nav-sep">&#8250;</span>
-    <span class="nav-current" id="navCurrent">Module 1: Welcome</span>
+    <span class="nav-current" id="navCurrent">Welcome</span>
   </div>
   <div class="nav-right">
     <div class="nav-modules" id="navModules">
       <button class="nav-btn" onclick="toggleModuleNav()">Modules &#9662;</button>
-      <div class="nav-dropdown" id="moduleDropdown">
-        <a href="index.html" class="current">
-          <span class="nav-dd-num">1</span> Welcome and Orientation
-        </a>
-        <a href="module2.html">
-          <span class="nav-dd-num">2</span> Why Accounting Systems Exist
-        </a>
-        <a href="module3.html">
-          <span class="nav-dd-num">3</span> Worth, Quantification, and Limits
-        </a>
-        <a href="module4.html">
-          <span class="nav-dd-num">4</span> The Architecture Itself
-        </a>
-        <a href="module5.html">
-          <span class="nav-dd-num">5</span> CVS Health: Balance Sheets
-        </a>
-        <a href="module6.html">
-          <span class="nav-dd-num">6</span> CVS Health: Income Statement
-        </a>
-        <a href="module7.html">
-          <span class="nav-dd-num">7</span> CVS Health: Cash Flows
-        </a>
-        <a href="module8.html">
-          <span class="nav-dd-num">8</span> The Analyst's Toolkit
-        </a>
-      </div>
+      <div class="nav-dropdown" id="moduleDropdown"></div>
     </div>
     <button class="nav-btn" onclick="toggleGlossary()" title="Glossary">&#128214; Glossary</button>
   </div>
@@ -552,7 +486,7 @@
 
 <!-- Progress Bar -->
 <div class="progress-strip">
-  <div class="progress-fill" id="progressFill" style="width: 12.5%;"></div>
+  <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
 </div>
 
 <!-- Banner -->
@@ -568,124 +502,243 @@
 <!-- Main content -->
 <div class="content">
 
-  <!-- Welcome -->
+  <!-- ===== Section 1: The $25 hook ===== -->
+  <div class="hook">
+    <div class="hook-amount">$25</div>
+    <p class="hook-text">
+      By the end of Module&nbsp;1, you&rsquo;ll choose what to do with it &mdash; <strong>invest</strong> in one of three businesses, <strong>contribute</strong> to one of three nonprofits, or split it. The work between here and there gives you a way to see each candidate that you don&rsquo;t have yet. The decision will be yours to make.
+    </p>
+  </div>
+
+  <!-- ===== Section 2: Welcome from Rick (video + transcript) ===== -->
   <div class="welcome">
     <div class="welcome-subtitle">Accounting as an Information System</div>
     <div class="welcome-text" id="welcomeText"></div>
     <div class="mascot" id="mascot"><img id="mascotImg" src="" alt=""></div>
+
     <div class="video-placeholder">
       <div class="play-btn"></div>
-      <div class="video-label">Welcome and Orientation &middot; 3&ndash;5 min</div>
+      <div class="video-label">Welcome &middot; ~2 min</div>
     </div>
     <button class="transcript-toggle" onclick="toggleTranscript()" id="transcriptToggle">Read transcript</button>
+
     <div class="transcript-box" id="transcriptBox">
-      <p>Hi. I&rsquo;m Rick Antle. I teach accounting at Yale, and I designed this prework for students going into their first accounting course. That includes future MBAs, law students, policy students, future accountants and CPAs &mdash; anyone who will work with the information that accounting systems produce and wants to understand what that information is telling you and what it isn&rsquo;t.</p>
-      <p>No prior accounting knowledge required. If you do have some, you&rsquo;ll find we approach familiar territory from a different angle.</p>
-      <p>Here&rsquo;s where we start. Think about a company like CVS Health &mdash; thousands of stores, millions of transactions a day, billions in debt, contracts that trigger legal consequences when certain numbers cross certain thresholds. No one person can hold all of that in their head. But it&rsquo;s not just about any one person. Many different people want access to that same information &mdash; investors, lenders, managers, regulators, judges, tax authorities. They all want to understand what&rsquo;s happening in the same organization, and they want to coordinate their decisions and actions based on a shared picture of it.</p>
-      <p>That&rsquo;s why accounting systems exist. They are shared information systems &mdash; used by corporations, nonprofits, trusts, governments, tax systems &mdash; that help organizations and the people who depend on them cope with the complexity of what those organizations do and what happens to them economically. Accounting systems compress that complexity into something structured enough for human minds to work with, and they make that structured picture available to everyone who relies on it.</p>
-      <p>But compression requires choices. There is far too much data to include it all, so every accounting system defines a boundary &mdash; what gets in and what doesn&rsquo;t. Beyond that boundary, you&rsquo;re choosing how to quantify things whose worth might be contested, when to recognize events, what to disclose. Every one of those choices involves a tradeoff. The output is useful &mdash; indispensable, even &mdash; but it is never the whole picture. It always requires a person who understands what the system did and what it didn&rsquo;t.</p>
-      <p>Now, one idea that will organize everything you&rsquo;re about to learn. Accounting systems around the world share a remarkable amount of deep structure. Most use double-entry bookkeeping &mdash; recording every economic event in two places. Most impose a self-balancing requirement &mdash; an identity &mdash; that keeps everything internally consistent. Most produce financial statements that present different views of the same underlying data. And all of them define that boundary &mdash; which economic events enter the system and which don&rsquo;t.</p>
-      <p>None of this emerged all at once. Double-entry bookkeeping appeared in medieval Italy. The balancing requirement crystallized through centuries of practice. These features survived and spread &mdash; across cultures, across centuries, into corporations and governments and tax systems alike &mdash; because they worked.</p>
-      <p>We call that shared deep structure the architecture. What varies are the specific rules that different bodies write for different kinds of organizations. US GAAP for American corporations. IFRS for most of the rest of the world. Separate rules for governments, for nonprofits, for tax reporting. Each of those is an instance of the architecture &mdash; a specific set of choices about when to recognize a transaction, how to quantify it, what to disclose.</p>
-      <p>In this prework, we take a high-altitude overview of that architecture. But it wouldn&rsquo;t be accounting if we didn&rsquo;t get into some specifics &mdash; so we&rsquo;ll study one instance, US GAAP, applied to a real company, CVS Health. Whenever a GAAP-specific rule appears, we&rsquo;ll flag it: this is an instance choice, and it could have been made differently. The architecture is what stays.</p>
-      <p>We&rsquo;ll work through the system from the outside in. Why it exists &mdash; who uses it and what questions they bring. How it processes what it takes in &mdash; the conventions, the tradeoffs, the limits. The engine at the center &mdash; the self-balancing requirement and the financial statements it generates. Then CVS Health&rsquo;s actual financials, so you can see the architecture and the instance choices working together on real numbers.</p>
-      <p>And no introduction to accounting would be complete without at least mentioning debits and credits. Debits and credits are the components of a notation &mdash; journal entry notation &mdash; that evolved for the purpose of analyzing transactions. The first step in accounting for any transaction is to analyze it: what changed, where do the effects land, does everything still balance? Journal entry notation is the language that developed for exactly that task. If you aspire to be an accountant or a CPA, this is how you craft entries into the system. If your goal is to use financial statements in a sophisticated way &mdash; to dig beneath the surface and understand what happened &mdash; this notation is your friend.</p>
-      <p>One last thing. Keep in mind that this is the prework, not the course. Learning how a system that compresses this much complexity actually works &mdash; that&rsquo;s itself a complex task, one that takes real time and effort. Our goal here is to help you get into the right mindset, so that when the course begins, you&rsquo;re oriented and ready to acquire that understanding more efficiently. Think of this as coaching before the season starts.</p>
-      <p>If you&rsquo;ve had some prior exposure to accounting, there&rsquo;s a diagnostic before Module 4 that will help you figure out where to go deep and where to move quickly. But don&rsquo;t skip Modules 1 through 3 &mdash; the framing will be new even if the mechanics aren&rsquo;t.</p>
-      <p>All right. Let&rsquo;s get started.</p>
+      <div class="beat-label">Beats 1 &amp; 2 &mdash; Scale problem and complexity</div>
+      <p>&ldquo;Imagine you are running a small business. Three employees, a handful of customers, maybe a dozen transactions in a week. You could probably keep track of most of that in your head &mdash; or a notebook. Now imagine ten thousand employees. Operations in forty states and a few different countries. Millions of transactions a year. Suppliers deciding whether to extend credit. Lenders deciding whether to lend. Shareholders deciding where to put their capital. Regulators checking for compliance. Each of them drawing on the same underlying records to answer very different questions. You can&rsquo;t run that from a notebook. And the systems built to handle that complexity &mdash; to capture it, organize it, report it in a form people can actually use &mdash; those systems are genuinely remarkable. They&rsquo;ve been evolving for literally thousands of years, absorbing new demands, new technology, new types of organizations. What we use today isn&rsquo;t something a committee designed from scratch. It&rsquo;s the accumulated solution to a very long series of real problems.&rdquo;</p>
+
+      <div class="beat-label">Self-introduction</div>
+      <p>&ldquo;My name is Rick Antle. I&rsquo;m the William S. Beinecke Professor of Accounting at the Yale School of Management. I&rsquo;ve spent my career studying how accounting systems work &mdash; what they reveal, what they conceal, and why. First encounters with accounting can be disorienting &mdash; whether you&rsquo;ve worked through rules and procedures, or been dropped into a set of financial statements with no map to navigate them. What&rsquo;s often missing is a real understanding of the architecture &mdash; where it came from, what problems it was built to solve, and why it looks the way it does. This prework is my attempt to fix that.&rdquo;</p>
+
+      <div class="beat-label">Beat 3 &mdash; Common-structure tease</div>
+      <p class="beat-pending">[To come. Plants the idea that underneath the visible variety, there is a common architecture &mdash; CVS Health uses it; so does a small nonprofit; so does a government agency.]</p>
+
+      <div class="beat-label">Beat 4 &mdash; How we&rsquo;ll work together</div>
+      <p class="beat-pending">[To come. Interactive and problem-first; we won&rsquo;t ask you to memorize rules, we&rsquo;ll ask you to solve problems. The architecture emerges from the doing.]</p>
+
+      <div class="beat-label">Beat 5 &mdash; Fresh-mind ask</div>
+      <p>&ldquo;If you&rsquo;ve studied accounting before &mdash; a course, some work experience, anything at all &mdash; you&rsquo;ve already assembled a mental model of how this works. And I&rsquo;m going to ask you to set it aside for now. Not because it&rsquo;s wrong. But because there&rsquo;s a real difference between applying a framework you already have and building one from scratch &mdash; because you needed it to solve a problem in front of you. This prework is designed to give you that second experience. And you can&rsquo;t have it if you&rsquo;re pattern-matching to something you already know. So when you hit a problem and something in the back of your head says &lsquo;I know where this is going&rsquo; &mdash; stay in the problem anyway. Let the architecture emerge. See if it looks the same from this angle. Give it a chance. I think you&rsquo;ll find it&rsquo;s worth it.&rdquo;</p>
+
+      <div class="beat-label">Beat 6 &mdash; The CVS destination</div>
+      <p class="beat-pending">[To come. By the end of this prework, you&rsquo;ll walk through the financial statements of CVS Health &mdash; one of the largest companies in the United States. The architecture you&rsquo;ll have built will let you navigate them.]</p>
+
+      <div class="beat-label">Beat 7 &mdash; Closing invitation</div>
+      <p class="beat-pending">[To come. Short handoff into Module 1.]</p>
     </div>
   </div>
 
   <hr class="divider">
 
-  <!-- Roadmap -->
+  <!-- ===== Section 3: One Architecture, Built from Problems ===== -->
+  <h2>One Architecture, Many Instances</h2>
+
+  <p class="prose">
+    Underneath every accounting system you&rsquo;ll encounter &mdash; corporate annual reports, nonprofit statements, government budgets, your own household books &mdash; there is a common architecture. The same structural skeleton, customized along a small set of dimensions:
+  </p>
+
+  <ul class="dimensions">
+    <li>information desired</li>
+    <li>information available</li>
+    <li>type of organization</li>
+    <li>technology</li>
+    <li>context and setting</li>
+  </ul>
+
+  <p class="prose">
+    Those dimensions account for the visible variety. The architecture underneath them is the same. Once you can see it, the differences between a corporation, a charity, a municipal government, and a sole proprietorship are differences in how the same skeleton has been customized &mdash; not differences in what kind of object you are looking at.
+  </p>
+
+  <p class="prose">
+    This prework helps you build that architecture for yourself, from a problem rather than from rules. By the time formal labels arrive, you will have already constructed what they name. The architecture lands on something you own, not on something you have been told to memorize.
+  </p>
+
+  <p class="prose">
+    Module&nbsp;1 builds the architecture from the ground up and ends with the $25 decision. Module&nbsp;2 puts the architecture to use &mdash; what the records admit, what they leave out, and how the statements explain change over time. The final module reads the actual financial statements of CVS&nbsp;Health, one of the largest companies in the United States, so you can watch the architecture and US&nbsp;GAAP working together on real numbers.
+  </p>
+
+  <!-- ===== Section 4: Experienced-student callout ===== -->
+  <div class="callout-experienced">
+    <div class="callout-label">A note for experienced students</div>
+    <h3>If you&rsquo;ve studied accounting before</h3>
+    <p>You have likely already assembled a mental model of how the system works. The prework will ask you to set it aside while you are inside the activities &mdash; not because anything you previously learned was wrong, but because there is a real difference between applying a framework you already have and building one from scratch. The architecture has to land on what you have just done, not on what you already know.</p>
+    <p>Stay in the problems. The prior knowledge will be useful again later &mdash; and you may find that what you built here looks slightly different from what you remember, in ways that turn out to matter.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== Section 5: Roadmap (4 main + 1 optional add-on) ===== -->
   <h2>Your Roadmap</h2>
 
   <p class="prose">
-    This prework walks you through an information system from the outside in.
+    Four short stops between you and the $25 call. Module&nbsp;1 builds the architecture and ends with the decision. Module&nbsp;2 puts the architecture to use. The final module reads CVS&nbsp;Health&rsquo;s actual financials. An optional add-on at the end gives you the analyst&rsquo;s tools for digging beneath what the statements disclose.
   </p>
 
   <div class="roadmap">
+
     <div class="roadmap-item active">
       <div class="roadmap-marker"><div class="roadmap-dot"></div><div class="roadmap-line"></div></div>
       <div class="roadmap-text">
-        <div class="roadmap-module">Module 1</div>
-        <div class="roadmap-title">Welcome and Orientation</div>
+        <div class="roadmap-module">Welcome</div>
+        <div class="roadmap-title">Course orientation</div>
         <div class="roadmap-desc">You are here</div>
       </div>
     </div>
+
     <div class="roadmap-item">
       <div class="roadmap-marker"><div class="roadmap-dot"></div><div class="roadmap-line"></div></div>
       <div class="roadmap-text">
+        <button class="roadmap-expand-toggle" onclick="toggleRoadmapItem(this)" aria-expanded="false">
+          <span class="toggle-label show">Activities</span>
+          <span class="toggle-label hide">Hide</span>
+          <span class="chevron" aria-hidden="true">&#9662;</span>
+        </button>
+        <div class="roadmap-module">Module 1</div>
+        <div class="roadmap-title"><a href="module1-activities.html">Building the Accounting Identity</a></div>
+        <div class="roadmap-desc">Sort, record, decompose, name &mdash; then the $25 decision in three movements</div>
+        <div class="roadmap-activities">
+          <a class="roadmap-activity" href="../../sort-assets-liabilities.html">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activity 1 &middot; Sort Assets and Liabilities</span>
+          </a>
+          <a class="roadmap-activity" href="../../track-transactions.html">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activity 2 &middot; Track Six Transactions</span>
+          </a>
+          <a class="roadmap-activity" href="../../inside-the-third-bucket.html">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activity 3 &middot; Inside the Third Bucket</span>
+          </a>
+          <a class="roadmap-activity" href="../../naming-the-third-bucket.html">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activity 4 &middot; Naming the Third Bucket</span>
+          </a>
+          <a class="roadmap-activity" href="../prework-intro/metals-prework-intro-invest-or-donate.html">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activity 5 &middot; The Three Businesses</span>
+          </a>
+          <a class="roadmap-activity" href="../prework-intro/metals-prework-part2-one-donation-three-nonprofits.html">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activity 6 &middot; The Three Nonprofits</span>
+          </a>
+          <a class="roadmap-activity" href="../prework-intro/metals-prework-reflections.html">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activity 7 &middot; Decision</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="roadmap-item">
+      <div class="roadmap-marker"><div class="roadmap-dot"></div><div class="roadmap-line"></div></div>
+      <div class="roadmap-text">
+        <button class="roadmap-expand-toggle" onclick="toggleRoadmapItem(this)" aria-expanded="false">
+          <span class="toggle-label show">Activities</span>
+          <span class="toggle-label hide">Hide</span>
+          <span class="chevron" aria-hidden="true">&#9662;</span>
+        </button>
         <div class="roadmap-module">Module 2</div>
-        <div class="roadmap-title"><a href="module2.html">Why Accounting Systems Exist</a></div>
-        <div class="roadmap-desc">The users and purposes the system serves</div>
+        <div class="roadmap-title"><a href="using-the-identity.html">Using the Identity</a></div>
+        <div class="roadmap-desc">What the records admit, what they leave out, and how the statements track change</div>
+        <div class="roadmap-activities">
+          <a class="roadmap-activity" href="../../where-the-line-falls.html">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activity 1 &middot; Where the Line Falls <span style="color:#888;">(Recognition)</span></span>
+          </a>
+          <span class="roadmap-activity coming">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activity 2 &middot; What Made the Third Bucket Change</span>
+            <span class="coming-tag">In progress</span>
+          </span>
+          <span class="roadmap-activity coming">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activity 3 &middot; Inside the Operating Piece</span>
+            <span class="coming-tag">In progress</span>
+          </span>
+          <span class="roadmap-activity coming">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activity 4 &middot; What Cash Did, and Why It&rsquo;s a Different Story</span>
+            <span class="coming-tag">In progress</span>
+          </span>
+        </div>
       </div>
     </div>
+
     <div class="roadmap-item">
       <div class="roadmap-marker"><div class="roadmap-dot"></div><div class="roadmap-line"></div></div>
       <div class="roadmap-text">
+        <button class="roadmap-expand-toggle" onclick="toggleRoadmapItem(this)" aria-expanded="false">
+          <span class="toggle-label show">Activities</span>
+          <span class="toggle-label hide">Hide</span>
+          <span class="chevron" aria-hidden="true">&#9662;</span>
+        </button>
         <div class="roadmap-module">Module 3</div>
-        <div class="roadmap-title"><a href="module3.html">Worth, Quantification, and Limits</a></div>
-        <div class="roadmap-desc">Conventions, tradeoffs, and what the system can and cannot see</div>
+        <div class="roadmap-title"><a href="cvs-health.html">Reading CVS&nbsp;Health</a></div>
+        <div class="roadmap-desc">The architecture and US&nbsp;GAAP working together on real numbers</div>
+        <div class="roadmap-activities">
+          <span class="roadmap-activity coming">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activities to come</span>
+            <span class="coming-tag">In progress</span>
+          </span>
+        </div>
       </div>
     </div>
-    <div class="roadmap-item">
-      <div class="roadmap-marker"><div class="roadmap-dot"></div><div class="roadmap-line"></div></div>
-      <div class="roadmap-text">
-        <div class="roadmap-module">Module 4</div>
-        <div class="roadmap-title"><a href="module4.html">The Architecture Itself</a></div>
-        <div class="roadmap-desc">The accounting identity and the four output channels</div>
-      </div>
+
+    <div class="roadmap-divider">
+      <span class="roadmap-divider-label">Optional add-on</span>
     </div>
-    <div class="roadmap-item">
-      <div class="roadmap-marker"><div class="roadmap-dot"></div><div class="roadmap-line"></div></div>
-      <div class="roadmap-text">
-        <div class="roadmap-module">Modules 5&ndash;7</div>
-        <div class="roadmap-title"><a href="module5.html">One Instance in Action &mdash; CVS Health</a></div>
-        <div class="roadmap-desc">Balance sheets, income statement, cash flows under US&nbsp;GAAP</div>
-      </div>
-    </div>
-    <div class="roadmap-item">
+
+    <div class="roadmap-item optional">
       <div class="roadmap-marker"><div class="roadmap-dot"></div></div>
       <div class="roadmap-text">
-        <div class="roadmap-module">Module 8</div>
-        <div class="roadmap-title"><a href="module8.html">The Analyst's Toolkit</a></div>
-        <div class="roadmap-desc">Debits, credits, journal entries &mdash; how inputs enter the system</div>
+        <button class="roadmap-expand-toggle" onclick="toggleRoadmapItem(this)" aria-expanded="false">
+          <span class="toggle-label show">Activities</span>
+          <span class="toggle-label hide">Hide</span>
+          <span class="chevron" aria-hidden="true">&#9662;</span>
+        </button>
+        <div class="roadmap-module">Bonus</div>
+        <div class="roadmap-title">The Analyst&rsquo;s Toolkit</div>
+        <div class="roadmap-desc">If you want to dig beneath the surface of what these statements disclose &mdash; to see where management made choices, where the records leave room for interpretation, where reading the numbers well requires reading the entries behind them &mdash; you&rsquo;ll need some tools.</div>
+        <div class="roadmap-activities">
+          <span class="roadmap-activity coming">
+            <span class="roadmap-activity-dot"></span>
+            <span class="roadmap-activity-text">Activities to come</span>
+            <span class="coming-tag">In progress</span>
+          </span>
+        </div>
       </div>
     </div>
+
   </div>
 
-  <hr class="divider">
-
-  <!-- How to use -->
-  <h2>How to Use This Prework</h2>
-
-  <div class="info-box">
-    <h3>New to accounting?</h3>
-    <p>Start at the beginning and take your time. Each module builds on the last, but you control the pace.</p>
-  </div>
-
-  <div class="info-box">
-    <h3>Some accounting background?</h3>
-    <p>There&rsquo;s a diagnostic before Module 4 to help you figure out where to go deep and where to move quickly. But don&rsquo;t skip the framing &mdash; the information system perspective will be new, even if the mechanics are familiar.</p>
-  </div>
-
-  <div class="info-box">
-    <h3>For everyone</h3>
-    <p>The diagnostics are not tests. They don&rsquo;t count toward any grade. They exist to help you figure out where to spend your time.</p>
-  </div>
-
-  <!-- Transition -->
+  <!-- ===== Section 6: Bridge into Module 1 ===== -->
   <p class="transition">
-    When you're ready, Module 2 begins with the question every information system must answer first: who uses it, and why?
+    Module&nbsp;1 hands you the tools to make the $25 call. Four short activities build the architecture you&rsquo;ll need; the fifth puts the $25 in your hand. You&rsquo;ll come back to the decision with eyes for what each candidate&rsquo;s records show &mdash; and what they leave out.
   </p>
 
-  <!-- Next module navigation -->
   <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
-    <a href="module2.html" style="display: flex; flex-direction: column; text-decoration: none; padding: 16px 20px; border: 1px solid #e0e0e0; border-radius: 6px; transition: border-color 0.15s, background 0.15s; text-align: right; min-width: 260px;">
-      <span style="font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #999; margin-bottom: 4px;">Next &rarr;</span>
-      <span style="font-size: 15px; color: var(--primary); font-weight: 500;">Module 2: Why Accounting Systems Exist</span>
+    <a href="module1-activities.html" class="next-link">
+      <span class="next-label">Next &rarr;</span>
+      <span class="next-title">Module 1: Building the Accounting Identity</span>
     </a>
   </div>
 
@@ -705,178 +758,25 @@
 </div>
 
 <!-- Scripts -->
-<script>
-// Transcript toggle
-function toggleTranscript() {
-  var box = document.getElementById('transcriptBox');
-  var btn = document.getElementById('transcriptToggle');
-  var isOpen = box.classList.toggle('open');
-  btn.classList.toggle('open', isOpen);
-  btn.textContent = isOpen ? 'Hide transcript' : 'Read transcript';
-}
-
-// Module nav dropdown
-function toggleModuleNav() {
-  document.getElementById('navModules').classList.toggle('open');
-}
-// Close dropdown when clicking outside
-document.addEventListener('click', function(e) {
-  var nav = document.getElementById('navModules');
-  if (!nav.contains(e.target)) nav.classList.remove('open');
-});
-
-// Glossary
-var GLOSSARY = [
-  { term: "Accounting system", def: "A shared information system that compresses the economic complexity of an organization into structured reports that many different people can consult for different purposes." },
-  { term: "Architecture", def: "The deep structure shared by accounting systems around the world: the self-balancing identity, double-entry bookkeeping, the four financial statements, and the input boundary. The architecture does not vary across instances." },
-  { term: "Instance", def: "A specific set of rules written by a rule-making body for a particular class of organizations. US GAAP, IFRS, and governmental accounting standards are each instances of the shared architecture." },
-  { term: "Accounting identity", def: "A self-imposed balancing requirement at the center of every accounting system: Assets = Liabilities + Equities. Not derived or discovered \u2014 chosen, because of what imposing it makes possible." },
-  { term: "Equities", def: "The definitional residual: Assets minus Liabilities. Always plural. Not \"what\u2019s left for the owners\" except in the special case of full liquidation. The meaning of Equities is limited by the same conventions that limit the recording of Assets and Liabilities." },
-  { term: "Asset", def: "The present right to an economic benefit. Not a physical thing, but a right to receive future benefits." },
-  { term: "Liability", def: "A present obligation of an entity to transfer an economic benefit. An obligation is not optional \u2014 it must be fulfilled." },
-  { term: "Double-entry bookkeeping", def: "A recording method in which every economic event is entered in two places, maintaining the balance of the accounting identity. Evolved in medieval Italy; now used by most accounting systems worldwide." },
-  { term: "Financial statements", def: "The four output channels of the accounting system: the balance sheet, income statement, statement of changes in equities, and statement of cash flows. Four windows onto one structure, not four independent documents." },
-  { term: "US GAAP", def: "Generally Accepted Accounting Principles. The instance of the accounting architecture written by FASB for US for-profit entities. The instance studied in this prework." },
-  { term: "IFRS", def: "International Financial Reporting Standards. The instance written by the IASB for entities in most countries outside the United States." },
-  { term: "FASB", def: "Financial Accounting Standards Board. The body that writes US GAAP \u2014 the accounting rules for US for-profit entities." },
-  { term: "Instance choice", def: "A decision made by a rule-making body (FASB, IASB, GASB) that could have been made differently. Whenever a GAAP-specific rule appears in the prework, it is identified as an instance choice." },
-  { term: "Tradeoff", def: "Every design choice in the accounting system gains something and loses something. There is no tradeoff-free accounting system \u2014 that would be reality itself." },
-  { term: "Compression", def: "What every accounting system does: takes the vast complexity of an organization\u2019s economic activity and produces something structured enough for human minds to work with. Compression requires choices, and choices involve tradeoffs." },
-  { term: "Input boundary", def: "The line that determines which economic events enter the accounting system and which do not. There is too much data to include it all. What falls outside the boundary \u2014 human capital, internally generated brands, relational assets \u2014 is invisible to the system." },
-  { term: "Journal entry notation", def: "The language of debits and credits used to analyze and record transactions. The first step in accounting for any transaction is to analyze it: what changed, where do the effects land, does everything still balance?" },
-  { term: "Historical cost", def: "The amount recorded at the time of an arm\u2019s-length transaction \u2014 the strongest epistemic anchor for worth, because two independent parties looked at the same thing and agreed on a price." },
-  { term: "Balance sheet", def: "The financial statement that shows the accounting identity at a point in time: what the entity has recorded as assets, what it owes (liabilities), and the residual (equities)." },
-  { term: "Income statement", def: "The financial statement that explains one category of change in equities: operations. What the entity earned and what it spent during a period." },
-  { term: "Statement of cash flows", def: "The financial statement that tracks cash inflows and outflows. Under the indirect method, it is a reconciliation between the change in equities and the change in cash." }
-];
-
-// Sort alphabetically
-GLOSSARY.sort(function(a, b) { return a.term.localeCompare(b.term); });
-
-function renderGlossary() {
-  var list = document.getElementById('glossaryList');
-  list.innerHTML = '';
-  GLOSSARY.forEach(function(g, i) {
-    var item = document.createElement('div');
-    item.className = 'glossary-item';
-    item.setAttribute('data-index', i);
-    item.innerHTML = '<div class="glossary-term">' + g.term + '</div><div class="glossary-def">' + g.def + '</div>';
-    list.appendChild(item);
-  });
-}
-
-function toggleGlossary() {
-  var overlay = document.getElementById('glossaryOverlay');
-  var backdrop = document.getElementById('glossaryBackdrop');
-  var isOpen = overlay.classList.toggle('open');
-  backdrop.classList.toggle('open', isOpen);
-  if (isOpen) {
-    document.getElementById('glossarySearchInput').value = '';
-    filterGlossary('');
-    document.getElementById('glossarySearchInput').focus();
-  }
-}
-
-function filterGlossary(query) {
-  var q = query.toLowerCase();
-  var items = document.querySelectorAll('.glossary-item');
-  items.forEach(function(item) {
-    var i = parseInt(item.getAttribute('data-index'));
-    var match = GLOSSARY[i].term.toLowerCase().indexOf(q) !== -1 || GLOSSARY[i].def.toLowerCase().indexOf(q) !== -1;
-    item.classList.toggle('hidden', !match);
-  });
-}
-
-// Progress tracking (localStorage-based)
-function getProgress() {
-  try {
-    return JSON.parse(localStorage.getItem('prework_progress') || '{}');
-  } catch(e) { return {}; }
-}
-
-function markModuleVisited(moduleNum) {
-  var progress = getProgress();
-  if (!progress[moduleNum]) {
-    progress[moduleNum] = { visited: true, timestamp: Date.now() };
-    localStorage.setItem('prework_progress', JSON.stringify(progress));
-  }
-  updateProgressBar();
-  updateModuleDropdown();
-}
-
-function updateProgressBar() {
-  var progress = getProgress();
-  var visited = Object.keys(progress).length;
-  var total = 8;
-  var pct = Math.round((visited / total) * 100);
-  document.getElementById('progressFill').style.width = pct + '%';
-}
-
-function updateModuleDropdown() {
-  var progress = getProgress();
-  var links = document.querySelectorAll('.nav-dropdown a');
-  links.forEach(function(link, i) {
-    var mod = i + 1;
-    if (progress[mod] && !link.classList.contains('current')) {
-      link.classList.add('completed');
-    }
-  });
-}
-
-// Init
-renderGlossary();
-markModuleVisited(1);
-</script>
-
-<!-- Config-driven theming -->
 <script src="config.js"></script>
+<script src="shared.js"></script>
 <script>
-(function() {
-  if (typeof SITE_CONFIG === 'undefined') return;
-  var C = SITE_CONFIG;
-  var r = document.documentElement.style;
+  // Welcome page is above the modules: pass 0 so no module is highlighted
+  // as current, and skip markModuleVisited so the welcome doesn't count
+  // toward the progress bar.
+  renderGlossary();
+  buildModuleDropdown(0);
+  updateProgressBar();
+  applyConfig();
 
-  if (C.colors) {
-    if (C.colors.primary)      r.setProperty('--primary', C.colors.primary);
-    if (C.colors.primaryLight)  r.setProperty('--primary-light', C.colors.primaryLight);
-    if (C.colors.faint)         r.setProperty('--primary-faint', C.colors.faint);
-    if (C.colors.accent)        r.setProperty('--accent', C.colors.accent);
+  // Expandable roadmap items: clicking the per-row toggle button reveals
+  // the activities list nested under that module.
+  function toggleRoadmapItem(button) {
+    const item = button.closest('.roadmap-item');
+    if (!item) return;
+    const isExpanded = item.classList.toggle('expanded');
+    button.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
   }
-
-  document.title = C.courseTitle || 'Accounting Pre-Work';
-  document.getElementById('courseTitle').textContent = C.courseTitle || 'Accounting Pre-Work';
-  document.getElementById('navHome').textContent = C.courseTitle ? C.courseTitle.split(' ')[0] : 'Prework';
-
-  var parts = [];
-  if (C.instructor && C.instructor.name) parts.push(C.instructor.name);
-  if (C.instructor && C.instructor.title) parts.push(C.instructor.title);
-  document.getElementById('authorLine').textContent = parts.join(' \u00B7 ');
-
-  if (C.institution) {
-    document.getElementById('institutionLine').textContent = C.institution;
-  }
-
-  var logoEl = document.getElementById('bannerLogo');
-  if (C.logo) {
-    if (C.logo.type === 'letter' && C.logo.value) {
-      logoEl.textContent = C.logo.value;
-    } else if (C.logo.type === 'url' && C.logo.value) {
-      logoEl.innerHTML = '<img src="' + C.logo.value + '" alt="Logo">';
-    }
-  }
-
-  if (C.welcomeText) {
-    var wt = document.getElementById('welcomeText');
-    wt.textContent = C.welcomeText;
-    wt.classList.add('visible');
-  }
-
-  if (C.mascot) {
-    var m = document.getElementById('mascot');
-    document.getElementById('mascotImg').src = C.mascot;
-    m.classList.add('visible');
-  }
-})();
 </script>
 
 </body>
