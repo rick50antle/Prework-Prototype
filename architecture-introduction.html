@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Architecture: Introduction</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* ===== ARCHITECTURE-INTRODUCTION PAGE =====
+     Prototype of OLI Page 2 (The Architecture: Introduction), repurposed
+     as the opener of Module 2. Pedagogical move: name what the student
+     just built in Module 1 (the identity), and preview what Modules 2
+     and 3 will do with it (snapshots + channels for what changed).
+     Rabbit hole on entity identification follows the expandable-card
+     pattern seen on the OLI Imposing-the-Identity page.
+  ============================================= */
+
+  /* === Page header (module + page number) === */
+  .page-header {
+    margin: 8px 0 22px;
+  }
+  .page-header .module-label {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary-light);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 6px;
+  }
+  .page-header h1 {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 30px;
+    color: var(--primary);
+    margin: 0;
+    line-height: 1.15;
+    font-weight: 700;
+  }
+  .page-header h1 .page-number {
+    color: var(--primary-light);
+    margin-right: 10px;
+    font-weight: 400;
+  }
+
+  /* === Prose === */
+  .prose-block {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #2a2a2a;
+    margin-bottom: 18px;
+  }
+  .prose-block:last-of-type { margin-bottom: 0; }
+  .prose-block strong { color: var(--primary); }
+
+  .pivot {
+    font-size: 17px;
+    color: var(--primary);
+    font-weight: 500;
+    margin: 28px 0 22px;
+    line-height: 1.5;
+  }
+
+  /* === Bridge sentence with inline rabbit-hole trigger === */
+  .bridge {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #2a2a2a;
+    margin-bottom: 8px;
+  }
+
+  .rabbit-hole-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--primary-faint);
+    color: var(--primary);
+    border: 1px solid #dce4ee;
+    border-radius: 4px;
+    padding: 2px 9px;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0.1px;
+    cursor: pointer;
+    margin: 0 2px;
+    transition: background 0.15s, border-color 0.15s;
+    line-height: 1.5;
+    vertical-align: baseline;
+  }
+  .rabbit-hole-trigger:hover {
+    background: #eef3fa;
+    border-color: var(--primary-light);
+  }
+  .rabbit-hole-trigger .chevron {
+    display: inline-block;
+    transition: transform 0.2s;
+    font-size: 9px;
+  }
+  .rabbit-hole-trigger.open .chevron {
+    transform: rotate(180deg);
+  }
+
+  /* === Rabbit-hole card (expandable) === */
+  .rabbit-hole {
+    display: none;
+    margin: 18px 0 26px;
+    padding: 22px 26px 18px;
+    background: #fafbfc;
+    border: 1px solid #e0e6ee;
+    border-left: 4px solid var(--primary-light);
+    border-radius: 5px;
+  }
+  .rabbit-hole.open { display: block; }
+  .rabbit-hole .rabbit-hole-label {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--primary-light);
+    margin-bottom: 6px;
+  }
+  .rabbit-hole h3 {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 17px;
+    color: var(--primary);
+    margin: 0 0 12px;
+    font-weight: 600;
+  }
+  .rabbit-hole p {
+    font-size: 14.5px;
+    line-height: 1.65;
+    margin-bottom: 12px;
+    color: #333;
+  }
+  .rabbit-hole p:last-child { margin-bottom: 0; }
+  .rabbit-hole .example-label {
+    font-style: italic;
+    color: var(--primary);
+    font-weight: 500;
+  }
+  .rabbit-hole .closer {
+    font-size: 13.5px;
+    color: #666;
+    border-top: 1px solid #e0e6ee;
+    margin-top: 14px;
+    padding-top: 12px;
+  }
+
+  /* === Three structural moves === */
+  .moves {
+    margin: 8px 0 0;
+    padding: 0;
+    counter-reset: move-counter;
+    list-style: none;
+  }
+  .moves li {
+    counter-increment: move-counter;
+    padding: 14px 0 14px 64px;
+    position: relative;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #2a2a2a;
+    border-top: 1px solid #ececec;
+  }
+  .moves li:first-child { border-top: none; padding-top: 6px; }
+  .moves li::before {
+    content: counter(move-counter);
+    position: absolute;
+    left: 0;
+    top: 14px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--primary-faint);
+    color: var(--primary);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .moves li:first-child::before { top: 6px; }
+  .moves li .move-tense {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 8px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    vertical-align: 2px;
+  }
+  .moves li.past .move-tense {
+    color: #8a6a1f;
+    background: #f0e9d8;
+    border: 1px solid #e0d3a8;
+  }
+  .moves li.coming .move-tense {
+    color: var(--primary);
+    background: var(--primary-faint);
+    border: 1px solid #dce4ee;
+  }
+
+  /* === Closer === */
+  .closer-line {
+    margin: 28px 0 0;
+    padding-top: 22px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 15.5px;
+    line-height: 1.7;
+    color: #444;
+    font-style: italic;
+  }
+
+  /* === Next link === */
+  .next-link {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    padding: 16px 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    transition: border-color 0.15s, background 0.15s;
+    text-align: right;
+    min-width: 260px;
+  }
+  .next-link:hover {
+    border-color: var(--primary-light);
+    background: var(--primary-faint);
+  }
+  .next-link .next-label {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #999;
+    margin-bottom: 4px;
+  }
+  .next-link .next-title {
+    font-size: 15px;
+    color: var(--primary);
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="nav">
+  <div class="nav-left">
+    <a href="index.html" class="nav-home" id="navHome">Prework</a>
+    <span class="nav-sep">&#8250;</span>
+    <span class="nav-current" id="navCurrent">Module 2 &middot; The Architecture: Introduction</span>
+  </div>
+  <div class="nav-right">
+    <div class="nav-modules" id="navModules">
+      <button class="nav-btn" onclick="toggleModuleNav()">Modules &#9662;</button>
+      <div class="nav-dropdown" id="moduleDropdown"></div>
+    </div>
+    <button class="nav-btn" onclick="toggleGlossary()" title="Glossary">&#128214; Glossary</button>
+  </div>
+</nav>
+
+<!-- Progress Bar -->
+<div class="progress-strip">
+  <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+</div>
+
+<!-- Banner -->
+<div class="banner">
+  <div class="banner-logo" id="bannerLogo"></div>
+  <div class="banner-text">
+    <h1 id="courseTitle">Accounting Pre-Work</h1>
+    <div class="author" id="authorLine"></div>
+    <div class="institution" id="institutionLine"></div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="content">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div class="module-label">Module 2 &middot; Using the Identity</div>
+    <h1><span class="page-number">2.</span>The Architecture: Introduction</h1>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Opening prose -->
+  <p class="prose-block">
+    You have an entity &mdash; an organization with a boundary. It has resources, and it has made promises. And it has a history &mdash; every resource and every promise reflects what the entity has done and what has happened to it. You have aspirations for what a financial story about that entity should capture: what resources it holds, what it owes, how those changed, and for whom. And you know that turning those aspirations into practice requires conventions, applied honestly within a context of incentives and oversight.
+  </p>
+
+  <p class="pivot">
+    Now: how do you actually build the system?
+  </p>
+
+  <!-- Bridge sentence with inline rabbit-hole trigger -->
+  <p class="bridge">
+    Before any of that, you identified what counts as the entity &mdash; the work you did in the first activity, when you sorted what was personal from what was the business&rsquo;s.
+    <button class="rabbit-hole-trigger" onclick="toggleRabbitHole(this)" aria-expanded="false" aria-controls="entityRabbitHole">
+      What counts as the entity?
+      <span class="chevron" aria-hidden="true">&#9662;</span>
+    </button>
+    With the entity fixed, the implementation rests on three structural moves.
+  </p>
+
+  <!-- Rabbit hole -->
+  <div class="rabbit-hole" id="entityRabbitHole">
+    <div class="rabbit-hole-label">Rabbit hole</div>
+    <h3>What counts as the entity?</h3>
+    <p>The entity boundary is a choice, not a fact about the world. Different boundaries produce different statements.</p>
+    <p><span class="example-label">A small business and its owner.</span> The business has its own bank account, inventory, and supplier debts. The owner has personal cash, a home, and a credit card balance. These are two different entities, even though the same person runs both. Sorting them apart &mdash; as you did in Activity 1 &mdash; is the first step in deciding what the accounting will and won&rsquo;t capture.</p>
+    <p><span class="example-label">A big company.</span> CVS Pharmacy is a different entity from CVS Health. Pharmacy is one division of Health, and Health is the parent corporation that consolidates all the businesses underneath it. The 2018 acquisition of Aetna created another possible boundary: CVS Health on its own, or the CVS Health + Aetna consolidated group. Which one you account for changes the numbers.</p>
+    <p><span class="example-label">A nonprofit.</span> A university is one legal entity. Its endowment, its operating funds, and its donor-restricted funds are all inside that one corporation &mdash; but the university&rsquo;s accounting presents them as separate &ldquo;net asset classes&rdquo; so users can see what the university can and can&rsquo;t spend freely. The boundary at the corporate level is one choice; the boundary between fund types is another.</p>
+    <p class="closer">The general rule: the entity is whatever the accounting is <em>of</em>. Choosing the entity is the first step before anything else can happen. We&rsquo;ll examine this more carefully later in Module&nbsp;2.</p>
+  </div>
+
+  <!-- Three structural moves -->
+  <ol class="moves">
+    <li class="past">
+      <span class="move-tense">You built this</span>
+      You imposed a constraint &mdash; the accounting identity &mdash; that forces every recording to be internally consistent.
+    </li>
+    <li class="coming">
+      <span class="move-tense">Coming next</span>
+      You&rsquo;ll apply that constraint at two different dates, creating two snapshots of the entity&rsquo;s financial position.
+    </li>
+    <li class="coming">
+      <span class="move-tense">Coming next</span>
+      You&rsquo;ll build channels that explain why the two snapshots differ &mdash; what happened between them.
+    </li>
+  </ol>
+
+  <p class="closer-line">
+    Everything else in the system is elaboration on these three moves.
+  </p>
+
+  <!-- Next link -->
+  <div style="display: flex; justify-content: flex-end; margin-top: 36px;">
+    <a href="#" class="next-link" id="nextLink">
+      <span class="next-label">Next &rarr;</span>
+      <span class="next-title">Module 2 &middot; Activity 1 (TBD)</span>
+    </a>
+  </div>
+
+</div>
+
+<!-- Glossary Overlay -->
+<div class="glossary-backdrop" id="glossaryBackdrop" onclick="toggleGlossary()"></div>
+<div class="glossary-overlay" id="glossaryOverlay">
+  <div class="glossary-header">
+    <h3>Glossary</h3>
+    <button class="glossary-close" onclick="toggleGlossary()">&times;</button>
+  </div>
+  <div class="glossary-search">
+    <input type="text" placeholder="Search terms..." oninput="filterGlossary(this.value)" id="glossarySearchInput">
+  </div>
+  <div class="glossary-list" id="glossaryList"></div>
+</div>
+
+<!-- Scripts -->
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<script>
+  // This page is the opener of Module 2. Until shared.js MODULES is
+  // updated for the new course shape, pass 0 so no module is highlighted
+  // as current. Re-wire once the MODULES array reflects the four-module flow.
+  renderGlossary();
+  buildModuleDropdown(0);
+  updateProgressBar();
+  applyConfig();
+
+  // Rabbit-hole expand/collapse. The trigger button toggles an .open class
+  // on both itself (for the chevron) and on the target card.
+  function toggleRabbitHole(button) {
+    const targetId = button.getAttribute('aria-controls');
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    const isOpen = target.classList.toggle('open');
+    button.classList.toggle('open', isOpen);
+    button.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+</script>
+
+</body>
+</html>
