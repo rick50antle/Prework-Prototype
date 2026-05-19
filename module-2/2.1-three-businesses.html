@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three Businesses, One Decision — Accounting Prework</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        .mono {
+            font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        }
+        .fade-in {
+            animation: fadeIn 0.35s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+    /**
+     * Three Businesses, One Decision
+     * CMU METALS Accounting Prework — Intro: Invest or Donate (Part 1, For-Profit)
+     *
+     * @version 1.0
+     * @date 2026-04-17
+     * @description Discovery-based introduction to the structure of for-profit
+     *              financial statements: the accounting identity, disaggregation
+     *              of Equities into Contributed Capital and Retained Earnings,
+     *              the income statement as the explanatory statement for Retained
+     *              Earnings, and the evidence test that governs what gets
+     *              recognized on the records.
+     */
+
+    const { useState } = React;
+
+    // ---------------- Colors ----------------
+    const colors = {
+        primary: '#00356b',
+        sand: '#f5f1e8',
+        earth: '#8b7355',
+        earthLight: '#d4c4a8',
+        earthDark: '#5c4d3d',
+        accent: '#c9a227',
+        clay: '#c4a574',
+        clayLight: '#e8dcc8',
+        clayDark: '#a08050',
+        success: '#22c55e',
+        successBg: '#f0fdf4',
+        warning: '#f59e0b',
+        warningBg: '#fffbeb',
+        error: '#dc2626',
+        errorBg: '#fef2f2',
+        profit: '#16a34a',
+        loss: '#dc2626'
+    };
+
+    // ---------------- Sounds ----------------
+    const createAudioContext = () => new (window.AudioContext || window.webkitAudioContext)();
+
+    const playSuccessTone = () => {
+        try {
+            const ctx = createAudioContext();
+            const notes = [523.25, 659.25, 783.99];
+            const startTime = ctx.currentTime;
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = freq; osc.type = 'sine';
+                const noteStart = startTime + (i * 0.1);
+                const noteEnd = noteStart + 0.15;
+                gain.gain.setValueAtTime(0, noteStart);
+                gain.gain.linearRampToValueAtTime(0.3, noteStart + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, noteEnd);
+                osc.start(noteStart); osc.stop(noteEnd + 0.1);
+            });
+            setTimeout(() => ctx.close(), 600);
+        } catch (e) { /* silent */ }
+    };
+
+    const playSoftNope = () => {
+        try {
+            const ctx = createAudioContext();
+            const notes = [400, 300];
+            const startTime = ctx.currentTime;
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = freq; osc.type = 'sine';
+                const noteStart = startTime + (i * 0.12);
+                const noteEnd = noteStart + 0.12;
+                gain.gain.setValueAtTime(0, noteStart);
+                gain.gain.linearRampToValueAtTime(0.2, noteStart + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, noteEnd);
+                osc.start(noteStart); osc.stop(noteEnd + 0.05);
+            });
+            setTimeout(() => ctx.close(), 400);
+        } catch (e) { /* silent */ }
+    };
+
+    const playBuzzer = () => {
+        try {
+            const ctx = createAudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 150; osc.type = 'sawtooth';
+            const startTime = ctx.currentTime;
+            gain.gain.setValueAtTime(0.25, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+            osc.start(startTime); osc.stop(startTime + 0.35);
+            setTimeout(() => ctx.close(), 400);
+        } catch (e) { /* silent */ }
+    };
+
+    const playContinueClick = () => {
+        try {
+            const ctx = createAudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 600; osc.type = 'sine';
+            const startTime = ctx.currentTime;
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.08);
+            osc.start(startTime); osc.stop(startTime + 0.1);
+            setTimeout(() => ctx.close(), 150);
+        } catch (e) { /* silent */ }
+    };
+
+    // ---------------- Glossary ----------------
+    const glossaryTerms = [
+        { term: 'Accounting identity', definition: 'The definitional relationship that Assets minus Liabilities equals Equities (for a for-profit) or Net Assets (for a nonprofit). It holds at every point in time, for every entity, by construction.' },
+        { term: 'Equities', definition: 'The definitional residual on the right side of a for-profit balance sheet — the difference between recorded assets and recorded liabilities. Shown in subparts so that the structure can carry more information.' },
+        { term: 'Contributed Capital', definition: 'The part of Equities that came from outside sources putting money or other assets into the business.' },
+        { term: 'Retained Earnings', definition: 'The part of Equities that reflects amounts the business generated through its activities and kept in the business.' },
+        { term: 'Net Income', definition: 'The bottom line of the income statement — revenues and gains minus expenses and losses for a period. Flows into Retained Earnings.' },
+        { term: 'Transaction', definition: 'An event in which something of value changes hands between parties.' },
+        { term: 'Arm\u2019s-length transaction', definition: 'A transaction between independent parties, each acting in their own interest. Such transactions are one strong source of evidence about an item\u2019s existence and its financial effects, though not the only source.' },
+        { term: 'Recognition', definition: 'The process of admitting an item onto the accounting records — reporting it on the balance sheet or income statement. The convention requires sufficient evidence that an item exists and that its effects are at least in part financial — that they bear on future cash flows.' }
+    ];
+
+    // ---------------- Presentational components (module scope) ----------------
+    // IMPORTANT: these live at module scope, not inside Tutorial. If they were
+    // defined inside Tutorial, their function identity would change on every
+    // render, causing React to unmount/remount their subtrees — which made text
+    // inputs lose focus after each keystroke.
+
+    const NarrativeBlock = ({ children }) => (
+        <div
+            className="p-4 rounded-lg border-l-4 mb-4"
+            style={{ backgroundColor: colors.sand, borderColor: colors.accent }}
+        >
+            <div style={{ color: colors.earthDark }}>{children}</div>
+        </div>
+    );
+
+    const InsightPanel = ({ title, children }) => (
+        <div
+            className="p-4 rounded-lg border-2 mb-4 fade-in"
+            style={{ backgroundColor: colors.successBg, borderColor: colors.success }}
+        >
+            <div className="flex items-start gap-2">
+                <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                <div>
+                    {title && <p className="font-bold mb-2" style={{ color: colors.success }}>{title}</p>}
+                    <div style={{ color: '#166534' }}>{children}</div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const KeyInsightBox = ({ children }) => (
+        <div
+            className="p-4 rounded-lg border-2 mb-4"
+            style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}
+        >
+            <div className="flex items-start gap-3">
+                <span className="flex-shrink-0" aria-hidden="true">💡</span>
+                <div style={{ color: colors.earthDark }}>{children}</div>
+            </div>
+        </div>
+    );
+
+    const WarningPanel = ({ title, children }) => (
+        <div
+            className="p-4 rounded-lg border-2 mb-4"
+            style={{ backgroundColor: colors.warningBg, borderColor: colors.warning }}
+        >
+            <div className="flex items-start gap-2">
+                <span aria-hidden="true">⚠</span>
+                <div>
+                    {title && <p className="font-bold mb-2" style={{ color: '#92400e' }}>{title}</p>}
+                    <div style={{ color: '#92400e' }}>{children}</div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const ContinueButton = ({ onClick, disabled, children = 'Continue' }) => (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50"
+            style={{ backgroundColor: colors.primary }}
+        >
+            {children} <span aria-hidden="true">→</span>
+        </button>
+    );
+
+    const StatementCard = ({ title, subtitle, rows, footer }) => (
+        <div
+            className="rounded-lg border-2 p-4 bg-white flex flex-col"
+            style={{ borderColor: colors.earthLight }}
+        >
+            <div className="mb-2">
+                <p className="font-bold" style={{ color: colors.primary }}>{title}</p>
+                {subtitle && <p className="text-xs" style={{ color: colors.earth }}>{subtitle}</p>}
+            </div>
+            <div className="space-y-1 text-sm mono" style={{ color: colors.earthDark }}>
+                {rows.map((r, i) => (
+                    <div
+                        key={i}
+                        className={`flex justify-between ${r.isTotal ? 'border-t pt-1 font-bold' : ''} ${r.isSubheader ? 'font-semibold pt-2' : ''}`}
+                        style={r.isTotal ? { borderColor: colors.earthLight, color: colors.primary } : {}}
+                    >
+                        <span style={{ paddingLeft: r.indent ? 12 : 0 }}>{r.label}</span>
+                        <span>{r.value}</span>
+                    </div>
+                ))}
+            </div>
+            {footer && <div className="mt-3 text-xs italic" style={{ color: colors.earth }}>{footer}</div>}
+        </div>
+    );
+
+    const ThreeCardGrid = ({ cards }) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            {cards}
+        </div>
+    );
+
+    const PickAndRationale = ({
+        pick, setPick, rationale, setRationale, submitted, setSubmitted,
+        onAdvance, prompt
+    }) => {
+        const canSubmit = pick && rationale.trim().length >= 8;
+
+        const handleSubmit = () => {
+            if (!canSubmit || submitted) return;
+            playSuccessTone();
+            setSubmitted(true);
+        };
+
+        return (
+            <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                <p className="mb-3 text-sm" style={{ color: colors.earthDark }}>{prompt}</p>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                    {['A', 'B', 'C'].map(opt => {
+                        const selected = pick === opt;
+                        return (
+                            <button
+                                key={opt}
+                                onClick={() => !submitted && setPick(opt)}
+                                disabled={submitted}
+                                className="p-3 rounded-lg border-2 text-center font-bold transition-all"
+                                style={{
+                                    borderColor: selected ? colors.primary : colors.earthLight,
+                                    backgroundColor: selected ? colors.sand : 'white',
+                                    color: selected ? colors.primary : colors.earthDark
+                                }}
+                            >
+                                Biz {opt}
+                            </button>
+                        );
+                    })}
+                </div>
+                <label className="block text-xs mb-1" style={{ color: colors.earth }}>
+                    One sentence about why.
+                </label>
+                <textarea
+                    value={rationale}
+                    onChange={(e) => setRationale(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey && !submitted && canSubmit) {
+                            e.preventDefault(); handleSubmit();
+                        }
+                    }}
+                    disabled={submitted}
+                    placeholder="Write a short reason..."
+                    rows={2}
+                    className="w-full p-3 border rounded text-sm resize-none mb-3"
+                    style={{ borderColor: colors.earthLight }}
+                />
+                {!submitted ? (
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!canSubmit}
+                        className="w-full py-2 rounded font-bold text-white disabled:opacity-50"
+                        style={{ backgroundColor: colors.primary }}
+                    >
+                        Record my thinking
+                    </button>
+                ) : (
+                    <div>
+                        <InsightPanel title="Captured.">
+                            <p className="text-sm">Your thinking is captured. You can revise it at the next reveal.</p>
+                        </InsightPanel>
+                        <ContinueButton onClick={onAdvance}>Continue</ContinueButton>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const TwoChoiceWithExplanation = ({
+        question,
+        correctAnswer,
+        hints,
+        revealCopy,
+        successCopy,
+        choice, setChoice,
+        explanation, setExplanation,
+        attempts, setAttempts,
+        submitted, setSubmitted,
+        onAdvance
+    }) => {
+        const canCheck = choice && explanation.trim().length >= 8;
+
+        const handleSubmit = () => {
+            if (submitted) return;
+            if (!canCheck) return;
+            if (choice === correctAnswer) {
+                playSuccessTone();
+                setSubmitted(true);
+                return;
+            }
+            const nextAttempts = attempts + 1;
+            setAttempts(nextAttempts);
+            if (nextAttempts >= 3) {
+                playBuzzer();
+                setSubmitted(true);
+            } else {
+                playSoftNope();
+            }
+        };
+
+        const wasCorrect = submitted && choice === correctAnswer;
+        const wasRevealed = submitted && choice !== correctAnswer;
+
+        return (
+            <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                <p className="mb-3 text-sm" style={{ color: colors.earthDark }}>
+                    <strong>Question:</strong> {question}
+                </p>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                    {[
+                        { v: 'yes', label: 'Yes' },
+                        { v: 'no', label: 'No' }
+                    ].map(opt => {
+                        const selected = choice === opt.v;
+                        const showAsCorrect = submitted && opt.v === correctAnswer;
+                        return (
+                            <button
+                                key={opt.v}
+                                onClick={() => !submitted && setChoice(opt.v)}
+                                disabled={submitted}
+                                className="p-3 rounded-lg border-2 text-center font-bold transition-all"
+                                style={{
+                                    borderColor: showAsCorrect
+                                        ? colors.success
+                                        : selected ? colors.primary : colors.earthLight,
+                                    backgroundColor: showAsCorrect
+                                        ? colors.successBg
+                                        : selected ? colors.sand : 'white',
+                                    color: colors.earthDark
+                                }}
+                            >
+                                {opt.label}
+                            </button>
+                        );
+                    })}
+                </div>
+                {choice && !submitted && (
+                    <div className="mb-3">
+                        <label className="block text-xs mb-1" style={{ color: colors.earth }}>
+                            Say briefly why.
+                        </label>
+                        <textarea
+                            value={explanation}
+                            onChange={(e) => setExplanation(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey && canCheck) {
+                                    e.preventDefault(); handleSubmit();
+                                }
+                            }}
+                            disabled={submitted}
+                            placeholder="Your reasoning..."
+                            rows={2}
+                            className="w-full p-3 border rounded text-sm resize-none"
+                            style={{ borderColor: colors.earthLight }}
+                        />
+                    </div>
+                )}
+                {!submitted && choice && (
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!canCheck}
+                        className="w-full py-2 rounded font-bold text-white disabled:opacity-50"
+                        style={{ backgroundColor: colors.primary }}
+                    >
+                        Check
+                    </button>
+                )}
+                {attempts > 0 && attempts < 3 && !submitted && (
+                    <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: colors.warningBg }}>
+                        <p className="text-sm" style={{ color: '#92400e' }}>
+                            <strong>Hint {attempts}/2:</strong> {hints[attempts - 1]}
+                        </p>
+                    </div>
+                )}
+                {wasCorrect && (
+                    <InsightPanel title="Yes — that's it.">
+                        {successCopy}
+                    </InsightPanel>
+                )}
+                {wasRevealed && (
+                    <WarningPanel title="Here's what the exercise was pointing to:">
+                        {revealCopy}
+                    </WarningPanel>
+                )}
+                {submitted && (
+                    <div className="mt-3">
+                        <ContinueButton onClick={onAdvance}>Continue</ContinueButton>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // ---------------- Main component ----------------
+    const Tutorial = () => {
+        // Phase control
+        const [phase, setPhase] = useState('welcome');
+
+        // UI state
+        const [showGlossary, setShowGlossary] = useState(false);
+        const [showSimplificationsNote, setShowSimplificationsNote] = useState(false);
+        const [devMode, setDevMode] = useState(false);
+        const [headerClickCount, setHeaderClickCount] = useState(0);
+
+        // Per-phase: picks + rationales (no evaluation)
+        const [totalsPick, setTotalsPick] = useState('');
+        const [totalsRationale, setTotalsRationale] = useState('');
+        const [totalsSubmitted, setTotalsSubmitted] = useState(false);
+
+        const [assetsPick, setAssetsPick] = useState('');
+        const [assetsRationale, setAssetsRationale] = useState('');
+        const [assetsSubmitted, setAssetsSubmitted] = useState(false);
+
+        const [equitiesPick, setEquitiesPick] = useState('');
+        const [equitiesRationale, setEquitiesRationale] = useState('');
+        const [equitiesSubmitted, setEquitiesSubmitted] = useState(false);
+
+        // Evaluated questions (three-strike)
+        const [incomeChoice, setIncomeChoice] = useState('');
+        const [incomeExplanation, setIncomeExplanation] = useState('');
+        const [incomeAttempts, setIncomeAttempts] = useState(0);
+        const [incomeSubmitted, setIncomeSubmitted] = useState(false);
+
+        const [recognitionChoice, setRecognitionChoice] = useState('');
+        const [recognitionExplanation, setRecognitionExplanation] = useState('');
+        const [recognitionAttempts, setRecognitionAttempts] = useState(0);
+        const [recognitionSubmitted, setRecognitionSubmitted] = useState(false);
+
+        // Consolidation reflection
+        const [consolidationReflection, setConsolidationReflection] = useState('');
+        const [consolidationSubmitted, setConsolidationSubmitted] = useState(false);
+
+        const phaseOrder = [
+            'welcome', 'totals', 'asset-breakdown', 'equities-breakdown',
+            'income-statements', 'recognition-rule', 'convention-applied',
+            'consolidation', 'complete'
+        ];
+        const currentPhaseIndex = Math.max(0, phaseOrder.indexOf(phase));
+        const progress = Math.round((currentPhaseIndex / (phaseOrder.length - 1)) * 100);
+
+        const handleRestart = () => {
+            playContinueClick();
+            setPhase('welcome');
+            setTotalsPick(''); setTotalsRationale(''); setTotalsSubmitted(false);
+            setAssetsPick(''); setAssetsRationale(''); setAssetsSubmitted(false);
+            setEquitiesPick(''); setEquitiesRationale(''); setEquitiesSubmitted(false);
+            setIncomeChoice(''); setIncomeExplanation(''); setIncomeAttempts(0); setIncomeSubmitted(false);
+            setRecognitionChoice(''); setRecognitionExplanation(''); setRecognitionAttempts(0); setRecognitionSubmitted(false);
+            setConsolidationReflection(''); setConsolidationSubmitted(false);
+            setShowSimplificationsNote(false);
+        };
+
+        const handleHeaderClick = () => {
+            const newCount = headerClickCount + 1;
+            setHeaderClickCount(newCount);
+            if (newCount >= 3) {
+                setDevMode(!devMode);
+                setHeaderClickCount(0);
+            }
+        };
+
+        const goTo = (p) => { playContinueClick(); setPhase(p); window.scrollTo(0, 0); };
+
+        // -------- Common UI --------
+        const HeaderWithControls = () => (
+            <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary }}>
+                <div className="flex justify-between items-start">
+                    <div onClick={handleHeaderClick} style={{ cursor: 'pointer' }}>
+                        <div className="flex items-center gap-2">
+                            <span className="text-white" aria-hidden="true">📖</span>
+                            <h1 className="text-lg font-bold text-white">Three Businesses, One Decision</h1>
+                        </div>
+                        <p className="text-sm mt-1" style={{ color: colors.earthLight }}>
+                            Accounting Prework • ~20 min
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <a
+                            href="../index.html"
+                            aria-label="Return to Main"
+                            title="Return to Main"
+                            className="p-2 rounded-lg hover:bg-white/10 no-underline inline-flex items-center justify-center"
+                        >
+                            <span className="text-white" aria-hidden="true">🏠</span>
+                        </a>
+                        <button
+                            onClick={() => setShowGlossary(true)}
+                            aria-label="Open glossary"
+                            title="Glossary"
+                            className="p-2 rounded-lg hover:bg-white/10"
+                        >
+                            <span className="text-white" aria-hidden="true">📖</span>
+                        </button>
+                        <button
+                            onClick={handleRestart}
+                            aria-label="Restart tutorial"
+                            title="Restart tutorial"
+                            className="p-2 rounded-lg hover:bg-white/10"
+                        >
+                            <span className="text-white text-lg" aria-hidden="true">↺</span>
+                        </button>
+                    </div>
+                </div>
+                <div className="mt-4">
+                    <div className="flex justify-between text-xs text-white/70 mb-1">
+                        <span>Progress</span>
+                        <span>{progress}%</span>
+                    </div>
+                    <div
+                        className="h-2 rounded-full"
+                        role="progressbar"
+                        aria-valuenow={progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                    >
+                        <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${progress}%`, backgroundColor: colors.accent }}
+                        />
+                    </div>
+                </div>
+                {devMode && (
+                    <div className="mt-3 pt-3 border-t border-white/20">
+                        <p className="text-xs text-white/70 mb-2">Dev Mode: skip to phase</p>
+                        <div className="flex flex-wrap gap-1">
+                            {phaseOrder.map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => setPhase(p)}
+                                    className={`px-2 py-1 rounded text-xs ${phase === p ? 'bg-white text-blue-900' : 'bg-white/20 text-white'}`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+
+        // -------- Glossary modal --------
+        const GlossaryModal = () => (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                    <div className="p-4 border-b sticky top-0 bg-white flex justify-between items-center">
+                        <h3 className="font-bold" style={{ color: colors.primary }}>Glossary</h3>
+                        <button
+                            onClick={() => setShowGlossary(false)}
+                            className="text-gray-500 hover:text-gray-700 text-xl"
+                            aria-label="Close glossary"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    <div className="p-4 space-y-3 text-sm">
+                        {glossaryTerms.map((item, i) => (
+                            <div key={i}>
+                                <p className="font-medium" style={{ color: colors.primary }}>{item.term}</p>
+                                <p className="text-gray-600 text-xs">{item.definition}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        // =================================================================
+        // PHASE RENDERERS
+        // =================================================================
+
+        // -------- Welcome --------
+        const renderWelcome = () => (
+            <div>
+                <NarrativeBlock>
+                    <p className="mb-2">
+                        In Module 1 you built the recordkeeping system from the inside out — identify
+                        the entity, list its Assets and Liabilities, and the residual falls out as Equities
+                        (or Net Assets, for an organization no one owns). A − L = E by construction.
+                        Time to apply it.
+                    </p>
+                    <p className="mb-2">
+                        You have <strong>$25k</strong>. You can invest it in one of three for-profit
+                        businesses, or donate it to a nonprofit. This first part of the exercise
+                        looks at the three for-profits. The donation option comes up in the next part.
+                    </p>
+                    <p>
+                        Each business started from nothing exactly one year ago. You will see their
+                        records, step by step, and work out how the pieces fit together.
+                    </p>
+                </NarrativeBlock>
+
+                <div
+                    className="rounded-lg p-4 mb-4 border-2"
+                    style={{ backgroundColor: 'white', borderColor: colors.primary }}
+                >
+                    <p className="font-bold mb-3" style={{ color: colors.primary }}>What you'll discover</p>
+                    <ul className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            That the balance sheet is constructed around a single identity.
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            What different information the two sides of a balance sheet carry.
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            How a second statement explains the change in one part of the right side.
+                        </li>
+                    </ul>
+                </div>
+
+                <div
+                    className="rounded-lg mb-4 border"
+                    style={{ backgroundColor: colors.clayLight, borderColor: colors.clayDark }}
+                >
+                    <button
+                        onClick={() => setShowSimplificationsNote(!showSimplificationsNote)}
+                        className="w-full p-3 flex justify-between items-center"
+                        style={{ color: colors.earthDark }}
+                    >
+                        <span className="font-bold text-sm">A note on simplifications</span>
+                        <span aria-hidden="true">{showSimplificationsNote ? '▲' : '▼'}</span>
+                    </button>
+                    {showSimplificationsNote && (
+                        <div className="px-3 pb-3 text-sm fade-in" style={{ color: colors.earthDark }}>
+                            <p className="mb-2">
+                                Real financial statements have many more lines than what appears in this
+                                exercise, and the rules that govern what can go on them are more detailed
+                                than what is covered here.
+                            </p>
+                            <p>
+                                The purpose here is to see the structural bones — the identity, the way
+                                the residual is shown in parts, and the role of an explanatory statement.
+                                Later material fills in the detail.
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                <ContinueButton onClick={() => goTo('totals')}>Begin</ContinueButton>
+            </div>
+        );
+
+        // -------- Totals --------
+        const renderTotals = () => {
+            const cards = ['A', 'B', 'C'].map(letter => (
+                <StatementCard
+                    key={letter}
+                    title={`Biz ${letter}`}
+                    subtitle="Balance Sheet — Year 1"
+                    rows={[
+                        { label: 'Total Assets', value: '$500', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Total Equities', value: '$500', isTotal: true }
+                    ]}
+                />
+            ));
+            return (
+                <div>
+                    <NarrativeBlock>
+                        <p>
+                            Here is each business's year-end record, reduced to totals. Three
+                            businesses, all started from nothing one year ago.
+                        </p>
+                    </NarrativeBlock>
+                    <ThreeCardGrid cards={cards} />
+                    <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            <strong>Notice:</strong> For each business,
+                            Total Assets minus Liabilities is <span className="mono">$500</span>.
+                            Total Equities is also <span className="mono">$500</span>.
+                        </p>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            This relationship — Assets minus Liabilities equals Equities — is called
+                            the <strong>accounting identity</strong>. It holds at every point in time,
+                            for every entity, by construction. <em>Equities</em> is the definitional
+                            difference between recorded assets and recorded liabilities.
+                        </p>
+                    </div>
+                    <PickAndRationale
+                        pick={totalsPick}
+                        setPick={setTotalsPick}
+                        rationale={totalsRationale}
+                        setRationale={setTotalsRationale}
+                        submitted={totalsSubmitted}
+                        setSubmitted={setTotalsSubmitted}
+                        onAdvance={() => goTo('asset-breakdown')}
+                        prompt={'If you decide to invest, your $25k has to go into one of these three. Based on what you see now, which do you pick?'}
+                    />
+                </div>
+            );
+        };
+
+        // -------- Asset Breakdown --------
+        const renderAssetBreakdown = () => {
+            const cards = [
+                <StatementCard
+                    key="A"
+                    title="Biz A"
+                    subtitle="Balance Sheet — Year 1"
+                    rows={[
+                        { label: 'Assets', isSubheader: true, value: '' },
+                        { label: 'Cash', value: '$500', indent: true },
+                        { label: 'Total Assets', value: '$500', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Total Equities', value: '$500', isTotal: true }
+                    ]}
+                />,
+                <StatementCard
+                    key="B"
+                    title="Biz B"
+                    subtitle="Balance Sheet — Year 1"
+                    rows={[
+                        { label: 'Assets', isSubheader: true, value: '' },
+                        { label: 'Cash', value: '$500', indent: true },
+                        { label: 'Total Assets', value: '$500', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Total Equities', value: '$500', isTotal: true }
+                    ]}
+                />,
+                <StatementCard
+                    key="C"
+                    title="Biz C"
+                    subtitle="Balance Sheet — Year 1"
+                    rows={[
+                        { label: 'Assets', isSubheader: true, value: '' },
+                        { label: 'Cash', value: '$400', indent: true },
+                        { label: 'Great Idea', value: '$100', indent: true },
+                        { label: 'Total Assets', value: '$500', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Total Equities', value: '$500', isTotal: true }
+                    ]}
+                />
+            ];
+            return (
+                <div>
+                    {totalsPick && (
+                        <KeyInsightBox>
+                            <p className="text-sm">
+                                On the totals alone, you picked <strong>Biz {totalsPick}</strong>.
+                                You wrote: <em>"{totalsRationale}"</em>
+                            </p>
+                        </KeyInsightBox>
+                    )}
+                    <NarrativeBlock>
+                        <p>
+                            Now with the asset side broken into its pieces. The identity still
+                            holds — each side still adds to $500 — but the composition is not the same
+                            for all three.
+                        </p>
+                    </NarrativeBlock>
+                    <ThreeCardGrid cards={cards} />
+                    <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            Biz C shows a new line: <strong>Great Idea</strong>, recorded at $100.
+                            Something got onto the books under that label. The exercise will come back
+                            to how it got there.
+                        </p>
+                    </div>
+                    <PickAndRationale
+                        pick={assetsPick}
+                        setPick={setAssetsPick}
+                        rationale={assetsRationale}
+                        setRationale={setAssetsRationale}
+                        submitted={assetsSubmitted}
+                        setSubmitted={setAssetsSubmitted}
+                        onAdvance={() => goTo('equities-breakdown')}
+                        prompt={'If you decide to invest, with the asset composition now visible, which do you pick?'}
+                    />
+                </div>
+            );
+        };
+
+        // -------- Equities Breakdown --------
+        const renderEquitiesBreakdown = () => {
+            const mkCard = (letter, cashRow, greatIdea, cc, re) => (
+                <StatementCard
+                    key={letter}
+                    title={`Biz ${letter}`}
+                    subtitle="Balance Sheet — Year 1"
+                    rows={[
+                        { label: 'Assets', isSubheader: true, value: '' },
+                        { label: 'Cash', value: cashRow, indent: true },
+                        ...(greatIdea ? [{ label: 'Great Idea', value: greatIdea, indent: true }] : []),
+                        { label: 'Total Assets', value: '$500', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Equities', isSubheader: true, value: '' },
+                        { label: 'Contributed Capital', value: cc, indent: true },
+                        { label: 'Retained Earnings', value: re, indent: true },
+                        { label: 'Total Equities', value: '$500', isTotal: true }
+                    ]}
+                />
+            );
+            const cards = [
+                mkCard('A', '$500', null, '$500', '$0'),
+                mkCard('B', '$500', null, '$400', '$100'),
+                mkCard('C', '$400', '$100', '$400', '$100')
+            ];
+            return (
+                <div>
+                    {assetsPick && (
+                        <KeyInsightBox>
+                            <p className="text-sm">
+                                With the assets visible, you picked <strong>Biz {assetsPick}</strong>.
+                                You wrote: <em>"{assetsRationale}"</em>
+                            </p>
+                        </KeyInsightBox>
+                    )}
+                    <NarrativeBlock>
+                        <p>
+                            Now the right side is broken into parts too.
+                            <strong> Contributed Capital</strong> is what owners put into the business
+                            from outside. <strong>Retained Earnings</strong> is what the business
+                            generated on its own and kept. Together they still sum to Total Equities.
+                        </p>
+                    </NarrativeBlock>
+                    <ThreeCardGrid cards={cards} />
+                    <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            <strong>Notice:</strong>
+                        </p>
+                        <ul className="space-y-1 text-sm" style={{ color: colors.earthDark }}>
+                            <li>• Biz A: all $500 came from outside. Nothing generated inside.</li>
+                            <li>• Biz B: $400 from outside, $100 generated and kept.</li>
+                            <li>• Biz C: $400 from outside, $100 recorded as generated and kept.</li>
+                        </ul>
+                        <p className="text-sm mt-2" style={{ color: colors.earthDark }}>
+                            On the Equities side, B and C look the same: $400 contributed, $100
+                            retained. But the records so far don't explain <em>what produced</em>
+                            the $100 in Retained Earnings for either one. That is what the income
+                            statement is for.
+                        </p>
+                    </div>
+                    <PickAndRationale
+                        pick={equitiesPick}
+                        setPick={setEquitiesPick}
+                        rationale={equitiesRationale}
+                        setRationale={setEquitiesRationale}
+                        submitted={equitiesSubmitted}
+                        setSubmitted={setEquitiesSubmitted}
+                        onAdvance={() => goTo('income-statements')}
+                        prompt={'If you decide to invest, with the Equities composition now visible, which do you pick?'}
+                    />
+                </div>
+            );
+        };
+
+        // -------- Income Statements --------
+        const renderIncomeStatements = () => {
+            const bizB = (
+                <StatementCard
+                    title="Biz B"
+                    subtitle="Income Statement — Year 1"
+                    rows={[
+                        { label: 'Revenues (cash)', value: '$130' },
+                        { label: 'Expenses (cash)', value: '($30)' },
+                        { label: 'Net Income', value: '$100', isTotal: true }
+                    ]}
+                />
+            );
+            const bizC = (
+                <StatementCard
+                    title="Biz C"
+                    subtitle="Income Statement — Year 1"
+                    rows={[
+                        { label: 'Gain from Having Great Idea', value: '$100' },
+                        { label: 'Net Income', value: '$100', isTotal: true }
+                    ]}
+                />
+            );
+            return (
+                <div>
+                    {equitiesPick && (
+                        <KeyInsightBox>
+                            <p className="text-sm">
+                                With the Equities visible, you picked <strong>Biz {equitiesPick}</strong>.
+                                You wrote: <em>"{equitiesRationale}"</em>
+                            </p>
+                        </KeyInsightBox>
+                    )}
+                    <NarrativeBlock>
+                        <p>
+                            Each business's Retained Earnings went from $0 at the start of the year
+                            to $100 at year-end. The income statement is the account of why.
+                        </p>
+                    </NarrativeBlock>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        {bizB}
+                        {bizC}
+                    </div>
+                    <TwoChoiceWithExplanation
+                        question="Looking at the two income statements, do they explain the $100 in Retained Earnings in the same way?"
+                        correctAnswer="no"
+                        hints={[
+                            'Look closely at the line items. What did Biz B do during the year? What did Biz C do?',
+                            'Biz B\u2019s statement shows cash coming in and cash going out — things that happened with customers and suppliers. Biz C\u2019s statement shows a single line claiming a gain. Are those the same kind of event?'
+                        ]}
+                        successCopy={
+                            <div className="text-sm space-y-2">
+                                <p>
+                                    Biz B's statement shows real inflows and outflows — transactions with
+                                    customers and suppliers. Biz C's statement shows a single self-described
+                                    gain.
+                                </p>
+                                <p>
+                                    The income statement reveals something the balance sheet alone could
+                                    not: whether the $100 in Retained Earnings came from transactions with
+                                    others or from a self-described event. The explanatory statement
+                                    earns its keep here.
+                                </p>
+                            </div>
+                        }
+                        revealCopy={
+                            <div className="text-sm space-y-2">
+                                <p>
+                                    The answer the exercise is pointing to is <strong>no</strong>.
+                                    Biz B's statement records real cash inflows and outflows — actual
+                                    transactions. Biz C's statement records a single self-described gain.
+                                </p>
+                                <p>
+                                    Both produce $100 of Net Income, but the events behind them are not
+                                    the same kind. The income statement makes that difference visible.
+                                </p>
+                            </div>
+                        }
+                        choice={incomeChoice} setChoice={setIncomeChoice}
+                        explanation={incomeExplanation} setExplanation={setIncomeExplanation}
+                        attempts={incomeAttempts} setAttempts={setIncomeAttempts}
+                        submitted={incomeSubmitted} setSubmitted={setIncomeSubmitted}
+                        onAdvance={() => goTo('recognition-rule')}
+                    />
+                </div>
+            );
+        };
+
+        // -------- Recognition Rule --------
+        const renderRecognitionRule = () => (
+            <div>
+                <NarrativeBlock>
+                    <p className="mb-2">
+                        Here is how the numbers on Biz C's records got there. Someone inside the
+                        business concluded that a "Great Idea" existed and was worth $100. The Great
+                        Idea was placed on the balance sheet as a $100 asset. A $100 line called
+                        "Gain from Having Great Idea" was placed on the income statement, producing
+                        the $100 of Net Income that explains the $100 in Retained Earnings.
+                    </p>
+                    <p>
+                        Nobody outside the business was involved. No money changed hands. No one
+                        bought the idea, sold it, or exchanged anything for it. The operator simply
+                        declared a value and put the numbers on the records.
+                    </p>
+                </NarrativeBlock>
+                <TwoChoiceWithExplanation
+                    question="Does the convention governing the records permit Biz C to show the Great Idea this way?"
+                    correctAnswer="no"
+                    hints={[
+                        'Think about what evidence the convention requires before an item can go on the records. What has to be demonstrable about it?',
+                        'The rule requires sufficient evidence of two things: that the item exists in some captured form, and that its effects are at least in part financial — that they bear on future cash flows. A self-declared value supplies neither.'
+                    ]}
+                    successCopy={
+                        <div className="text-sm space-y-2">
+                            <p>
+                                The convention admits an item onto the records only when there is
+                                sufficient evidence that (1) it exists, and (2) its effects are at
+                                least in part financial — that they bear on future cash flows. A
+                                self-declared "Great Idea" supplies neither kind of evidence. Something
+                                that just makes everyone inside the business feel good but produces no
+                                effect on future cash flows would not be counted.
+                            </p>
+                            <p>
+                                An arm's-length transaction is one strong source of such evidence —
+                                money changes hands, the effect on cash flows is observable, an
+                                outside party has acted on the value. But it is not the only source.
+                                Market prices for traded financial instruments, for example, can
+                                supply evidence of value even when the business has not just bought
+                                or sold the instrument.
+                            </p>
+                            <p>
+                                This rule is a choice by standard-setters — a judgment about what
+                                readers need protection from. It keeps self-serving valuations off
+                                the records. It also keeps plenty of genuinely valuable things off
+                                — a brand built in-house, customer relationships, what the people
+                                in the business know how to do. Some things fall outside the line
+                                the convention draws.
+                            </p>
+                        </div>
+                    }
+                    revealCopy={
+                        <div className="text-sm space-y-2">
+                            <p>
+                                The answer the exercise is pointing to is <strong>no</strong>. The
+                                convention requires sufficient evidence on two points before an item
+                                can enter the records: that it exists, and that its effects are at
+                                least in part financial — that they bear on future cash flows.
+                            </p>
+                            <p>
+                                Biz C's Great Idea, as recorded, supplies neither. The operator's
+                                declaration is not evidence of existence in any form the records can
+                                capture, and there is no demonstrated effect on future cash flows.
+                                Under the rule, the Great Idea does not belong on the balance sheet,
+                                and the matching gain does not belong on the income statement.
+                            </p>
+                            <p>
+                                An arm's-length transaction is one strong source of evidence on both
+                                points — but not the only source. Market prices for traded financial
+                                instruments are another. The rule is a choice by standard-setters,
+                                with identifiable beneficiaries (readers protected from self-described
+                                valuations) and identifiable costs (genuinely valuable things — brands,
+                                relationships, in-house know-how — that stay off the records because
+                                the evidence test isn't met).
+                            </p>
+                        </div>
+                    }
+                    choice={recognitionChoice} setChoice={setRecognitionChoice}
+                    explanation={recognitionExplanation} setExplanation={setRecognitionExplanation}
+                    attempts={recognitionAttempts} setAttempts={setRecognitionAttempts}
+                    submitted={recognitionSubmitted} setSubmitted={setRecognitionSubmitted}
+                    onAdvance={() => goTo('convention-applied')}
+                />
+            </div>
+        );
+
+        // -------- Convention Applied --------
+        const renderConventionApplied = () => {
+            const bsA = (
+                <StatementCard
+                    title="Biz A"
+                    subtitle="Balance Sheet — Year 1"
+                    rows={[
+                        { label: 'Assets', isSubheader: true, value: '' },
+                        { label: 'Cash', value: '$500', indent: true },
+                        { label: 'Total Assets', value: '$500', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Equities', isSubheader: true, value: '' },
+                        { label: 'Contributed Capital', value: '$500', indent: true },
+                        { label: 'Retained Earnings', value: '$0', indent: true },
+                        { label: 'Total Equities', value: '$500', isTotal: true }
+                    ]}
+                    footer="No income statement activity — the business had no revenues or expenses."
+                />
+            );
+            const bsB = (
+                <StatementCard
+                    title="Biz B"
+                    subtitle="Balance Sheet — Year 1"
+                    rows={[
+                        { label: 'Assets', isSubheader: true, value: '' },
+                        { label: 'Cash', value: '$500', indent: true },
+                        { label: 'Total Assets', value: '$500', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Equities', isSubheader: true, value: '' },
+                        { label: 'Contributed Capital', value: '$400', indent: true },
+                        { label: 'Retained Earnings', value: '$100', indent: true },
+                        { label: 'Total Equities', value: '$500', isTotal: true }
+                    ]}
+                />
+            );
+            const isB = (
+                <StatementCard
+                    title="Biz B"
+                    subtitle="Income Statement — Year 1"
+                    rows={[
+                        { label: 'Revenues (cash)', value: '$130' },
+                        { label: 'Expenses (cash)', value: '($30)' },
+                        { label: 'Net Income', value: '$100', isTotal: true }
+                    ]}
+                />
+            );
+            const bsC = (
+                <StatementCard
+                    title="Biz C"
+                    subtitle="Balance Sheet — Year 1"
+                    rows={[
+                        { label: 'Assets', isSubheader: true, value: '' },
+                        { label: 'Cash', value: '$400', indent: true },
+                        { label: 'Total Assets', value: '$400', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Equities', isSubheader: true, value: '' },
+                        { label: 'Contributed Capital', value: '$400', indent: true },
+                        { label: 'Retained Earnings', value: '$0', indent: true },
+                        { label: 'Total Equities', value: '$400', isTotal: true }
+                    ]}
+                    footer="No income statement activity — under the convention, the asserted Great Idea and its matching gain are excluded."
+                />
+            );
+            return (
+                <div>
+                    <NarrativeBlock>
+                        <p>
+                            Here are the three businesses as the records stand once the recognition
+                            rule is applied. Biz C's Great Idea is excluded, and so is the gain that
+                            went with it.
+                        </p>
+                    </NarrativeBlock>
+                    <div className="mb-4">
+                        <p className="font-bold text-sm mb-2" style={{ color: colors.primary }}>Balance Sheets</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {bsA}{bsB}{bsC}
+                        </div>
+                    </div>
+                    <div className="mb-4">
+                        <p className="font-bold text-sm mb-2" style={{ color: colors.primary }}>Income Statement</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div
+                                className="rounded-lg border-2 p-4 text-sm italic flex items-center justify-center"
+                                style={{ borderColor: colors.earthLight, color: colors.earth, backgroundColor: 'white' }}
+                            >
+                                Biz A — no activity to report
+                            </div>
+                            {isB}
+                            <div
+                                className="rounded-lg border-2 p-4 text-sm italic flex items-center justify-center"
+                                style={{ borderColor: colors.earthLight, color: colors.earth, backgroundColor: 'white' }}
+                            >
+                                Biz C — no activity the convention admits
+                            </div>
+                        </div>
+                    </div>
+                    <KeyInsightBox>
+                        <div className="text-sm space-y-2">
+                            <p className="font-semibold">What the structure now conveys:</p>
+                            <ul className="space-y-1">
+                                <li>• The identity still holds for each: Assets − Liabilities = Equities.</li>
+                                <li>• The Equities subparts — Contributed Capital and Retained Earnings — carry separate pieces of information about where the residual came from.</li>
+                                <li>• The income statement explains the change in Retained Earnings during the year. Where there is no income statement activity, Retained Earnings did not change.</li>
+                                <li>• The convention admits an item onto the records only when there is sufficient evidence that it exists and that its effects are at least in part financial. A self-declared value does not meet that test.</li>
+                            </ul>
+                        </div>
+                    </KeyInsightBox>
+                    <ContinueButton onClick={() => goTo('consolidation')}>Continue</ContinueButton>
+                </div>
+            );
+        };
+
+        // -------- Consolidation --------
+        const renderConsolidation = () => {
+            const canSubmit = consolidationReflection.trim().length >= 15;
+            const handleReflect = () => {
+                if (!canSubmit || consolidationSubmitted) return;
+                playSuccessTone();
+                setConsolidationSubmitted(true);
+            };
+            return (
+                <div>
+                    <NarrativeBlock>
+                        <p>
+                            Three things this exercise shows about the structure of for-profit
+                            financial statements.
+                        </p>
+                    </NarrativeBlock>
+                    <div
+                        className="rounded-lg p-4 mb-4 border-2"
+                        style={{ backgroundColor: 'white', borderColor: colors.primary }}
+                    >
+                        <ol className="space-y-3 text-sm" style={{ color: colors.earthDark }}>
+                            <li>
+                                <strong style={{ color: colors.primary }}>1. An identity holds the balance sheet together.</strong>{' '}
+                                Assets − Liabilities = Equities, at every point in time, by
+                                construction.
+                            </li>
+                            <li>
+                                <strong style={{ color: colors.primary }}>2. The residual gets broken into subparts.</strong>{' '}
+                                Contributed Capital and Retained Earnings answer different questions
+                                about where the Equities balance came from. Without the breakdown,
+                                the balance sheet can't carry those distinctions.
+                            </li>
+                            <li>
+                                <strong style={{ color: colors.primary }}>3. A second statement explains how the residual changed.</strong>{' '}
+                                The income statement tells the story behind Retained Earnings. Two
+                                businesses with the same Retained Earnings balance can have very
+                                different income statements behind them — and the structure makes
+                                those differences visible.
+                            </li>
+                        </ol>
+                    </div>
+
+                    {(totalsPick || assetsPick || equitiesPick) && (
+                        <div
+                            className="rounded-lg p-4 mb-4"
+                            style={{ backgroundColor: colors.clayLight }}
+                        >
+                            <p className="font-bold mb-2 text-sm" style={{ color: colors.primary }}>
+                                Your thinking through the exercise
+                            </p>
+                            <ul className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                                {totalsPick && (
+                                    <li>
+                                        <strong>Totals only:</strong> Biz {totalsPick} — <em>"{totalsRationale}"</em>
+                                    </li>
+                                )}
+                                {assetsPick && (
+                                    <li>
+                                        <strong>Asset breakdown:</strong> Biz {assetsPick} — <em>"{assetsRationale}"</em>
+                                    </li>
+                                )}
+                                {equitiesPick && (
+                                    <li>
+                                        <strong>Equities breakdown:</strong> Biz {equitiesPick} — <em>"{equitiesRationale}"</em>
+                                    </li>
+                                )}
+                            </ul>
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                        <p className="font-semibold mb-2 text-sm" style={{ color: colors.primary }}>
+                            Before you move on
+                        </p>
+                        <label className="block text-xs mb-1" style={{ color: colors.earth }}>
+                            Write a sentence or two about what you now see in these statements that
+                            you didn't see at the start.
+                        </label>
+                        <textarea
+                            value={consolidationReflection}
+                            onChange={(e) => setConsolidationReflection(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey && canSubmit && !consolidationSubmitted) {
+                                    e.preventDefault(); handleReflect();
+                                }
+                            }}
+                            disabled={consolidationSubmitted}
+                            placeholder="Your reflection..."
+                            rows={3}
+                            className="w-full p-3 border rounded text-sm resize-none mb-3"
+                            style={{ borderColor: colors.earthLight }}
+                        />
+                        {!consolidationSubmitted ? (
+                            <button
+                                onClick={handleReflect}
+                                disabled={!canSubmit}
+                                className="w-full py-2 rounded font-bold text-white disabled:opacity-50"
+                                style={{ backgroundColor: colors.primary }}
+                            >
+                                Submit reflection
+                            </button>
+                        ) : (
+                            <ContinueButton onClick={() => goTo('complete')}>Continue</ContinueButton>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // -------- Complete --------
+        const renderComplete = () => (
+            <div>
+                <div className="text-center mb-6">
+                    <div
+                        className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
+                        style={{ backgroundColor: colors.accent }}
+                    >
+                        <span className="text-3xl" aria-hidden="true">🏆</span>
+                    </div>
+                    <h2 className="text-2xl font-bold" style={{ color: colors.primary }}>
+                        Tutorial Complete
+                    </h2>
+                </div>
+
+                <div
+                    className="rounded-lg p-4 mb-4 border-2"
+                    style={{ backgroundColor: 'white', borderColor: colors.success }}
+                >
+                    <h3 className="font-bold mb-3" style={{ color: colors.primary }}>What you discovered</h3>
+                    <ol className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>The <strong>accounting identity</strong>: Assets − Liabilities = Equities, always, by construction.</span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>Why Equities is shown in subparts — so the structure can carry information about where the residual came from.</span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>How the <strong>income statement</strong> explains what happened behind Retained Earnings.</span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>The evidence test that governs what enters the records — that the item exists and that its effects are at least in part financial.</span>
+                        </li>
+                    </ol>
+                </div>
+
+                <KeyInsightBox>
+                    <p className="font-semibold mb-2">The deeper point</p>
+                    <p className="text-sm">
+                        Financial statements are not a single report. They are a connected set. The
+                        balance sheet presents an identity at a point in time. The income statement
+                        explains how a part of that identity — Retained Earnings — changed during
+                        the period. The structure is built to carry information that no single
+                        statement could carry alone.
+                    </p>
+                </KeyInsightBox>
+
+                <div
+                    className="rounded-lg p-4 mb-4"
+                    style={{ backgroundColor: colors.clayLight }}
+                >
+                    <h3 className="font-bold mb-2" style={{ color: colors.primary }}>Coming next</h3>
+                    <p className="text-sm" style={{ color: colors.earthDark }}>
+                        The same structural pieces appear for a nonprofit — an identity, a residual
+                        with subparts, explanatory statements. But the names differ, the rules
+                        differ, and a new dimension appears: donor intent. Your $25k could still go
+                        there instead.
+                    </p>
+                    <p className="font-bold mt-2 text-sm" style={{ color: colors.primary }}>
+                        Next: the nonprofit side of the decision
+                    </p>
+                </div>
+
+                <button
+                    onClick={() => { playContinueClick(); window.location.href = '2.2-three-nonprofits.html'; }}
+                    className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 mb-3"
+                    style={{ backgroundColor: colors.primary }}
+                >
+                    Next Tutorial <span aria-hidden="true">→</span>
+                </button>
+                <button
+                    onClick={handleRestart}
+                    className="w-full py-3 rounded-lg font-bold border-2 flex items-center justify-center gap-2 hover:bg-gray-50"
+                    style={{ borderColor: colors.primary, color: colors.primary }}
+                >
+                    <span aria-hidden="true">↺</span> Restart Tutorial
+                </button>
+            </div>
+        );
+
+        // -------- Dispatch --------
+        let content = null;
+        if (phase === 'welcome') content = renderWelcome();
+        else if (phase === 'totals') content = renderTotals();
+        else if (phase === 'asset-breakdown') content = renderAssetBreakdown();
+        else if (phase === 'equities-breakdown') content = renderEquitiesBreakdown();
+        else if (phase === 'income-statements') content = renderIncomeStatements();
+        else if (phase === 'recognition-rule') content = renderRecognitionRule();
+        else if (phase === 'convention-applied') content = renderConventionApplied();
+        else if (phase === 'consolidation') content = renderConsolidation();
+        else if (phase === 'complete') content = renderComplete();
+
+        return (
+            <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                <div className="p-4 max-w-3xl mx-auto">
+                    <HeaderWithControls />
+                    <div key={phase} className="fade-in">{content}</div>
+                </div>
+                {showGlossary && <GlossaryModal />}
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Tutorial />);
+    </script>
+</body>
+</html>

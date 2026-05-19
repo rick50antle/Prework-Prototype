@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 3.1: The Architecture in Action</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="min-h-screen" style="background-color: #f5f1e8;">
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        const { useState } = React;
+
+        const colors = {
+            primary: '#00356b', sand: '#f5f1e8', earth: '#8b7355', earthLight: '#d4c4a8',
+            earthDark: '#5c4d3d', accent: '#c9a227', clayLight: '#e8dcc8', clayDark: '#a08050',
+            success: '#22c55e', successBg: '#f0fdf4', warning: '#f59e0b', warningBg: '#fffbeb',
+            error: '#dc2626', errorBg: '#fef2f2',
+            dim: '#c4b89e',  // for dimmed lines
+            formulaBg: '#f5f0e3',  // for HOW DID X CHANGE boxes
+            clarBg: '#e6eef5', clarBorder: '#a8c5dd',  // for ABOUT CLASSIFICATION / IMPORTANT CLARIFICATION
+            yellowHi: '#fef3c7',  // for drill-open row highlight
+        };
+
+        // ==================================================================
+        // DATA — all figures in thousands
+        // ==================================================================
+        const opening = {
+            date: 'Dec 31, Year T−1',
+            assets: [
+                { key: 'cash', label: 'Cash', value: 850 },
+                { key: 'ar', label: 'Accounts receivable', value: 120 },
+                { key: 'inv', label: 'Inventory', value: 1800 },
+                { key: 'ppe', label: 'Property & equipment, net', value: 1200 },
+            ],
+            totalAssets: 3970,
+            liabilities: [
+                { key: 'ap', label: 'Accounts payable', value: 480 },
+                { key: 'accrued', label: 'Accrued expenses', value: 90 },
+                { key: 'loan', label: 'Bank loan', value: 900 },
+            ],
+            totalLiabilities: 1470,
+            equity: [
+                { key: 'cs', label: 'Common stock', value: 400 },
+                { key: 're', label: 'Retained earnings', value: 2100 },
+            ],
+            totalEquity: 2500,
+        };
+        const closing = {
+            date: 'Dec 31, Year T',
+            assets: [
+                { key: 'cash', label: 'Cash', value: 1180 },
+                { key: 'ar', label: 'Accounts receivable', value: 145 },
+                { key: 'inv', label: 'Inventory', value: 2150 },
+                { key: 'ppe', label: 'Property & equipment, net', value: 1650 },
+            ],
+            totalAssets: 5125,
+            liabilities: [
+                { key: 'ap', label: 'Accounts payable', value: 560 },
+                { key: 'accrued', label: 'Accrued expenses', value: 105 },
+                { key: 'loan', label: 'Bank loan', value: 1100 },
+            ],
+            totalLiabilities: 1765,
+            equity: [
+                { key: 'cs', label: 'Common stock', value: 400 },
+                { key: 're', label: 'Retained earnings', value: 2960 },
+            ],
+            totalEquity: 3360,
+        };
+
+        // 12 aggregate items
+        const aggregate = {
+            revenues: [
+                { label: 'Revenue from new bike sales', value: 5500 },
+                { label: 'Revenue from repair services', value: 1800 },
+                { label: 'Revenue from parts & accessories', value: 900 },
+            ],
+            expenses: [
+                { label: 'Cost of inventory sold', value: 5400 },
+                { label: 'Salaries and wages', value: 1000 },
+                { label: 'Rent (six locations)', value: 250 },
+                { label: 'Utilities, marketing, other operating', value: 150 },
+                { label: 'Depreciation of stores and equipment', value: 200 },
+                { label: 'Interest on the bank loan', value: 60 },
+                { label: 'Income tax expense', value: 200 },
+            ],
+            other: [
+                { label: 'New store buildout (capital expenditure)', value: 650, sign: '−' },
+                { label: 'Net financing — borrowed $200, distributed $80', value: 120, sign: '+' },
+            ],
+        };
+
+        // Cash Flow Statement
+        const cfs = {
+            operating: { label: 'Cash from operations', value: 860, sign: '+' },
+            investing: { label: 'Cash used in investing', value: 650, sign: '−' },
+            financing: { label: 'Cash from financing', value: 120, sign: '+' },
+            netChange: 330,
+            scenarios: {
+                operating: "Customers paid you ~$8,200 for bikes, repairs, and parts. You paid suppliers ~$5,400 for inventory, employees $1,000 in wages, landlords $250 in rent, plus utilities, marketing, interest, and taxes. The net of all that was $860 of cash generated by running the six stores. By convention, cash flows from running the business are reported in the Operating section.",
+                investing: "During the year, you spent $650 building out the sixth store — leasehold improvements, fixtures, point-of-sale equipment. By convention, cash flows for acquiring or selling long-term assets are reported in the Investing section — though edge cases exist (a leasing company's fleet purchases, securities held for trading, etc.).",
+                financing: "During the year, you drew $200 on the bank line and distributed $80 to you and Anna — net $120 in. By convention, cash flows that move money between the business and its lenders or owners are reported in the Financing section.",
+            },
+        };
+
+        // Statement of Changes in Equity
+        const soce = {
+            openingEquity: 2500,
+            netIncome: 940,
+            distributions: 80,
+            closingEquity: 3360,
+            // Optionally split by component (CC vs RE) — simple version here.
+        };
+
+        // Income Statement (revealed inside SoCE via Net income drilldown)
+        const incomeStatement = {
+            revenue: 8200,
+            cogs: 5400,
+            grossProfit: 2800,
+            sgna: 1400,  // 1000 salaries + 250 rent + 150 utilities/marketing/other
+            depreciation: 200,
+            operatingIncome: 1200,
+            interest: 60,
+            pretax: 1140,
+            tax: 200,
+            netIncome: 940,
+        };
+
+        // NI → CFO reconciliation
+        const recon = {
+            startNI: 940,
+            items: [
+                { label: '+ Depreciation (non-cash expense)', value: 200, sign: '+' },
+                { label: '− Increase in accounts receivable', value: 25, sign: '−' },
+                { label: '− Increase in inventory', value: 350, sign: '−' },
+                { label: '+ Increase in accounts payable', value: 80, sign: '+' },
+                { label: '+ Increase in accrued expenses', value: 15, sign: '+' },
+            ],
+            endCFO: 860,
+        };
+
+        // ==================================================================
+        // STAGES
+        // ==================================================================
+        const STAGE_WELCOME = 0;
+        const STAGE_AGGREGATE = 1;
+        const STAGE_SNAPSHOTS = 2;
+        const STAGE_CASH_MCQ = 3;
+        const STAGE_CFS = 4;
+        const STAGE_EQUITY_MCQ = 5;
+        const STAGE_SOCE = 6;
+        const STAGE_NI_MCQ = 7;
+        const STAGE_IS = 8;
+        const STAGE_NICFO_MCQ = 9;
+        const STAGE_RECON = 10;
+        const STAGE_SYNTHESIS = 11;
+        const TOTAL_STAGES = 11;
+
+        const STAGE_LABELS = [
+            'welcome','aggregate','snapshots','cash MCQ','CFS','equity MCQ',
+            'SoCE','NI MCQ','IS','NI-CFO MCQ','reconciliation','synthesis'
+        ];
+
+        // ==================================================================
+        // APP
+        // ==================================================================
+        const App = () => {
+            const [stage, setStage] = useState(0);
+            const [cashAns, setCashAns] = useState(null);
+            const [equityAns, setEquityAns] = useState(null);
+            const [niAns, setNiAns] = useState(null);
+            const [niCfoAns, setNiCfoAns] = useState(null);
+            const [cfsOpen, setCfsOpen] = useState({ operating: false, investing: false, financing: false });
+            const [isOpen, setIsOpen] = useState(false);
+            const [reconOpen, setReconOpen] = useState(false);
+            const [devMode, setDevMode] = useState(false);
+            const [hdrClicks, setHdrClicks] = useState(0);
+
+            const handleHdrClick = () => {
+                const n = hdrClicks + 1; setHdrClicks(n);
+                if (n >= 3) { setDevMode(!devMode); setHdrClicks(0); }
+            };
+            const reset = () => {
+                setStage(0); setCashAns(null); setEquityAns(null); setNiAns(null); setNiCfoAns(null);
+                setCfsOpen({ operating: false, investing: false, financing: false });
+                setIsOpen(false); setReconOpen(false);
+            };
+            const advance = () => setStage(stage + 1);
+            const goTo = (s) => setStage(s);
+
+            const progress = Math.round((stage / TOTAL_STAGES) * 100);
+            const fmt = (v) => v.toLocaleString('en-US');
+
+            // ============================================================
+            // REUSABLE COMPONENTS
+            // ============================================================
+            const Header = () => (
+                <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary }}>
+                    <div className="flex justify-between items-start">
+                        <div onClick={handleHdrClick} style={{ cursor: 'pointer' }}>
+                            <h1 className="text-lg font-bold text-white">Tutorial 3.1: The Architecture in Action</h1>
+                            <p className="text-sm mt-1" style={{ color: colors.earthLight }}>
+                                Bicycle retail chain &middot; pre-IPO &middot; ~25 min
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <a href="../index.html"
+                               className="p-2 rounded-lg hover:bg-white/10 text-white text-xl no-underline inline-flex items-center justify-center"
+                               title="Return to Main">🏠</a>
+                            <button onClick={reset}
+                                    className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                    title="Restart">↺</button>
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <div className="flex justify-between text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                            <span>Progress</span><span>{progress}%</span>
+                        </div>
+                        <div className="h-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+                            <div className="h-full rounded-full transition-all duration-500"
+                                 style={{ width: `${progress}%`, backgroundColor: colors.accent }} />
+                        </div>
+                    </div>
+                    {devMode && (
+                        <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                            <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>Dev: jump to stage</p>
+                            <div className="flex flex-wrap gap-1">
+                                {STAGE_LABELS.map((lab, i) => (
+                                    <button key={i} onClick={() => goTo(i)}
+                                            className="px-2 py-1 rounded text-xs border-0 cursor-pointer"
+                                            style={{
+                                                backgroundColor: stage === i ? 'white' : 'rgba(255,255,255,0.2)',
+                                                color: stage === i ? colors.primary : 'white'
+                                            }}>{lab}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            // Orange small-caps section label + body content (with optional formula box)
+            const NarrativeCard = ({ label, children }) => (
+                <div className="rounded-lg p-5 mb-4 bg-white"
+                     style={{ border: `1px solid ${colors.earthLight}` }}>
+                    <p className="font-bold text-sm uppercase tracking-wider mb-3" style={{ color: colors.accent }}>{label}</p>
+                    <div className="text-sm leading-relaxed" style={{ color: colors.earthDark }}>
+                        {children}
+                    </div>
+                </div>
+            );
+
+            const FormulaBox = ({ title, children }) => (
+                <div className="rounded-lg p-4 my-3" style={{ backgroundColor: colors.formulaBg }}>
+                    <p className="text-xs uppercase tracking-wider font-bold mb-3" style={{ color: colors.earth }}>{title}</p>
+                    <div className="text-sm space-y-2 mono" style={{ color: colors.earthDark }}>{children}</div>
+                </div>
+            );
+
+            const ClarifBox = ({ title, children }) => (
+                <div className="rounded-lg p-4 mb-4 border-2"
+                     style={{ backgroundColor: colors.clarBg, borderColor: colors.clarBorder }}>
+                    <p className="text-xs uppercase tracking-wider font-bold mb-2" style={{ color: colors.primary }}>{title}</p>
+                    <div className="text-sm leading-relaxed" style={{ color: colors.earthDark }}>{children}</div>
+                </div>
+            );
+
+            const AnnaBox = ({ children }) => (
+                <div className="rounded-lg p-4 mb-3 border-2"
+                     style={{ borderColor: colors.clayDark, backgroundColor: 'white' }}>
+                    <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.primary }}>ANNA</p>
+                    <div className="text-sm italic leading-relaxed" style={{ color: colors.earthDark }}>{children}</div>
+                </div>
+            );
+
+            // MCQ with OLI-style answer dynamic
+            const McqOptions = ({ options, correctIdx, selected, setSelected, feedback }) => (
+                <div className="space-y-2 mt-3">
+                    {options.map((opt, i) => {
+                        const isCorrect = selected === correctIdx;
+                        const isThisCorrect = i === correctIdx;
+                        const isSelected = selected === i;
+                        // Style: chosen-correct = green; non-chosen after correct = dim; default = neutral
+                        let bg = 'white', border = colors.earthLight, fg = colors.earthDark, opacity = 1;
+                        if (isCorrect && isThisCorrect) { bg = colors.successBg; border = colors.success; fg = '#166534'; }
+                        else if (isCorrect && !isThisCorrect) { opacity = 0.4; }
+                        else if (!isCorrect && isSelected) { bg = colors.errorBg; border = colors.error; fg = '#991b1b'; }
+                        return (
+                            <button key={i} onClick={() => setSelected(i)} disabled={isCorrect}
+                                    className="w-full p-3 rounded-lg border-2 text-left cursor-pointer disabled:cursor-default text-sm"
+                                    style={{ backgroundColor: bg, borderColor: border, color: fg, opacity }}>
+                                {opt}
+                            </button>
+                        );
+                    })}
+                    {selected === correctIdx && (
+                        <div className="rounded-lg p-3 mt-3"
+                             style={{ backgroundColor: colors.successBg, border: `1px solid ${colors.success}` }}>
+                            <p className="text-sm" style={{ color: '#166534' }}>✓ {feedback}</p>
+                        </div>
+                    )}
+                </div>
+            );
+
+            // Balance Sheet — `focus` is array of row keys to keep highlighted; everything else dims
+            // `narrow` shrinks when in 3-column layout
+            const BalanceSheet = ({ data, focus, narrow, title }) => {
+                const dimStyle = (key) => focus && !focus.includes(key) ? { color: colors.dim, opacity: 0.55 } : { color: colors.earthDark };
+                const focusStyle = (key) => focus && focus.includes(key) ? { fontWeight: 600 } : {};
+                const subtotalStyle = (key) => {
+                    const dim = focus && !focus.includes(key);
+                    return { color: dim ? colors.dim : colors.primary, fontWeight: 'bold', opacity: dim ? 0.55 : 1 };
+                };
+                const Row = ({ k, label, value, isSubtotal }) => (
+                    <div className="flex justify-between items-center py-1 text-sm">
+                        <span style={isSubtotal ? subtotalStyle(k) : { ...dimStyle(k), ...focusStyle(k) }}>{label}</span>
+                        <span className="mono" style={isSubtotal ? subtotalStyle(k) : { ...dimStyle(k), ...focusStyle(k) }}>${fmt(value)}</span>
+                    </div>
+                );
+                return (
+                    <div className="rounded-lg p-4 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <p className="font-bold mb-1" style={{ color: colors.primary }}>{title}</p>
+                        <p className="text-xs mb-3" style={{ color: colors.earth }}>{data.date} &middot; (in thousands)</p>
+                        <p className="text-xs uppercase tracking-wider font-semibold mb-1 pb-1"
+                           style={{ color: colors.primary, borderBottom: `1px solid ${colors.earthLight}` }}>Assets</p>
+                        {data.assets.map(a => <Row key={a.key} k={a.key} label={a.label} value={a.value} />)}
+                        <Row k="totalAssets" label="Total Assets" value={data.totalAssets} isSubtotal />
+                        <p className="text-xs uppercase tracking-wider font-semibold mt-3 mb-1 pb-1"
+                           style={{ color: colors.primary, borderBottom: `1px solid ${colors.earthLight}` }}>Liabilities</p>
+                        {data.liabilities.map(l => <Row key={l.key} k={l.key} label={l.label} value={l.value} />)}
+                        <Row k="totalLiabilities" label="Total Liabilities" value={data.totalLiabilities} isSubtotal />
+                        <p className="text-xs uppercase tracking-wider font-semibold mt-3 mb-1 pb-1"
+                           style={{ color: colors.primary, borderBottom: `1px solid ${colors.earthLight}` }}>Equity</p>
+                        {data.equity.map(e => <Row key={e.key} k={e.key} label={e.label} value={e.value} />)}
+                        <Row k="totalEquity" label="Total Equity" value={data.totalEquity} isSubtotal />
+                    </div>
+                );
+            };
+
+            // Cash Flow Statement
+            const CashFlowStatement = ({ withScenarios, withReconDrill }) => {
+                const signed = (s, v) => s === '−' ? `(${fmt(v)})` : `${fmt(v)}`;
+                const Row = ({ section, lineKey, line }) => {
+                    const open = cfsOpen[lineKey];
+                    const toggle = () => setCfsOpen({ ...cfsOpen, [lineKey]: !open });
+                    return (
+                        <div>
+                            <p className="text-xs uppercase tracking-wide mt-2" style={{ color: colors.earth }}>{section}</p>
+                            <div className="flex justify-between items-center py-2 text-sm" style={{ borderBottom: open ? 'none' : `1px solid ${colors.sand}` }}>
+                                <button onClick={toggle} disabled={!withScenarios}
+                                        className="flex items-center gap-1 border-0 bg-transparent cursor-pointer p-0"
+                                        style={{ color: colors.earthDark }}>
+                                    {line.label} {withScenarios && (open ? <span style={{ color: colors.accent }}>▲</span> : <span style={{ color: colors.accent }}>▼</span>)}
+                                </button>
+                                <span className="mono" style={{ color: line.sign === '−' ? colors.error : colors.earthDark }}>
+                                    {signed(line.sign, line.value)}
+                                </span>
+                            </div>
+                            {open && withScenarios && (
+                                <div className="rounded-lg p-3 my-2 text-sm leading-relaxed"
+                                     style={{ backgroundColor: colors.formulaBg, color: colors.earthDark, borderLeft: `3px solid ${colors.accent}` }}>
+                                    {cfs.scenarios[lineKey]}
+                                </div>
+                            )}
+                        </div>
+                    );
+                };
+                return (
+                    <div className="rounded-lg p-4 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <p className="font-bold mb-1" style={{ color: colors.primary }}>Cash Flow Statement</p>
+                        <p className="text-xs mb-3" style={{ color: colors.earth }}>Year T &middot; (in thousands)</p>
+                        <Row section="Operating" lineKey="operating" line={cfs.operating} />
+                        {withReconDrill && cfsOpen.operating && (
+                            <div className="rounded-lg p-3 my-2"
+                                 style={{ backgroundColor: 'white', borderLeft: `3px solid ${colors.accent}`, border: `1px solid ${colors.earthLight}` }}>
+                                <p className="text-xs uppercase tracking-wide font-bold mb-2" style={{ color: colors.primary }}>NET INCOME → CASH FROM OPERATIONS</p>
+                                <div className="mono text-sm space-y-1" style={{ color: colors.earthDark }}>
+                                    <div className="flex justify-between"><span>Net Income (from Income Statement)</span><span>${fmt(recon.startNI)}</span></div>
+                                    {recon.items.map((it, i) => (
+                                        <div key={i} className="flex justify-between" style={{ color: it.sign === '−' ? colors.error : colors.earthDark }}>
+                                            <span>{it.label}</span><span>{it.sign === '−' ? `(${fmt(it.value)})` : fmt(it.value)}</span>
+                                        </div>
+                                    ))}
+                                    <div className="flex justify-between pt-2 font-bold" style={{ borderTop: `1px solid ${colors.earthLight}`, color: colors.primary }}>
+                                        <span>Cash from Operations</span><span>${fmt(recon.endCFO)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        <Row section="Investing" lineKey="investing" line={cfs.investing} />
+                        <Row section="Financing" lineKey="financing" line={cfs.financing} />
+                        <div className="flex justify-between items-center py-2 mt-2 text-sm font-bold"
+                             style={{ borderTop: `2px solid ${colors.primary}`, color: colors.primary }}>
+                            <span>Net increase in cash</span><span className="mono">${fmt(cfs.netChange)}</span>
+                        </div>
+                        <p className="text-xs mt-2" style={{ color: colors.earth }}>* ( ) denotes a negative amount</p>
+                    </div>
+                );
+            };
+
+            // Statement of Changes in Equity
+            const SoCE = ({ withIsDrill }) => {
+                const toggle = () => setIsOpen(!isOpen);
+                return (
+                    <div className="rounded-lg p-4 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <p className="font-bold mb-1" style={{ color: colors.primary }}>Statement of Changes in Equity</p>
+                        <p className="text-xs mb-3" style={{ color: colors.earth }}>Year T &middot; (in thousands)</p>
+                        <div className="flex justify-between py-2 text-sm" style={{ borderBottom: `1px solid ${colors.sand}`, color: colors.earthDark }}>
+                            <span>Opening equity</span><span className="mono">${fmt(soce.openingEquity)}</span>
+                        </div>
+                        <div className={`flex justify-between py-2 text-sm ${isOpen && withIsDrill ? '' : ''}`}
+                             style={{ borderBottom: isOpen ? 'none' : `1px solid ${colors.sand}`,
+                                      backgroundColor: isOpen ? colors.yellowHi : 'transparent',
+                                      paddingLeft: isOpen ? '0.5rem' : 0, paddingRight: isOpen ? '0.5rem' : 0 }}>
+                            <button onClick={toggle} disabled={!withIsDrill}
+                                    className="flex items-center gap-1 border-0 bg-transparent cursor-pointer p-0"
+                                    style={{ color: colors.earthDark }}>
+                                Net income {withIsDrill && (isOpen ? <span style={{ color: colors.accent }}>▲</span> : <span style={{ color: colors.accent }}>▼</span>)}
+                            </button>
+                            <span className="mono" style={{ color: colors.earthDark }}>${fmt(soce.netIncome)}</span>
+                        </div>
+                        {isOpen && withIsDrill && (
+                            <div className="rounded-lg p-3 my-2"
+                                 style={{ backgroundColor: 'white', borderLeft: `3px solid ${colors.accent}`, border: `1px solid ${colors.earthLight}` }}>
+                                <p className="text-xs uppercase tracking-wider font-bold mb-2" style={{ color: colors.primary }}>Income Statement</p>
+                                <div className="mono text-sm space-y-1" style={{ color: colors.earthDark }}>
+                                    <div className="flex justify-between"><span>Revenue</span><span>${fmt(incomeStatement.revenue)}</span></div>
+                                    <div className="flex justify-between"><span>Cost of inventory sold</span><span style={{ color: colors.error }}>({fmt(incomeStatement.cogs)})</span></div>
+                                    <div className="flex justify-between font-bold pt-1" style={{ borderTop: `1px solid ${colors.sand}`, color: colors.primary }}>
+                                        <span>Gross profit</span><span>${fmt(incomeStatement.grossProfit)}</span>
+                                    </div>
+                                    <div className="flex justify-between"><span>Selling, general & administrative</span><span style={{ color: colors.error }}>({fmt(incomeStatement.sgna)})</span></div>
+                                    <div className="flex justify-between"><span>Depreciation</span><span style={{ color: colors.error }}>({fmt(incomeStatement.depreciation)})</span></div>
+                                    <div className="flex justify-between font-bold pt-1" style={{ borderTop: `1px solid ${colors.sand}`, color: colors.primary }}>
+                                        <span>Operating income</span><span>${fmt(incomeStatement.operatingIncome)}</span>
+                                    </div>
+                                    <div className="flex justify-between"><span>Interest expense</span><span style={{ color: colors.error }}>({fmt(incomeStatement.interest)})</span></div>
+                                    <div className="flex justify-between"><span>Pretax income</span><span>${fmt(incomeStatement.pretax)}</span></div>
+                                    <div className="flex justify-between"><span>Income tax</span><span style={{ color: colors.error }}>({fmt(incomeStatement.tax)})</span></div>
+                                    <div className="flex justify-between font-bold pt-2 text-base" style={{ borderTop: `2px solid ${colors.primary}`, color: colors.primary }}>
+                                        <span>Net income</span><span>${fmt(incomeStatement.netIncome)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex justify-between py-2 text-sm" style={{ borderBottom: `1px solid ${colors.sand}`, color: colors.earthDark }}>
+                            <span>Distributions to owners</span><span className="mono" style={{ color: colors.error }}>({fmt(soce.distributions)})</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 mt-2 text-sm font-bold"
+                             style={{ borderTop: `2px solid ${colors.primary}`, color: colors.primary }}>
+                            <span>Closing equity</span><span className="mono">${fmt(soce.closingEquity)}</span>
+                        </div>
+                        <p className="text-xs mt-2" style={{ color: colors.earth }}>* ( ) denotes a negative amount</p>
+                    </div>
+                );
+            };
+
+            const ContinueButton = ({ onClick, label, disabled }) => (
+                <button onClick={onClick} disabled={disabled}
+                        className="w-full py-3 rounded-lg font-bold text-white border-0 cursor-pointer disabled:cursor-not-allowed mb-4"
+                        style={{ backgroundColor: disabled ? colors.earth : colors.primary, opacity: disabled ? 0.5 : 1 }}>
+                    {label} →
+                </button>
+            );
+
+            // Layout helpers
+            const TwoColBS = ({ focus }) => (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                    <BalanceSheet data={opening} focus={focus} title="Opening Balance Sheet" />
+                    <BalanceSheet data={closing} focus={focus} title="Closing Balance Sheet" />
+                </div>
+            );
+
+            const ThreeColBridge = ({ focus, middle }) => (
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                    <BalanceSheet data={opening} focus={focus} title="Opening Balance Sheet" narrow />
+                    <div>{middle}</div>
+                    <BalanceSheet data={closing} focus={focus} title="Closing Balance Sheet" narrow />
+                </div>
+            );
+
+            // ============================================================
+            // STAGE RENDERERS
+            // ============================================================
+
+            const renderWelcome = () => (
+                <>
+                    <NarrativeCard label="Years Later">
+                        <p className="mb-3 italic">
+                            Several years on. The repair shop became a destination, then a small chain. You and Anna
+                            brought on staff, opened a second location, then a third, then three more. Anna pushed
+                            to add new-bike sales — first cautiously, then aggressively. Now you have six stores,
+                            ~80 employees, ~$8 million in revenue, and an underwriter circling.
+                        </p>
+                    </NarrativeCard>
+                    <AnnaBox>
+                        <p className="mb-2">
+                            "If we want to go public, we file with the SEC. They want three years of audited
+                            financial statements — GAAP, signed off by a CPA firm. We incorporated a few years
+                            ago, so that's done. But we've never produced a Statement of Cash Flows before.
+                            We're about to."
+                        </p>
+                        <p>
+                            "Let me walk you through what those statements are and how they fit together. We'll
+                            start with what you already know — two balance sheets — and build outward from there."
+                        </p>
+                    </AnnaBox>
+                    <ContinueButton onClick={advance} label="Start with the year-in-aggregate" />
+                </>
+            );
+
+            const renderAggregate = () => (
+                <>
+                    <NarrativeCard label="The Year in Aggregate">
+                        <p className="mb-3">
+                            Before the statements, here's what happened during Year T at the consolidated, six-store
+                            level. Twelve summary lines. These are the building blocks.
+                        </p>
+                    </NarrativeCard>
+
+                    <div className="rounded-lg p-5 mb-4 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs uppercase tracking-wider font-bold mb-2" style={{ color: colors.accent }}>What we brought in</p>
+                        <div className="mono text-sm space-y-1 mb-4" style={{ color: colors.earthDark }}>
+                            {aggregate.revenues.map((r, i) => (
+                                <div key={i} className="flex justify-between"><span>{r.label}</span><span>${fmt(r.value)}</span></div>
+                            ))}
+                        </div>
+                        <p className="text-xs uppercase tracking-wider font-bold mb-2" style={{ color: colors.accent }}>What we used up doing the work</p>
+                        <div className="mono text-sm space-y-1 mb-4" style={{ color: colors.earthDark }}>
+                            {aggregate.expenses.map((e, i) => (
+                                <div key={i} className="flex justify-between"><span>{e.label}</span><span>${fmt(e.value)}</span></div>
+                            ))}
+                        </div>
+                        <p className="text-xs uppercase tracking-wider font-bold mb-2" style={{ color: colors.accent }}>Other things that happened with cash</p>
+                        <div className="mono text-sm space-y-1" style={{ color: colors.earthDark }}>
+                            {aggregate.other.map((o, i) => (
+                                <div key={i} className="flex justify-between">
+                                    <span>{o.label}</span>
+                                    <span style={{ color: o.sign === '−' ? colors.error : colors.earthDark }}>
+                                        {o.sign === '−' ? `(${fmt(o.value)})` : `${fmt(o.value)}`}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <AnnaBox>
+                        <p className="mb-2">
+                            "These have names. The first three are <strong>Revenues</strong> — what we earned by
+                            doing our work. The next seven are <strong>Expenses</strong> — what we used up doing it.
+                            Revenues minus Expenses gives us <strong>Net Income</strong>:
+                            $8,200 − $7,260 = <strong>$940</strong>. Three new words for three things you already
+                            see on the page."
+                        </p>
+                        <p>
+                            "The last two — the store buildout and the net financing — aren't revenues or expenses.
+                            They moved cash but they're different kinds of moves. We'll see where they land in a
+                            minute."
+                        </p>
+                    </AnnaBox>
+                    <ContinueButton onClick={advance} label="Now look at the two balance sheets" />
+                </>
+            );
+
+            const renderSnapshots = () => (
+                <>
+                    <NarrativeCard label="Two Snapshots">
+                        <p className="mb-3">
+                            Here are the consolidated balance sheets at the beginning and end of Year T. Each one
+                            is a snapshot of the entity's financial position at a specific moment. The identity
+                            holds at both: Assets − Liabilities = Equity.
+                        </p>
+                        <p className="mb-3">
+                            The two snapshots are not the same. Cash changed. Inventory changed. PP&E changed.
+                            Bank loan changed. Retained earnings changed. The Balance Sheets alone tell you{' '}
+                            <em>what</em> changed; they don't tell you <em>why</em>. The other statements do
+                            that work.
+                        </p>
+                    </NarrativeCard>
+                    <TwoColBS focus={null} />
+                    <div className="text-center mb-4 text-sm mono" style={{ color: colors.primary }}>
+                        Opening: $3,970 − $1,470 = $2,500 ✓ &nbsp;&middot;&nbsp; Closing: $5,125 − $1,765 = $3,360 ✓
+                    </div>
+                    <ContinueButton onClick={advance} label="Start with Cash" />
+                </>
+            );
+
+            const renderCashMcq = () => (
+                <>
+                    <NarrativeCard label="The Cash Path">
+                        <p className="mb-3">
+                            Look at the <strong style={{ color: colors.primary }}>Cash</strong> line in the two
+                            Balance Sheets. Cash increased from <strong style={{ color: colors.primary }}>$850</strong> to{' '}
+                            <strong style={{ color: colors.primary }}>$1,180</strong> over the year — up $330.
+                        </p>
+                        <p className="font-semibold mt-3" style={{ color: colors.earthDark }}>
+                            Which financial statement would you look at to understand why Cash increased by $330?
+                        </p>
+                        <McqOptions
+                            options={['Income Statement', 'Cash Flow Statement', 'Statement of Changes in Equity']}
+                            correctIdx={1}
+                            selected={cashAns}
+                            setSelected={setCashAns}
+                            feedback="The Cash Flow Statement gives more detail about why Cash changed during the period."
+                        />
+                    </NarrativeCard>
+                    <TwoColBS focus={['cash']} />
+                    <ContinueButton onClick={advance} label="See the Cash Flow Statement" disabled={cashAns !== 1} />
+                </>
+            );
+
+            const renderCfsReveal = () => (
+                <>
+                    <NarrativeCard label="The Cash Path">
+                        <p className="mb-3">
+                            The <strong style={{ color: colors.primary }}>Cash Flow Statement</strong> gives more
+                            detail about why Cash changed. It splits the net change in cash into{' '}
+                            <strong style={{ color: colors.primary }}>operating</strong>,{' '}
+                            <strong style={{ color: colors.primary }}>investing</strong>, and{' '}
+                            <strong style={{ color: colors.primary }}>financing</strong> cash flows.
+                        </p>
+                        <FormulaBox title="How did Cash change?">
+                            <p><strong>From the Balance Sheets:</strong> Change in Cash = Closing Cash − Opening Cash</p>
+                            <p><strong>From the Cash Flow Statement:</strong> Net Change in Cash = Operating + Investing + Financing</p>
+                        </FormulaBox>
+                        <p className="text-sm">Click each cash flow category (▼) to see what it captures.</p>
+                    </NarrativeCard>
+                    <ThreeColBridge focus={['cash']} middle={<CashFlowStatement withScenarios />} />
+                    <ClarifBox title="About classification">
+                        <p>
+                            <strong>Operating</strong>, <strong>Investing</strong>, and <strong>Financing</strong> are
+                            conventions, not tight definitions. FASB gives examples of what belongs in each section
+                            rather than bright-line rules. The examples cover most of what businesses do; edge cases
+                            get argued case by case. Don't read these section labels as if they derived from the
+                            underlying activity — they're labels the convention assigns, and the convention is loose
+                            at the edges.
+                        </p>
+                    </ClarifBox>
+                    <ContinueButton onClick={advance} label="Now look at Equity" />
+                </>
+            );
+
+            const renderEquityMcq = () => (
+                <>
+                    <NarrativeCard label="The Equity Path">
+                        <p className="mb-3">
+                            Now look at <strong style={{ color: colors.primary }}>Total Equity</strong> in the two
+                            Balance Sheets. It increased from <strong style={{ color: colors.primary }}>$2,500</strong>{' '}
+                            to <strong style={{ color: colors.primary }}>$3,360</strong> over the year — up $860.
+                        </p>
+                        <p className="font-semibold mt-3" style={{ color: colors.earthDark }}>
+                            Which financial statement would you look at to understand why Total Equity increased by $860?
+                        </p>
+                        <McqOptions
+                            options={['Income Statement', 'Cash Flow Statement', 'Statement of Changes in Equity']}
+                            correctIdx={2}
+                            selected={equityAns}
+                            setSelected={setEquityAns}
+                            feedback="The Statement of Changes in Equity gives more detail about why Total Equity changed during the period."
+                        />
+                    </NarrativeCard>
+                    <TwoColBS focus={['totalEquity']} />
+                    <ContinueButton onClick={advance} label="See the Statement of Changes in Equity" disabled={equityAns !== 2} />
+                </>
+            );
+
+            const renderSoceReveal = () => (
+                <>
+                    <NarrativeCard label="The Equity Path">
+                        <p className="mb-3">
+                            The <strong style={{ color: colors.primary }}>Statement of Changes in Equity</strong>{' '}
+                            gives more detail about why Total Equity changed. In this period, Common Stock didn't
+                            move (no shares issued); the residual change was driven by net income earned during the
+                            year, partly offset by distributions to owners.
+                        </p>
+                        <FormulaBox title="How did Equity change?">
+                            <p><strong>From the Balance Sheets:</strong> Change in Equity = Closing Equity − Opening Equity</p>
+                            <p><strong>From the Statement of Changes in Equity:</strong> Closing Equity = Opening Equity + Net Income − Distributions</p>
+                            <p><strong>Therefore:</strong> Net Income − Distributions = Change in Equity</p>
+                        </FormulaBox>
+                        <p className="text-sm">
+                            One important line in this statement is <strong style={{ color: colors.primary }}>Net Income</strong>.
+                            Next, we'll look at where that line comes from.
+                        </p>
+                    </NarrativeCard>
+                    <ThreeColBridge focus={['totalEquity']} middle={<SoCE />} />
+                    <ContinueButton onClick={advance} label="Where does Net Income come from?" />
+                </>
+            );
+
+            const renderNiMcq = () => (
+                <>
+                    <NarrativeCard label="The Net Income Path">
+                        <p className="mb-3">
+                            In the Statement of Changes in Equity, <strong style={{ color: colors.primary }}>Net
+                            Income</strong> appears as a single line: <strong style={{ color: colors.primary }}>$940</strong>.
+                            It rolls up the year's revenues and expenses.
+                        </p>
+                        <p className="font-semibold mt-3" style={{ color: colors.earthDark }}>
+                            Which financial statement would you look at to understand why Net Income is $940?
+                        </p>
+                        <McqOptions
+                            options={['Income Statement', 'Cash Flow Statement', 'Statement of Changes in Equity']}
+                            correctIdx={0}
+                            selected={niAns}
+                            setSelected={setNiAns}
+                            feedback="The Income Statement gives more detail about how Net Income was determined."
+                        />
+                    </NarrativeCard>
+                    <div className="mb-4">
+                        <SoCE />
+                    </div>
+                    <ContinueButton onClick={advance} label="See the Income Statement" disabled={niAns !== 0} />
+                </>
+            );
+
+            const renderIsReveal = () => (
+                <>
+                    <NarrativeCard label="The Net Income Path">
+                        <p className="mb-3">
+                            The <strong style={{ color: colors.primary }}>Income Statement</strong> shows the
+                            Revenue and Expenses behind Net Income.
+                        </p>
+                        <FormulaBox title="How is Net Income determined?">
+                            <p><strong>From the Income Statement:</strong> Net Income = Revenue − Expenses</p>
+                            <p style={{ color: colors.earth }}>(Subtotals shown along the way: Gross Profit, Operating Income, Pretax Income.)</p>
+                        </FormulaBox>
+                        <p className="text-sm">
+                            Click the <span style={{ color: colors.accent }}>▼</span> next to <em>Net income</em>{' '}
+                            inside the Statement of Changes in Equity below to open the Income Statement inline.
+                        </p>
+                        <ClarifBox title="A note about the layout">
+                            <p>
+                                In real financial reporting, the Income Statement and the Statement of Changes in
+                                Equity are two separate statements. In this activity we nest one inside the other so
+                                you can see the connection: the Net Income on the Income Statement <em>is</em> the
+                                Net Income line on the Statement of Changes in Equity.
+                            </p>
+                        </ClarifBox>
+                    </NarrativeCard>
+                    <div className="mb-4">
+                        <SoCE withIsDrill />
+                    </div>
+                    <ContinueButton onClick={advance} label="Compare Net Income to Cash from Operations" />
+                </>
+            );
+
+            const renderNiCfoMcq = () => (
+                <>
+                    <NarrativeCard label="The Net Income — Cash Flow Gap">
+                        <p className="mb-3">
+                            Notice something. <strong style={{ color: colors.primary }}>Net Income</strong> for the
+                            year was <strong style={{ color: colors.primary }}>$940</strong>. But{' '}
+                            <strong style={{ color: colors.primary }}>Cash from Operations</strong> was only{' '}
+                            <strong style={{ color: colors.primary }}>$860</strong>. Different numbers. Both measure
+                            something about the year's operating activity.
+                        </p>
+                        <p className="font-semibold mt-3" style={{ color: colors.earthDark }}>
+                            Why aren't they the same?
+                        </p>
+                        <McqOptions
+                            options={[
+                                "They're supposed to be the same — there's a typo somewhere.",
+                                "Cash from Operations only counts cash sales; Net Income counts credit sales too. The gap is the credit-sales portion.",
+                                "Some income statement items don't move cash this period (depreciation), and some cash moves don't show up on the income statement (working capital changes). The gap reconciles the two."
+                            ]}
+                            correctIdx={2}
+                            selected={niCfoAns}
+                            setSelected={setNiCfoAns}
+                            feedback="Net Income and Cash from Operations measure different things. The reconciliation bridges them."
+                        />
+                    </NarrativeCard>
+                    <ContinueButton onClick={advance} label="See the reconciliation" disabled={niCfoAns !== 2} />
+                </>
+            );
+
+            const renderReconReveal = () => {
+                // Ensure Operating is expanded so the recon drill is visible
+                if (!cfsOpen.operating) setCfsOpen({ ...cfsOpen, operating: true });
+                return (
+                    <>
+                        <NarrativeCard label="The Net Income — Cash Flow Gap">
+                            <p className="mb-3">
+                                The <strong style={{ color: colors.primary }}>NI → CFO reconciliation</strong> walks
+                                from Net Income to Cash from Operations one adjustment at a time. Two kinds of
+                                adjustments do the work:
+                            </p>
+                            <FormulaBox title="What's in the reconciliation?">
+                                <p><strong>Non-cash expenses</strong> (like depreciation): added back. They reduced
+                                Net Income but didn't actually take cash out.</p>
+                                <p><strong>Working capital changes</strong> (AR, inventory, AP, accrued): subtract
+                                or add based on direction. Growing receivables and inventory absorb cash even though
+                                they don't hit Net Income directly.</p>
+                            </FormulaBox>
+                            <p className="text-sm">
+                                Click the <span style={{ color: colors.accent }}>▲</span> next to <em>Cash from
+                                operations</em> inside the Cash Flow Statement to see the full reconciliation expanded
+                                in place. We've opened it for you.
+                            </p>
+                            <ClarifBox title="About the method">
+                                <p>
+                                    This is the <strong>indirect method</strong> of presenting Cash from Operations
+                                    — starts from Net Income, adjusts for non-cash items and working capital changes.
+                                    The <strong>direct method</strong> would list operating cash receipts and payments
+                                    directly. Both arrive at the same Cash from Operations number. US filers mostly
+                                    use the indirect method by convention; it's permitted, not required.
+                                </p>
+                            </ClarifBox>
+                        </NarrativeCard>
+                        <ThreeColBridge focus={['cash']} middle={<CashFlowStatement withScenarios withReconDrill />} />
+                        <div className="text-center mb-4 text-sm mono" style={{ color: colors.primary }}>
+                            $940 NI → +$200 depreciation − $280 net working capital uses = $860 CFO
+                        </div>
+                        <ContinueButton onClick={advance} label="Synthesize the architecture" />
+                    </>
+                );
+            };
+
+            const renderSynthesis = () => (
+                <>
+                    <div className="text-center mb-6">
+                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
+                             style={{ backgroundColor: colors.accent }}>
+                            <span className="text-4xl">🏛️</span>
+                        </div>
+                        <h2 className="text-2xl font-bold" style={{ color: colors.primary }}>The Accounting System</h2>
+                    </div>
+                    <NarrativeCard label="What you just built">
+                        <p className="mb-3">
+                            You started with two snapshots of the entity (the Balance Sheets at beginning and end of
+                            year). The other statements explained the change between them:
+                        </p>
+                        <ul className="space-y-2 mb-3 text-sm">
+                            <li>
+                                <strong style={{ color: colors.primary }}>Cash Flow Statement</strong> — explains the
+                                change in Cash. Three sections: Operating, Investing, Financing.
+                            </li>
+                            <li>
+                                <strong style={{ color: colors.primary }}>Statement of Changes in Equity</strong> —
+                                explains the change in Total Equity. Net Income plus contributions minus distributions.
+                            </li>
+                            <li>
+                                <strong style={{ color: colors.primary }}>Income Statement</strong> — explains where
+                                Net Income came from. Revenue minus Expenses.
+                            </li>
+                            <li>
+                                <strong style={{ color: colors.primary }}>NI → CFO reconciliation</strong> — bridges
+                                Net Income to Cash from Operations. Non-cash expenses + working capital changes.
+                            </li>
+                        </ul>
+                        <p>
+                            These four statements aren't separate reports that happen to fit together. Each one
+                            explains a different part of the change between the two Balance Sheets. The 12 aggregate
+                            lines you started with all land somewhere — in the Income Statement (the seven expenses
+                            and three revenues), in the Cash Flow Statement (CapEx as investing, financing activity),
+                            and the working capital changes (implicit in the Balance Sheet movements) show up in the
+                            reconciliation.
+                        </p>
+                    </NarrativeCard>
+                    <ClarifBox title="What this activity simplified">
+                        <p className="mb-2">
+                            We focused on the four statements and the connections between them. The numbers reconcile
+                            cleanly because we set them up to. Real audited financial statements have many more lines
+                            and many more conventions to apply.
+                        </p>
+                        <p className="mb-2">
+                            We did not walk the changes in Non-cash assets and Liabilities individually. Those changes
+                            also flow through the four statements — Inventory and AR changes through the reconciliation,
+                            PP&E through Investing + Depreciation, the bank loan through Financing — but tracing each
+                            of those movements individually is its own exercise.
+                        </p>
+                        <p>
+                            Module 4 takes the architecture you just built and points it at real audited statements:
+                            CVS Health (a public for-profit under US GAAP) and Yale University (a nonprofit under
+                            FASB's nonprofit standards). The skeleton you'll see there is this one. The customizations
+                            live on top.
+                        </p>
+                    </ClarifBox>
+                    <a href="../index.html"
+                       className="block w-full py-3 rounded-lg font-bold text-white text-center no-underline mb-4"
+                       style={{ backgroundColor: colors.primary }}>
+                        Return to Main →
+                    </a>
+                </>
+            );
+
+            // ============================================================
+            // DISPATCH
+            // ============================================================
+            const stageContent = (() => {
+                if (stage === STAGE_WELCOME) return renderWelcome();
+                if (stage === STAGE_AGGREGATE) return renderAggregate();
+                if (stage === STAGE_SNAPSHOTS) return renderSnapshots();
+                if (stage === STAGE_CASH_MCQ) return renderCashMcq();
+                if (stage === STAGE_CFS) return renderCfsReveal();
+                if (stage === STAGE_EQUITY_MCQ) return renderEquityMcq();
+                if (stage === STAGE_SOCE) return renderSoceReveal();
+                if (stage === STAGE_NI_MCQ) return renderNiMcq();
+                if (stage === STAGE_IS) return renderIsReveal();
+                if (stage === STAGE_NICFO_MCQ) return renderNiCfoMcq();
+                if (stage === STAGE_RECON) return renderReconReveal();
+                if (stage === STAGE_SYNTHESIS) return renderSynthesis();
+                return null;
+            })();
+
+            return (
+                <div className="max-w-6xl mx-auto p-4">
+                    <Header />
+
+                    <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#fef9e7', border: `2px solid ${colors.accent}` }}>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            <strong>Mockup:</strong> Tutorial 3.1 ("The Architecture in Action"). The bike-shop has grown
+                            into a six-store retail chain and is preparing for an IPO. Twelve aggregate items from Year T
+                            drive a walk through the four financial statements via the OLI-style "which statement explains
+                            this change?" pattern. Extends the OLI exercise with the NI→CFO reconciliation as its own beat.
+                            "By convention" framing replaces OLI's "because" claims about CFS classification.
+                        </p>
+                    </div>
+
+                    {stageContent}
+
+                    <div className="mt-6 p-4 rounded-lg bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <div className="flex justify-between items-start mb-2">
+                            <p className="text-sm font-bold" style={{ color: colors.primary }}>For refinement</p>
+                            <button onClick={reset} className="text-xs underline border-0 bg-transparent cursor-pointer" style={{ color: colors.earth }}>Reset</button>
+                        </div>
+                        <ul className="text-sm space-y-1 list-disc list-inside" style={{ color: colors.earthDark }}>
+                            <li><strong>12 stages</strong>: welcome → aggregate (12 items + R/E intro) → two snapshots → Cash MCQ → CFS reveal → Equity MCQ → SoCE reveal → Net Income MCQ → IS reveal (inline-nested via SoCE's Net income ▼) → NI-CFO gap MCQ → reconciliation reveal (inline-nested via CFS's Cash from operations ▼) → synthesis.</li>
+                            <li><strong>OLI dynamics adopted</strong>: orange small-caps section labels, two→three column bridge layout (BS | statement | BS) on each reveal, dimming-not-highlighting focus (only the line being asked about stays at full strength), MCQ green-on-correct with others fading, HOW DID X CHANGE? formula boxes, ▼ scenarios on each CFS line, inline-nested IS inside the SoCE Net income row (yellow row highlight + accent left-bar on the embedded child card).</li>
+                            <li><strong>Extensions beyond OLI</strong>: (1) Year-in-aggregate stage with 12 items before the architecture walk; doubles as the introduction of Revenues, Expenses, Net Income as named categories. (2) NI→CFO reconciliation as a fourth MCQ + reveal beat, mirroring the IS-inside-SoCE drilldown pattern (reconciliation appears inline inside the CFS Operating row).</li>
+                            <li><strong>"By convention" framing</strong> replaces OLI's "because" claims. CFS scenarios end with "By convention, [section] captures [kind of cash flow]" rather than "Because this cash came from X, it appears under Y." An ABOUT CLASSIFICATION clarifBox flags that Operating/Investing/Financing are loose conventions (FASB gives examples, not bright-line definitions) and edge cases exist.</li>
+                            <li><strong>Numbers reconcile</strong>: Opening BS (3,970 − 1,470 = 2,500). Closing BS (5,125 − 1,765 = 3,360). NI 940 = Revenue 8,200 − Expenses 7,260. SoCE 2,500 + 940 − 80 = 3,360. CFS net 860 − 650 + 120 = 330 = ΔCash. Recon 940 + 200 dep − 25 AR − 350 inv + 80 AP + 15 accrued = 860 CFO.</li>
+                            <li><strong>Single-click MCQ</strong>: clicking the wrong option marks it red; correct option still selectable. (OLI implements differently — wrong options aren't marked red — but a no-penalty retry-until-correct flow keeps the activity from being a gotcha.)</li>
+                            <li><strong>Dev mode</strong>: triple-click the header to reveal a stage-jump bar (welcome / aggregate / snapshots / cash MCQ / CFS / ... / synthesis).</li>
+                            <li><strong>What's deferred to other activities</strong>: Non-cash asset / liability tracing (3.3 in the planned Module 3 list), end-to-end practice (3.4), NFP version (Module 4). IS doesn't get its own three-column reveal because it's introduced via the inline-nest inside SoCE's Net income drilldown.</li>
+                        </ul>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 1.5: Naming What You Built</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="min-h-screen" style="background-color: #f5f1e8;">
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        const { useState } = React;
+
+        const colors = {
+            primary: '#00356b', sand: '#f5f1e8', earth: '#8b7355', earthLight: '#d4c4a8',
+            earthDark: '#5c4d3d', accent: '#c9a227', clayLight: '#e8dcc8', clayDark: '#a08050',
+            success: '#22c55e', successBg: '#f0fdf4', warning: '#f59e0b', warningBg: '#fffbeb',
+            error: '#dc2626', errorBg: '#fef2f2',
+        };
+
+        const App = () => {
+            const [step, setStep] = useState(0);
+            const [renameStage, setRenameStage] = useState(0);  // 0 = nothing renamed, 1/2/3 = Things/Promises/Reasons revealed
+            const [devMode, setDevMode] = useState(false);
+            const [headerClickCount, setHeaderClickCount] = useState(0);
+
+            const TOTAL_STEPS = 7;
+            const progress = Math.round((step / TOTAL_STEPS) * 100);
+
+            const handleHeaderClick = () => {
+                const n = headerClickCount + 1;
+                setHeaderClickCount(n);
+                if (n >= 3) { setDevMode(!devMode); setHeaderClickCount(0); }
+            };
+            const advance = () => setStep(step + 1);
+            const reset = () => { setStep(0); setRenameStage(0); };
+
+            // Reusable components
+            const NarrativeBlock = ({ children }) => (
+                <div className="p-4 rounded-lg mb-4 italic"
+                     style={{ backgroundColor: colors.sand, borderLeft: `4px solid ${colors.accent}`, color: '#374151' }}>
+                    {children}
+                </div>
+            );
+            const AnnaBox = ({ children }) => (
+                <div className="rounded-lg p-4 mb-3 border-2"
+                     style={{ borderColor: colors.clayDark, backgroundColor: 'white' }}>
+                    <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.primary }}>ANNA</p>
+                    <div className="text-sm italic" style={{ color: colors.earthDark }}>{children}</div>
+                </div>
+            );
+            const KeyInsightBox = ({ children }) => (
+                <div className="p-4 rounded-lg border-2 mb-4"
+                     style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}>
+                    <div className="flex items-start gap-3">
+                        <span className="text-lg flex-shrink-0 mt-0.5" style={{ color: colors.accent }}>💡</span>
+                        <div style={{ color: colors.earthDark }}>{children}</div>
+                    </div>
+                </div>
+            );
+            const ContinueButton = ({ onClick, children = 'Continue', disabled = false }) => (
+                <button onClick={onClick} disabled={disabled}
+                        className="w-full py-3 rounded-lg font-bold text-white border-0 cursor-pointer disabled:cursor-not-allowed mb-4"
+                        style={{ backgroundColor: disabled ? colors.earth : colors.primary, opacity: disabled ? 0.5 : 1 }}>
+                    {children} →
+                </button>
+            );
+
+            // ============================================================
+            // STEP RENDERERS
+            // ============================================================
+            const renderWelcome = () => (
+                <>
+                    <NarrativeBlock>
+                        Step out of the shop for a minute. Anna leans back at the workbench.
+                    </NarrativeBlock>
+                    <AnnaBox>
+                        "What you just built — Things, Promises, the surviving Reasons — has a long history.
+                        Longer than you'd think. And modern names that mostly fit, plus one that doesn't really.
+                        Let me walk you through both. Quickly. Because the words matter when you start reading
+                        statements other people prepared."
+                    </AnnaBox>
+                    <ContinueButton onClick={advance}>Start with the history</ContinueButton>
+                </>
+            );
+
+            const renderBabylonians = () => (
+                <>
+                    <NarrativeBlock>
+                        <p className="font-medium not-italic mb-1" style={{ color: colors.earthDark }}>
+                            Mesopotamia, around 3000 BCE.
+                        </p>
+                        <p className="text-sm">
+                            Scribes pressed wedge-shaped marks into clay tablets. Storehouses kept track of grain.
+                            Tax collectors kept track of livestock. Lenders kept track of who owed what to whom.
+                        </p>
+                    </NarrativeBlock>
+                    <div className="rounded-lg p-4 mb-4 mono text-sm"
+                         style={{ backgroundColor: '#fafaf7', border: `1px solid ${colors.earthLight}`, color: colors.earthDark }}>
+                        <p className="text-xs uppercase tracking-wide mb-2" style={{ color: colors.earth }}>From a tablet, paraphrased:</p>
+                        <p>1,200 measures of barley · in the great storehouse</p>
+                        <p>40 sheep · branded for Lugal-zagesi</p>
+                        <p>30 measures of barley · owed by Ur-Nammu, to be paid at harvest</p>
+                        <p>20 measures of grain · owed by the temple, due next moon</p>
+                    </div>
+                    <AnnaBox>
+                        "Look at it. It's a list of things — barley, sheep — and a list of promises — who owes
+                        what, when. They had two tabs. Things and Promises. By 5,000 years ago, people had
+                        figured this much out. That part of what you just built isn't new."
+                    </AnnaBox>
+                    <ContinueButton onClick={advance}>What was missing</ContinueButton>
+                </>
+            );
+
+            const renderPacioli = () => (
+                <>
+                    <NarrativeBlock>
+                        <p className="font-medium not-italic mb-1" style={{ color: colors.earthDark }}>
+                            Northern Italy, 1494.
+                        </p>
+                        <p className="text-sm">
+                            A Franciscan friar named Luca Pacioli publishes <em>Summa de Arithmetica</em> — a long
+                            book about math, with a section called <em>Particularis de Computis et Scripturis</em>.
+                            "On Reckonings and Writings." He didn't invent what he wrote about. Italian merchants
+                            had been doing it for two centuries already. He wrote it down so apprentices could learn it.
+                        </p>
+                    </NarrativeBlock>
+                    <AnnaBox>
+                        "Pacioli's contribution: he closed the system. Every transaction touches exactly two sides.
+                        Things, Promises, and a third tab — Reasons — for whatever's left. The Reasons you would have
+                        kept after the prune. The system you just built? That's what's in Pacioli."
+                    </AnnaBox>
+                    <KeyInsightBox>
+                        <p className="font-semibold mb-2">Four and a half thousand years between the tablets and the friar.</p>
+                        <p>
+                            Things and Promises were the easy half. Closing the system with Reasons took much longer.
+                            People experimented; what survived was what apprentices could learn from each other. The
+                            need to teach the next generation shaped what got written down — and what got named.
+                        </p>
+                    </KeyInsightBox>
+                    <ContinueButton onClick={advance}>The first naming move</ContinueButton>
+                </>
+            );
+
+            const renderEntity = () => (
+                <>
+                    <NarrativeBlock>
+                        Before Pacioli's two-sided rule can run, one thing has to be settled.
+                    </NarrativeBlock>
+                    <AnnaBox>
+                        "Whose books? You can't keep track of Things and Promises until you know which Things and
+                        whose Promises. Your shop. Your apartment. A guild. A charity. A church. Each one its
+                        own subject. The first move in any system of books is to name the subject. The convention
+                        calls it the <strong>entity</strong>."
+                    </AnnaBox>
+                    <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-sm font-bold mb-3" style={{ color: colors.primary }}>What gets to be an entity?</p>
+                        <p className="text-sm mb-3" style={{ color: colors.earthDark }}>
+                            Anything you can draw a clear boundary around — what's in it, what isn't. A specific shop.
+                            A specific person. A specific organization. The boundary is the work; the name follows.
+                        </p>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="p-2 rounded" style={{ backgroundColor: colors.successBg, border: `1px solid ${colors.success}`, color: '#166534' }}>
+                                <p className="font-bold mb-1">✓ Entity</p>
+                                <p className="text-xs">Your bike shop. Anna. Yale University. A neighborhood food bank.</p>
+                            </div>
+                            <div className="p-2 rounded" style={{ backgroundColor: colors.errorBg, border: `1px solid ${colors.error}`, color: '#991b1b' }}>
+                                <p className="font-bold mb-1">✗ Not an entity</p>
+                                <p className="text-xs">The bicycle industry. Smith's deposit. The shop's cash register. "Last quarter."</p>
+                            </div>
+                        </div>
+                    </div>
+                    <AnnaBox>
+                        "The not-entity examples? Industries are too aggregated — they're made up of entities, not
+                        one of them. Transactions and physical objects are things that happen <em>to</em> an entity,
+                        not entities themselves. Time periods aren't entities either; they're slices of an entity's life.
+                        Naming the entity is harder than it sounds — and getting it wrong messes up everything that follows."
+                    </AnnaBox>
+                    <ContinueButton onClick={advance}>Now the renaming</ContinueButton>
+                </>
+            );
+
+            const renderRenaming = () => {
+                const showThings    = renameStage >= 1;
+                const showPromises  = renameStage >= 2;
+                const showReasons   = renameStage >= 3;
+
+                const RenameRow = ({ intuitive, formal, definition, shown }) => (
+                    <div className="rounded-lg p-3 mb-2"
+                         style={{
+                             border: `1px solid ${shown ? colors.accent : colors.earthLight}`,
+                             backgroundColor: shown ? '#fef9e7' : 'white',
+                         }}>
+                        <div className="flex items-center gap-3">
+                            <span className="font-medium text-sm" style={{ color: colors.earthDark, minWidth: '120px' }}>{intuitive}</span>
+                            <span style={{ color: colors.earth }}>→</span>
+                            <span className="font-bold text-sm" style={{ color: shown ? colors.primary : colors.earthLight, minWidth: '90px' }}>
+                                {shown ? formal : '?????'}
+                            </span>
+                            {shown && (
+                                <span className="text-xs italic" style={{ color: colors.earth }}>{definition}</span>
+                            )}
+                        </div>
+                    </div>
+                );
+
+                return (
+                    <>
+                        <NarrativeBlock>
+                            The system you built has names. Some of them are pretty good. One of them isn't.
+                        </NarrativeBlock>
+                        <div className="mb-4">
+                            <RenameRow intuitive="Things"   formal="Assets"      definition='"A present right to an economic benefit."' shown={showThings} />
+                            <RenameRow intuitive="Promises" formal="Liabilities" definition='"A present obligation to transfer an economic benefit."' shown={showPromises} />
+                            <RenameRow intuitive="surviving Reasons" formal="Equities"     definition="The definitional residual. A − L = Equities." shown={showReasons} />
+                        </div>
+
+                        {renameStage === 0 && (
+                            <AnnaBox>
+                                "Three substitutions. Click through and I'll tell you about each one."
+                            </AnnaBox>
+                        )}
+                        {renameStage === 1 && (
+                            <AnnaBox>
+                                <p className="mb-2">
+                                    "<strong>Things</strong> become <strong>Assets</strong>. The convention's definition is
+                                    'a present right to an economic benefit.' That's the same idea as <em>things that
+                                    benefit the entity</em> — same content, more formal phrasing. Notice what it doesn't say:
+                                    it doesn't say <em>owns</em>. It says <em>has a present right to</em>. That's deliberate —
+                                    a leased forklift is an asset (right to use it) even if title is somewhere else."
+                                </p>
+                            </AnnaBox>
+                        )}
+                        {renameStage === 2 && (
+                            <AnnaBox>
+                                <p className="mb-2">
+                                    "<strong>Promises</strong> become <strong>Liabilities</strong>. Same definition shape —
+                                    'a present obligation to transfer an economic benefit.' Promises of the entity. Whatever
+                                    you've committed to deliver later — cash, work, parts, something. The word changes;
+                                    the idea doesn't."
+                                </p>
+                            </AnnaBox>
+                        )}
+                        {renameStage === 3 && (
+                            <>
+                                <AnnaBox>
+                                    <p className="mb-2">
+                                        "Now the awkward one. The surviving Reasons — the ones that didn't get pruned —
+                                        sum to Assets minus Liabilities. The convention calls this the <strong>residual</strong>.
+                                        It's a definitional difference, not a thing you can point at. The for-profit name for
+                                        it is <em>Equity</em>. Singular. As if it were one coherent thing the owners have."
+                                    </p>
+                                    <p className="mb-2">
+                                        "But it isn't. It's the difference between two recorded lists — whatever the convention
+                                        let onto Assets minus whatever it let onto Liabilities. We'll write <strong>Equities</strong>,
+                                        plural, to keep that straight. Same arithmetic; better name."
+                                    </p>
+                                </AnnaBox>
+                                <KeyInsightBox>
+                                    <p className="font-semibold mb-2">Equities is what's left, by definition.</p>
+                                    <p>
+                                        Not what the owners would walk away with. Not the value of the business.
+                                        Just the recorded Assets minus the recorded Liabilities, with all the gaps and
+                                        path dependence baked in. The label "Equity" obscures this. The plural keeps
+                                        the residual nature visible.
+                                    </p>
+                                </KeyInsightBox>
+                            </>
+                        )}
+
+                        {renameStage < 3 ? (
+                            <button onClick={() => setRenameStage(renameStage + 1)}
+                                    className="w-full py-3 rounded-lg font-bold text-white border-0 cursor-pointer mb-4"
+                                    style={{ backgroundColor: colors.accent }}>
+                                {renameStage === 0 ? 'Reveal the first rename' : 'Reveal the next rename'} →
+                            </button>
+                        ) : (
+                            <ContinueButton onClick={advance}>See the identity</ContinueButton>
+                        )}
+                    </>
+                );
+            };
+
+            const renderIdentity = () => (
+                <>
+                    <NarrativeBlock>
+                        Now write down what you just earned the right to write down.
+                    </NarrativeBlock>
+                    <div className="rounded-lg p-6 mb-4 text-center"
+                         style={{ backgroundColor: 'white', border: `2px solid ${colors.primary}` }}>
+                        <p className="text-xs uppercase tracking-widest mb-2" style={{ color: colors.earth }}>The accounting identity</p>
+                        <p className="text-2xl font-bold mono" style={{ color: colors.primary }}>
+                            Assets − Liabilities = Equities
+                        </p>
+                        <p className="text-xs mt-3" style={{ color: colors.earthDark }}>
+                            A − L = E. By construction. Holds in every set of books, on every balance sheet, for every entity.
+                        </p>
+                    </div>
+                    <AnnaBox>
+                        <p className="mb-2">
+                            "It's called the accounting <strong>identity</strong> — not equation. An equation is something
+                            you solve. An identity is something that holds by definition, every time, no exceptions.
+                            Equities <em>is</em> A minus L. That's its definition."
+                        </p>
+                        <p>
+                            "The balance sheet is built around the identity, not assembled to satisfy one. You list
+                            Assets on the left, Liabilities on the right (top), and Equities falls out on the right (bottom)
+                            as the difference. The fact that it balances isn't a result — it's the construction."
+                        </p>
+                    </AnnaBox>
+                    <KeyInsightBox>
+                        <p className="font-semibold mb-2">Inside Equities — two sub-stories.</p>
+                        <p className="mb-2">
+                            The residual can grow two ways: somebody outside the entity put resources in (owners contributing
+                            cash, equipment), or the entity generated value through its own operations and kept it
+                            (running the business profitably). The convention names these two sub-piles separately:
+                        </p>
+                        <ul className="space-y-1 mb-2 text-sm">
+                            <li>• <strong>Contributed Capital</strong> — "from contributions of owners"</li>
+                            <li>• <strong>Retained Earnings</strong> — "from running the business"</li>
+                        </ul>
+                        <p>
+                            Both inside Equities. Both summing to A − L. But they answer different questions
+                            about <em>where the residual came from</em> — and that's information the identity's
+                            arithmetic alone doesn't carry. We'll come back to this distinction later.
+                        </p>
+                    </KeyInsightBox>
+                    <ContinueButton onClick={advance}>One more wrinkle</ContinueButton>
+                </>
+            );
+
+            const renderNetAssets = () => (
+                <>
+                    <NarrativeBlock>
+                        One last move before we stop. What if no one owns the entity?
+                    </NarrativeBlock>
+                    <AnnaBox>
+                        <p className="mb-2">
+                            "Your shop is owned — by you. Equities makes some sense there, even if 'Equity' singular is
+                            a sloppy label. But there are entities no one owns. A charity. A museum. A university.
+                            A church. A homeless shelter. Real entities, real books, real Assets and Liabilities.
+                            Same arithmetic: A − L = the residual."
+                        </p>
+                        <p className="mb-2">
+                            "Different label, though. For an unowned entity the convention writes
+                            <strong> Net Assets</strong>, not Equities. The math is identical; the word changes because
+                            the accountability structure does. The shop is accountable to you. A charity is accountable
+                            to its donors and its mission. There's nobody to call an owner, so the residual gets a
+                            different name to make that clear."
+                        </p>
+                        <p>
+                            "You'll meet Net Assets head-on in Module 3, when you read a real nonprofit's statements.
+                            For now: same residual, same identity, different label depending on who the entity is
+                            accountable to."
+                        </p>
+                    </AnnaBox>
+                    <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: '#fafaf7', border: `1px solid ${colors.earthLight}` }}>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p className="text-xs uppercase tracking-wide mb-2" style={{ color: colors.earth }}>For-profit entity</p>
+                                <p className="font-bold mono" style={{ color: colors.primary }}>A − L = Equities</p>
+                                <p className="text-xs mt-1" style={{ color: colors.earthDark }}>Accountable to owners.</p>
+                            </div>
+                            <div>
+                                <p className="text-xs uppercase tracking-wide mb-2" style={{ color: colors.earth }}>Nonprofit entity</p>
+                                <p className="font-bold mono" style={{ color: colors.primary }}>A − L = Net Assets</p>
+                                <p className="text-xs mt-1" style={{ color: colors.earthDark }}>Accountable to mission and donors.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <ContinueButton onClick={advance}>Bring it back to your spreadsheet</ContinueButton>
+                </>
+            );
+
+            const renderComplete = () => (
+                <>
+                    <div className="text-center mb-6">
+                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
+                             style={{ backgroundColor: colors.accent }}>
+                            <span className="text-4xl">📚</span>
+                        </div>
+                        <h2 className="text-2xl font-bold" style={{ color: colors.primary }}>Names you've earned</h2>
+                    </div>
+                    <NarrativeBlock>
+                        Look back at the spreadsheet you built. Apply the new vocabulary.
+                    </NarrativeBlock>
+                    <div className="rounded-lg overflow-hidden mb-4"
+                         style={{ border: `1px solid ${colors.earthLight}`, backgroundColor: 'white' }}>
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr style={{ backgroundColor: '#fafaf7', borderBottom: `1px solid ${colors.earthLight}` }}>
+                                    <th className="text-left px-3 py-2 text-xs uppercase tracking-wide font-semibold" style={{ color: colors.earth }}>You called it</th>
+                                    <th className="text-left px-3 py-2 text-xs uppercase tracking-wide font-semibold" style={{ color: colors.earth }}>Modern name</th>
+                                    <th className="text-right px-3 py-2 text-xs uppercase tracking-wide font-semibold" style={{ color: colors.earth }}>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody className="mono">
+                                <tr style={{ borderBottom: `1px solid ${colors.sand}` }}>
+                                    <td className="px-3 py-2" style={{ color: colors.earthDark }}>Things</td>
+                                    <td className="px-3 py-2 font-bold" style={{ color: colors.primary }}>Assets</td>
+                                    <td className="px-3 py-2 text-right font-bold" style={{ color: colors.success }}>+$240</td>
+                                </tr>
+                                <tr style={{ borderBottom: `1px solid ${colors.sand}` }}>
+                                    <td className="px-3 py-2" style={{ color: colors.earthDark }}>Promises</td>
+                                    <td className="px-3 py-2 font-bold" style={{ color: colors.primary }}>Liabilities</td>
+                                    <td className="px-3 py-2 text-right font-bold" style={{ color: colors.earthDark }}>$0</td>
+                                </tr>
+                                <tr style={{ borderBottom: `2px solid ${colors.primary}` }}>
+                                    <td className="px-3 py-2" style={{ color: colors.earthDark }}>Surviving Reasons</td>
+                                    <td className="px-3 py-2 font-bold" style={{ color: colors.primary }}>Equities</td>
+                                    <td className="px-3 py-2 text-right font-bold" style={{ color: colors.success }}>+$240</td>
+                                </tr>
+                                <tr>
+                                    <td className="px-3 py-2 text-xs italic" colSpan="2" style={{ color: colors.earth }}>
+                                        Check: A − L = $240 − $0 = $240 = Equities ✓
+                                    </td>
+                                    <td className="px-3 py-2"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <KeyInsightBox>
+                        <p className="font-semibold mb-2">You invented the system. Now you have the names for it.</p>
+                        <p>
+                            Identify the entity. List its Assets and Liabilities. The residual is Equities (for-profit) or
+                            Net Assets (no-owner). A − L = E by construction; it's the accounting identity.
+                            Pacioli wrote it down in 1494. You worked it out at the workbench in May.
+                        </p>
+                    </KeyInsightBox>
+                    <AnnaBox>
+                        "Next: back to the $25k decision in the present. Now you have tools for reading what
+                        other people prepared. Module 1 closes; Module 2 starts with the six options."
+                    </AnnaBox>
+                    <a href="../index.html"
+                       className="block w-full py-3 rounded-lg font-bold text-white text-center no-underline mb-4"
+                       style={{ backgroundColor: colors.primary }}>
+                        Return to Main →
+                    </a>
+                </>
+            );
+
+            const renderStep = () => {
+                if (step === 0) return renderWelcome();
+                if (step === 1) return renderBabylonians();
+                if (step === 2) return renderPacioli();
+                if (step === 3) return renderEntity();
+                if (step === 4) return renderRenaming();
+                if (step === 5) return renderIdentity();
+                if (step === 6) return renderNetAssets();
+                if (step === 7) return renderComplete();
+                return null;
+            };
+
+            return (
+                <div className="max-w-3xl mx-auto p-4">
+
+                    {/* Header */}
+                    <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary }}>
+                        <div className="flex justify-between items-start">
+                            <div onClick={handleHeaderClick} style={{ cursor: 'pointer' }}>
+                                <h1 className="text-lg font-bold text-white">Tutorial 1.5: Naming What You Built</h1>
+                                <p className="text-sm mt-1" style={{ color: colors.earthLight }}>
+                                    Bicycle repair shop &middot; ~10 min
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <a href="../index.html"
+                                   className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer no-underline inline-flex items-center justify-center"
+                                   title="Return to Main" aria-label="Return to Main">🏠</a>
+                                <button onClick={reset}
+                                        className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                        title="Restart tutorial" aria-label="Restart tutorial">↺</button>
+                            </div>
+                        </div>
+                        <div className="mt-4">
+                            <div className="flex justify-between text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                                <span>Progress</span><span>{progress}%</span>
+                            </div>
+                            <div className="h-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                                 role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+                                <div className="h-full rounded-full transition-all duration-500"
+                                     style={{ width: `${progress}%`, backgroundColor: colors.accent }} />
+                            </div>
+                        </div>
+                        {devMode && (
+                            <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                                <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>Dev: skip to step</p>
+                                <div className="flex flex-wrap gap-1">
+                                    {[0,1,2,3,4,5,6,7].map(s => (
+                                        <button key={s} onClick={() => { setStep(s); setRenameStage(s === 4 ? 0 : s > 4 ? 3 : 0); }}
+                                                className="px-2 py-1 rounded text-xs border-0 cursor-pointer"
+                                                style={{
+                                                    backgroundColor: step === s ? 'white' : 'rgba(255,255,255,0.2)',
+                                                    color: step === s ? colors.primary : 'white'
+                                                }}>
+                                            {['welcome','Babylonians','Pacioli','entity','renaming','identity','net assets','complete'][s]}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mockup banner */}
+                    <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#fef9e7', border: `2px solid ${colors.accent}` }}>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            <strong>Mockup:</strong> Tutorial 1.5 ("Naming What You Built"). Short reflective interlude.
+                            Bridges from the intuitive 3-bucket system the student just built (1.1–1.4) to the modern vocabulary:
+                            entity, Assets, Liabilities, Equities (plural, with critique of the singular convention), and a brief
+                            mention of Net Assets for unowned entities. Introduces the accounting <em>identity</em> A − L = E and
+                            names the two sub-components of Equities (Contributed Capital, Retained Earnings). Light interaction:
+                            step-through reveal of the three renames. Closes Module 1's flashback; Tutorial 1.6 will exit back
+                            to the $25k decision.
+                        </p>
+                    </div>
+
+                    {/* Step content */}
+                    {renderStep()}
+
+                    {/* For refinement notes */}
+                    <div className="mt-6 p-4 rounded-lg bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <div className="flex justify-between items-start mb-2">
+                            <p className="text-sm font-bold" style={{ color: colors.primary }}>For refinement</p>
+                            <button onClick={reset} className="text-xs underline border-0 bg-transparent cursor-pointer" style={{ color: colors.earth }}>Reset</button>
+                        </div>
+                        <ul className="text-sm space-y-1 list-disc list-inside" style={{ color: colors.earthDark }}>
+                            <li>Eight steps: welcome → Babylonians → Pacioli → identify the entity → renaming (interactive reveal) → identity (A − L = E + sub-names) → Net Assets footnote → synthesis/complete.</li>
+                            <li><strong>Pedagogy-skill compliance:</strong> uses "accounting identity" never "equation"; "Equities" plural with explicit critique of the singular convention; A − L = E form throughout (never rearranged); Equities framed as definitional residual, never as "what owners get."</li>
+                            <li><strong>NFP-skill compliance:</strong> Net Assets named briefly (one step) with the accountability-structure rationale (mission/donors vs. owners). Same arithmetic, different label. Internal structure of Net Assets (donor restrictions) deferred to Module 3.</li>
+                            <li><strong>Renaming step interaction:</strong> staged reveal — three clicks unfold Things→Assets, Promises→Liabilities, Reasons→Equities one at a time with Anna's commentary between. The "Equities is awkward, we use the plural" beat lives on the third reveal.</li>
+                            <li><strong>Identity step</strong> introduces the two sub-components of Equities by their plain-English glosses ("from contributions of owners" / "from running the business") before naming Contributed Capital and Retained Earnings. Setup for Module 2/3.</li>
+                            <li><strong>Synthesis</strong> applies the new vocabulary to the spreadsheet from 1.4 — same numbers ($240 = $240), new column labels. Connects the formal vocabulary back to what the student built.</li>
+                            <li>Anna remains the voice; she's the continuity thread from 1.1 through 1.5. 1.5 is also Module 1's closing beat — its opening line ("step out of the shop for a minute") breaks the flashback frame and the synthesis closer hands directly to Module 2 ("back to the $25k decision"). No separate exit-the-flashback tutorial is needed; Module 2's opening (2.1) picks up the present-tense re-anchoring.</li>
+                            <li>Recognition test not yet named here — could be added as a footnote callback to 1.3 (the evidence-test work with invoices, packing slips, notebook) but kept implicit for now to avoid overloading 1.5.</li>
+                        </ul>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

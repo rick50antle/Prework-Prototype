@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reflections — Accounting Prework</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        .mono {
+            font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        }
+        .fade-in {
+            animation: fadeIn 0.35s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+    /**
+     * Reflections
+     * CMU METALS Accounting Prework — Reflections (post-Parts 1 and 2)
+     *
+     * @version 1.0
+     * @date 2026-04-18
+     * @description Six reflection prompts that consolidate the throughline from
+     *              Parts 1 and 2. The arc: shared left side (A and L common across
+     *              for-profits and nonprofits); different right side (Equities vs.
+     *              Net Assets, and their subparts); generality of the structure
+     *              (one frame from software startup to food bank); changes in the
+     *              records (activity statements explain changes in what the records
+     *              recognize); why records are incomplete even for for-profits;
+     *              relative completeness of records across organization types.
+     */
+
+    const { useState } = React;
+
+    // ---------------- Colors ----------------
+    const colors = {
+        primary: '#00356b',
+        sand: '#f5f1e8',
+        earth: '#8b7355',
+        earthLight: '#d4c4a8',
+        earthDark: '#5c4d3d',
+        accent: '#c9a227',
+        clay: '#c4a574',
+        clayLight: '#e8dcc8',
+        clayDark: '#a08050',
+        success: '#22c55e',
+        successBg: '#f0fdf4',
+        warning: '#f59e0b',
+        warningBg: '#fffbeb'
+    };
+
+    // ---------------- Sounds ----------------
+    const createAudioContext = () => new (window.AudioContext || window.webkitAudioContext)();
+
+    const playSuccessTone = () => {
+        try {
+            const ctx = createAudioContext();
+            const notes = [523.25, 659.25, 783.99];
+            const startTime = ctx.currentTime;
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = freq; osc.type = 'sine';
+                const noteStart = startTime + (i * 0.1);
+                const noteEnd = noteStart + 0.15;
+                gain.gain.setValueAtTime(0, noteStart);
+                gain.gain.linearRampToValueAtTime(0.3, noteStart + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, noteEnd);
+                osc.start(noteStart); osc.stop(noteEnd + 0.1);
+            });
+            setTimeout(() => ctx.close(), 600);
+        } catch (e) { /* silent */ }
+    };
+
+    const playContinueClick = () => {
+        try {
+            const ctx = createAudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 600; osc.type = 'sine';
+            const startTime = ctx.currentTime;
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.08);
+            osc.start(startTime); osc.stop(startTime + 0.1);
+            setTimeout(() => ctx.close(), 150);
+        } catch (e) { /* silent */ }
+    };
+
+    // ---------------- Presentational components (module scope) ----------------
+    // IMPORTANT: these live at module scope, not inside Tutorial. If they were
+    // defined inside Tutorial, their function identity would change on every
+    // render, causing React to unmount/remount their subtrees — which made text
+    // inputs lose focus after each keystroke.
+
+    const NarrativeBlock = ({ children }) => (
+        <div
+            className="p-4 rounded-lg border-l-4 mb-4"
+            style={{ backgroundColor: colors.sand, borderColor: colors.accent }}
+        >
+            <div style={{ color: colors.earthDark }}>{children}</div>
+        </div>
+    );
+
+    const SetupBlock = ({ children }) => (
+        <div
+            className="p-4 rounded-lg border-2 mb-4 bg-white"
+            style={{ borderColor: colors.earthLight }}
+        >
+            <div style={{ color: colors.earthDark }}>{children}</div>
+        </div>
+    );
+
+    const PromptBlock = ({ children }) => (
+        <div
+            className="p-4 rounded-lg border-2 mb-4"
+            style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}
+        >
+            <div className="flex items-start gap-3">
+                <span className="flex-shrink-0" aria-hidden="true">✍︎</span>
+                <div style={{ color: colors.earthDark }}>{children}</div>
+            </div>
+        </div>
+    );
+
+    const InsightPanel = ({ title, children }) => (
+        <div
+            className="p-4 rounded-lg border-2 mb-4 fade-in"
+            style={{ backgroundColor: colors.successBg, borderColor: colors.success }}
+        >
+            <div className="flex items-start gap-2">
+                <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                <div>
+                    {title && <p className="font-bold mb-2" style={{ color: colors.success }}>{title}</p>}
+                    <div style={{ color: '#166534' }}>{children}</div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const KeyInsightBox = ({ children }) => (
+        <div
+            className="p-4 rounded-lg border-2 mb-4"
+            style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}
+        >
+            <div className="flex items-start gap-3">
+                <span className="flex-shrink-0" aria-hidden="true">💡</span>
+                <div style={{ color: colors.earthDark }}>{children}</div>
+            </div>
+        </div>
+    );
+
+    const ContinueButton = ({ onClick, disabled, children = 'Continue' }) => (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50"
+            style={{ backgroundColor: colors.primary }}
+        >
+            {children} <span aria-hidden="true">→</span>
+        </button>
+    );
+
+    const ExpandableHint = ({ open, setOpen, children }) => (
+        <div
+            className="rounded-lg mb-4 border"
+            style={{ backgroundColor: colors.clayLight, borderColor: colors.clayDark }}
+        >
+            <button
+                onClick={() => setOpen(!open)}
+                className="w-full p-3 flex justify-between items-center"
+                style={{ color: colors.earthDark }}
+            >
+                <span className="font-bold text-sm">Need a starting point?</span>
+                <span aria-hidden="true">{open ? '▲' : '▼'}</span>
+            </button>
+            {open && (
+                <div className="px-3 pb-3 text-sm fade-in" style={{ color: colors.earthDark }}>
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+
+    const ReflectionTextarea = ({
+        value, setValue,
+        submitted, setSubmitted,
+        onAdvance,
+        minLength = 150,
+        placeholder = 'Your reflection...'
+    }) => {
+        const trimmed = value.trim();
+        const canSubmit = trimmed.length >= minLength;
+        const remaining = Math.max(0, minLength - trimmed.length);
+
+        const handleReflect = () => {
+            if (!canSubmit || submitted) return;
+            playSuccessTone();
+            setSubmitted(true);
+        };
+
+        return (
+            <div className="bg-white rounded-lg p-4 mb-4 shadow-sm border" style={{ borderColor: colors.earthLight }}>
+                <textarea
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    onKeyDown={(e) => {
+                        // Cmd/Ctrl+Enter submits; plain Enter is for paragraph breaks in reflections
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && canSubmit && !submitted) {
+                            e.preventDefault();
+                            handleReflect();
+                        }
+                    }}
+                    disabled={submitted}
+                    placeholder={placeholder}
+                    rows={7}
+                    className="w-full p-3 border rounded text-sm resize-y mb-2"
+                    style={{ borderColor: colors.earthLight }}
+                />
+                <div className="flex justify-between items-center mb-3 text-xs" style={{ color: colors.earth }}>
+                    <span>
+                        {submitted
+                            ? 'Reflection captured.'
+                            : remaining > 0
+                                ? `${remaining} more character${remaining === 1 ? '' : 's'} before you can continue`
+                                : 'Ready to continue.'}
+                    </span>
+                    <span>{trimmed.length} / {minLength}+</span>
+                </div>
+                {!submitted ? (
+                    <button
+                        onClick={handleReflect}
+                        disabled={!canSubmit}
+                        className="w-full py-2 rounded font-bold text-white disabled:opacity-50"
+                        style={{ backgroundColor: colors.primary }}
+                    >
+                        Submit reflection
+                    </button>
+                ) : (
+                    <div>
+                        <InsightPanel title="Captured.">
+                            <p className="text-sm">Your reflection is saved in this session. You can revisit and revise it as long as the page is open.</p>
+                        </InsightPanel>
+                        <ContinueButton onClick={onAdvance}>Continue</ContinueButton>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // ---------------- Main component ----------------
+    const Tutorial = () => {
+        // Phase control
+        const [phase, setPhase] = useState('welcome');
+
+        // Dev mode (triple-click header)
+        const [devMode, setDevMode] = useState(false);
+        const [headerClickCount, setHeaderClickCount] = useState(0);
+
+        // Prompt 1 — shared left side (A/L)
+        const [p1, setP1] = useState('');
+        const [p1Submitted, setP1Submitted] = useState(false);
+        const [p1HintOpen, setP1HintOpen] = useState(false);
+
+        // Prompt 2 — different right side (Equities vs. Net Assets)
+        const [p2, setP2] = useState('');
+        const [p2Submitted, setP2Submitted] = useState(false);
+        const [p2HintOpen, setP2HintOpen] = useState(false);
+
+        // Prompt 3 — generality of the structure
+        const [p3, setP3] = useState('');
+        const [p3Submitted, setP3Submitted] = useState(false);
+        const [p3HintOpen, setP3HintOpen] = useState(false);
+
+        // Prompt 4 — changes in the records
+        const [p4, setP4] = useState('');
+        const [p4Submitted, setP4Submitted] = useState(false);
+        const [p4HintOpen, setP4HintOpen] = useState(false);
+
+        // Prompt 5 — why for-profit records are incomplete
+        const [p5, setP5] = useState('');
+        const [p5Submitted, setP5Submitted] = useState(false);
+        const [p5HintOpen, setP5HintOpen] = useState(false);
+
+        // Prompt 6 — relative completeness
+        const [p6, setP6] = useState('');
+        const [p6Submitted, setP6Submitted] = useState(false);
+        const [p6HintOpen, setP6HintOpen] = useState(false);
+
+        // Prompt 7 — the $25k decision
+        const [p7, setP7] = useState('');
+        const [p7Submitted, setP7Submitted] = useState(false);
+        const [p7HintOpen, setP7HintOpen] = useState(false);
+
+        const phaseOrder = [
+            'welcome',
+            'shared-left',
+            'different-right',
+            'generality',
+            'changes',
+            'forprofit-gap',
+            'completeness',
+            'decision',
+            'complete'
+        ];
+        const currentPhaseIndex = Math.max(0, phaseOrder.indexOf(phase));
+        const progress = Math.round((currentPhaseIndex / (phaseOrder.length - 1)) * 100);
+
+        const handleRestart = () => {
+            playContinueClick();
+            setPhase('welcome');
+            setP1(''); setP1Submitted(false); setP1HintOpen(false);
+            setP2(''); setP2Submitted(false); setP2HintOpen(false);
+            setP3(''); setP3Submitted(false); setP3HintOpen(false);
+            setP4(''); setP4Submitted(false); setP4HintOpen(false);
+            setP5(''); setP5Submitted(false); setP5HintOpen(false);
+            setP6(''); setP6Submitted(false); setP6HintOpen(false);
+            setP7(''); setP7Submitted(false); setP7HintOpen(false);
+            window.scrollTo(0, 0);
+        };
+
+        const handleHeaderClick = () => {
+            const newCount = headerClickCount + 1;
+            setHeaderClickCount(newCount);
+            if (newCount >= 3) {
+                setDevMode(!devMode);
+                setHeaderClickCount(0);
+            }
+        };
+
+        const goTo = (p) => { playContinueClick(); setPhase(p); window.scrollTo(0, 0); };
+
+        // -------- Header --------
+        const HeaderWithControls = () => (
+            <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary }}>
+                <div className="flex justify-between items-start">
+                    <div onClick={handleHeaderClick} style={{ cursor: 'pointer' }}>
+                        <div className="flex items-center gap-2">
+                            <span className="text-white" aria-hidden="true">📝</span>
+                            <h1 className="text-lg font-bold text-white">Reflections</h1>
+                        </div>
+                        <p className="text-sm mt-1" style={{ color: colors.earthLight }}>
+                            Accounting Prework • After Parts 1 and 2 • ~15–20 min
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <a
+                            href="../index.html"
+                            aria-label="Return to Main"
+                            title="Return to Main"
+                            className="p-2 rounded-lg hover:bg-white/10 no-underline inline-flex items-center justify-center"
+                        >
+                            <span className="text-white" aria-hidden="true">🏠</span>
+                        </a>
+                        <button
+                            onClick={handleRestart}
+                            aria-label="Restart reflections"
+                            title="Restart reflections"
+                            className="p-2 rounded-lg hover:bg-white/10"
+                        >
+                            <span className="text-white text-lg" aria-hidden="true">↺</span>
+                        </button>
+                    </div>
+                </div>
+                <div className="mt-4">
+                    <div className="flex justify-between text-xs text-white/70 mb-1">
+                        <span>Progress</span>
+                        <span>{progress}%</span>
+                    </div>
+                    <div
+                        className="h-2 rounded-full"
+                        role="progressbar"
+                        aria-valuenow={progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                    >
+                        <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${progress}%`, backgroundColor: colors.accent }}
+                        />
+                    </div>
+                </div>
+                {devMode && (
+                    <div className="mt-3 pt-3 border-t border-white/20">
+                        <p className="text-xs text-white/70 mb-2">Dev Mode: skip to phase</p>
+                        <div className="flex flex-wrap gap-1">
+                            {phaseOrder.map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => setPhase(p)}
+                                    className={`px-2 py-1 rounded text-xs ${phase === p ? 'bg-white text-blue-900' : 'bg-white/20 text-white'}`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+
+        // -------- Welcome --------
+        const renderWelcome = () => (
+            <div>
+                <NarrativeBlock>
+                    <p className="mb-2">
+                        Welcome back. You have now worked through the for-profit side
+                        (<strong>Part 1</strong>) and the nonprofit side (<strong>Part 2</strong>).
+                        This reflection steps back from the specifics of each and asks what the
+                        two sides had in common, where they diverged, and what both leave out.
+                    </p>
+                    <p>
+                        Seven short reflection prompts follow. Each has a short setup to anchor
+                        your thinking and, if it helps, an optional starting point you can
+                        expand. There are no right answers — the point is to notice things you
+                        might not have named yet.
+                    </p>
+                </NarrativeBlock>
+
+                <div
+                    className="rounded-lg p-4 mb-4 border-2"
+                    style={{ backgroundColor: 'white', borderColor: colors.primary }}
+                >
+                    <p className="font-bold mb-3" style={{ color: colors.primary }}>Two threads running through the prompts</p>
+                    <ul className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            <span><strong>Structure.</strong> What the accounting records use to convey information about an organization, and how flexibly that structure bends to fit different kinds of organizations.</span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            <span><strong>Incompleteness.</strong> What the records admit, what they leave out, and why the gap between the records and reality can be different for different kinds of organizations.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <ContinueButton onClick={() => goTo('shared-left')}>Begin</ContinueButton>
+            </div>
+        );
+
+        // -------- Phase 2: shared left side --------
+        const renderSharedLeft = () => (
+            <div>
+                <h2 className="text-lg font-bold mb-3" style={{ color: colors.primary }}>
+                    1 of 7 — A shared left side
+                </h2>
+
+                <SetupBlock>
+                    <p className="mb-3">
+                        For-profits exist to generate financial returns for their owners.
+                        Nonprofits exist to pursue <em>missions</em> — feeding the hungry,
+                        saving bees, preserving art, housing the unhoused, educating kids —
+                        that are not themselves financial. But both require financial resources
+                        to operate. Both have things of financial value that the organization
+                        holds and can use, and both have financial obligations that the
+                        organization owes. Both track these on the balance sheet: Assets and
+                        Liabilities.
+                    </p>
+                    <p>
+                        Parts 1 and 2 used deliberately stripped-down organizations — each had
+                        a very short list of recorded assets and no liabilities. Real
+                        organizations carry much more.
+                    </p>
+                </SetupBlock>
+
+                <PromptBlock>
+                    <p className="font-bold mb-2" style={{ color: colors.primary }}>Prompt 1</p>
+                    <p>
+                        Think of a real business you know and a real nonprofit you know. For
+                        each, name <strong>one financial resource</strong> and <strong>one financial obligation</strong> you
+                        would expect to find on its balance sheet. For each item, say briefly
+                        why someone outside the organization might care to see it.
+                    </p>
+                </PromptBlock>
+
+                <ExpandableHint open={p1HintOpen} setOpen={setP1HintOpen}>
+                    <p>
+                        Pick a business or a nonprofit you have had some contact with — somewhere
+                        you have shopped, worked, volunteered, or donated. The resources might
+                        be cash held at a bank, equipment the organization uses, inventory it
+                        sells, or amounts others owe it. The obligations might be wages owed to
+                        employees, rent owed to a landlord, a loan from a bank, or amounts owed
+                        to suppliers. Who outside the organization has a decision to make that
+                        depends on knowing any of these?
+                    </p>
+                </ExpandableHint>
+
+                <ReflectionTextarea
+                    value={p1} setValue={setP1}
+                    submitted={p1Submitted} setSubmitted={setP1Submitted}
+                    onAdvance={() => goTo('different-right')}
+                    placeholder="For the business: one resource, one obligation, and why each might matter to someone outside. Then the same for the nonprofit."
+                />
+            </div>
+        );
+
+        // -------- Phase 3: different right side --------
+        const renderDifferentRight = () => (
+            <div>
+                <h2 className="text-lg font-bold mb-3" style={{ color: colors.primary }}>
+                    2 of 7 — A different right side
+                </h2>
+
+                <SetupBlock>
+                    <p className="mb-3">
+                        Both a for-profit balance sheet and a nonprofit Statement of Financial
+                        Position show the same arithmetic on the right side — Assets minus
+                        Liabilities. But the conventions give that residual different names.
+                        The for-profit convention calls it <strong>Equities</strong>. The
+                        nonprofit convention calls it <strong>Net Assets</strong>.
+                    </p>
+                    <p className="mb-3">
+                        Even the way each residual is further broken down differs:
+                    </p>
+                    <ul className="mb-3 space-y-1 text-sm ml-4">
+                        <li>— For-profits split Equities into <strong>Contributed Capital</strong> (resources contributed from outside) and <strong>Retained Earnings</strong> (residual generated inside the entity and kept there).</li>
+                        <li>— Nonprofits split Net Assets into <strong>Net Assets With Donor Restrictions</strong> and <strong>Net Assets Without Donor Restrictions</strong>.</li>
+                    </ul>
+                    <p>
+                        The arithmetic is identical. The names and the subparts are not.
+                    </p>
+                </SetupBlock>
+
+                <PromptBlock>
+                    <p className="font-bold mb-2" style={{ color: colors.primary }}>Prompt 2</p>
+                    <p>
+                        Why do you think the two conventions use different names and different
+                        subparts for the same arithmetic residual? What is each convention
+                        trying to communicate about the kind of organization being reported on?
+                    </p>
+                </PromptBlock>
+
+                <ExpandableHint open={p2HintOpen} setOpen={setP2HintOpen}>
+                    <p>
+                        Consider what is different about the situation of a for-profit versus a
+                        nonprofit. Who contributes resources, and with what expectations? What
+                        happens to amounts the entity generates through its activities? Then
+                        ask, for each subpart: what piece of information would a reader of the
+                        balance sheet find useful that the residual total alone could not carry?
+                    </p>
+                </ExpandableHint>
+
+                <ReflectionTextarea
+                    value={p2} setValue={setP2}
+                    submitted={p2Submitted} setSubmitted={setP2Submitted}
+                    onAdvance={() => goTo('generality')}
+                    placeholder="Why the different names, and what each set of subparts is trying to communicate..."
+                />
+            </div>
+        );
+
+        // -------- Phase 4: generality of the structure --------
+        const renderGenerality = () => (
+            <div>
+                <h2 className="text-lg font-bold mb-3" style={{ color: colors.primary }}>
+                    3 of 7 — A structure that reaches
+                </h2>
+
+                <SetupBlock>
+                    <p className="mb-3">
+                        Within the for-profit world alone, organizations vary dramatically in
+                        what they hold and what they do. A real estate trust holds mostly land
+                        and buildings. A software company holds mostly intellectual property and
+                        the expertise of its people. A consulting firm holds receivables and
+                        client relationships. A manufacturer holds inventory and equipment. A
+                        newspaper holds content, archives, and subscriber relationships. Working
+                        out how the accounting identity should apply to each of these took a
+                        century of accumulated convention-building, each refinement tailoring
+                        the specific assets, liabilities, and residual subparts to a new kind
+                        of organization.
+                    </p>
+                    <p>
+                        And yet, for all that variation, the differences among for-profits are
+                        in some ways smaller than the difference between any for-profit and a
+                        nonprofit. A food bank and a real estate trust are more different from
+                        each other in operation than almost any two for-profits are. But the
+                        same accounting structure — Assets minus Liabilities equals a residual,
+                        reported as a snapshot at a point in time, with a companion statement
+                        that decomposes how that residual changed — accommodates all of them.
+                    </p>
+                </SetupBlock>
+
+                <PromptBlock>
+                    <p className="font-bold mb-2" style={{ color: colors.primary }}>Prompt 3</p>
+                    <p>
+                        What does the structure's reach — from a software startup to a museum,
+                        from a consulting firm to a food bank — suggest about the structure
+                        itself? What does it <em>require</em> of an organization, and what does
+                        it <em>leave open</em>?
+                    </p>
+                </PromptBlock>
+
+                <ExpandableHint open={p3HintOpen} setOpen={setP3HintOpen}>
+                    <p>
+                        Try to name what all these organizations share that the structure
+                        depends on. Then try to name the things these organizations differ on
+                        that the structure is silent about. The structure is a kind of frame —
+                        what does the frame specify, and what does it leave for each kind of
+                        organization to fill in?
+                    </p>
+                </ExpandableHint>
+
+                <ReflectionTextarea
+                    value={p3} setValue={setP3}
+                    submitted={p3Submitted} setSubmitted={setP3Submitted}
+                    onAdvance={() => goTo('changes')}
+                    placeholder="What the structure requires, and what it leaves open..."
+                />
+            </div>
+        );
+
+        // -------- Phase 5: changes in the records --------
+        const renderChanges = () => (
+            <div>
+                <h2 className="text-lg font-bold mb-3" style={{ color: colors.primary }}>
+                    4 of 7 — Changes in the records
+                </h2>
+
+                <SetupBlock>
+                    <p className="mb-3">
+                        Every kind of organization you have seen produces not just a snapshot at
+                        a point in time but also a <strong>companion statement</strong> that
+                        explains how the residual changed during a period. For for-profits, that
+                        companion statement is the <strong>Income Statement</strong>. For
+                        nonprofits, it is the <strong>Statement of Activities</strong>. Both
+                        describe how things changed over a period.
+                    </p>
+                    <p>
+                        Changes in what, exactly?
+                    </p>
+                </SetupBlock>
+
+                <PromptBlock>
+                    <p className="font-bold mb-2" style={{ color: colors.primary }}>Prompt 4</p>
+                    <p className="mb-3">
+                        Consider two scenarios.
+                    </p>
+                    <ul className="mb-3 space-y-2 ml-4">
+                        <li>— This year, a nonprofit's volunteers double the hours they donate. The organization is plainly stronger for it.</li>
+                        <li>— A business sees its regulars bring more friends. Customer loyalty visibly grows, and the business is plainly stronger for it.</li>
+                    </ul>
+                    <p>
+                        Would either of these changes appear in the activity statement? Why or
+                        why not? Use your answer to say, in your own words, what the activity
+                        statement is actually tracking changes <em>in</em>.
+                    </p>
+                </PromptBlock>
+
+                <ExpandableHint open={p4HintOpen} setOpen={setP4HintOpen}>
+                    <p>
+                        Picture what would need to have happened for volunteer hours, or for
+                        customer loyalty, to show up as a change on the statement. What would
+                        the records have to already be tracking? If the records were not
+                        tracking that thing to begin with, can there be any "change" in it for
+                        the statement to decompose?
+                    </p>
+                </ExpandableHint>
+
+                <ReflectionTextarea
+                    value={p4} setValue={setP4}
+                    submitted={p4Submitted} setSubmitted={setP4Submitted}
+                    onAdvance={() => goTo('forprofit-gap')}
+                    placeholder="What the activity statement is tracking changes in..."
+                />
+            </div>
+        );
+
+        // -------- Phase 6: why for-profit records are incomplete --------
+        const renderForProfitGap = () => (
+            <div>
+                <h2 className="text-lg font-bold mb-3" style={{ color: colors.primary }}>
+                    5 of 7 — Incompleteness, even in a for-profit
+                </h2>
+
+                <SetupBlock>
+                    <p className="mb-3">
+                        If what the activity statement explains is changes in what the records
+                        recognize, then the boundary around what the records admit in the first
+                        place matters enormously. That boundary applies to every kind of
+                        organization — not just to nonprofits. Even in a for-profit, where the
+                        organization's purpose is itself financial, the records leave real
+                        things out.
+                    </p>
+                    <p>
+                        A business might have a recognizable brand, a workforce with deep
+                        in-house expertise, a reputation that makes partners want to work with
+                        it, or accumulated operational know-how. Most of these would not appear
+                        on its balance sheet.
+                    </p>
+                </SetupBlock>
+
+                <PromptBlock>
+                    <p className="font-bold mb-2" style={{ color: colors.primary }}>Prompt 5</p>
+                    <p>
+                        Pick one of those things — brand, workforce expertise, reputation,
+                        operational know-how, or something else in that spirit — and explain
+                        why you think it stays off the records. What is it about the way the
+                        records work that keeps it out?
+                    </p>
+                </PromptBlock>
+
+                <ExpandableHint open={p5HintOpen} setOpen={setP5HintOpen}>
+                    <p>
+                        Think about how something gets onto the records in the first place.
+                        Part 1 pointed at an evidence test the convention applies before
+                        admitting an item: evidence that the item exists in a form the records
+                        can capture, and that its effects are at least partly financial — that
+                        they bear on future cash flows. What kinds of things have a hard time
+                        producing that evidence, and why?
+                    </p>
+                </ExpandableHint>
+
+                <ReflectionTextarea
+                    value={p5} setValue={setP5}
+                    submitted={p5Submitted} setSubmitted={setP5Submitted}
+                    onAdvance={() => goTo('completeness')}
+                    placeholder="Pick one thing that stays off the records, and say why..."
+                />
+            </div>
+        );
+
+        // -------- Phase 7: relative completeness --------
+        const renderCompleteness = () => (
+            <div>
+                <h2 className="text-lg font-bold mb-3" style={{ color: colors.primary }}>
+                    6 of 7 — Relative completeness
+                </h2>
+
+                <SetupBlock>
+                    <p className="mb-3">
+                        For-profits and nonprofits differ in what they exist to accomplish. A
+                        for-profit's purpose centers on generating financial returns for its
+                        owners — something the records can, in broad strokes, express in their
+                        own terms. Nonprofits have missions — feeding the hungry, saving bees,
+                        preserving art, housing the unhoused, educating kids — that are not
+                        themselves financial.
+                    </p>
+                    <p>
+                        A nonprofit succeeds when its mission is being accomplished, and
+                        accomplishment in those terms is not something dollars directly express.
+                    </p>
+                </SetupBlock>
+
+                <PromptBlock>
+                    <p className="font-bold mb-2" style={{ color: colors.primary }}>Prompt 6</p>
+                    <p>
+                        Given this difference, how complete a picture of what the organization
+                        is actually accomplishing can you get from its financial statements?
+                        Which case do you think has a bigger gap between the records and what
+                        the organization is doing — and why?
+                    </p>
+                </PromptBlock>
+
+                <ExpandableHint open={p6HintOpen} setOpen={setP6HintOpen}>
+                    <p>
+                        Start from the purpose of the organization. Is that purpose itself
+                        something that dollars can express? If it is, the records are
+                        probably a fairly close picture of what the organization is trying to
+                        do. If it is not, the records and the purpose point at different
+                        things — and someone reading only the financial statements may be
+                        reading a very partial picture of the organization's work.
+                    </p>
+                </ExpandableHint>
+
+                <ReflectionTextarea
+                    value={p6} setValue={setP6}
+                    submitted={p6Submitted} setSubmitted={setP6Submitted}
+                    onAdvance={() => goTo('decision')}
+                    placeholder="Where the gap is bigger, and why..."
+                />
+            </div>
+        );
+
+        // -------- Phase 8: the $25k decision (Prompt 7) --------
+        const renderDecision = () => (
+            <div>
+                <h2 className="text-lg font-bold mb-3" style={{ color: colors.primary }}>
+                    7 of 7 — Back to the $25k
+                </h2>
+
+                <SetupBlock>
+                    <p className="mb-3">
+                        Parts 1 and 2 each opened with $25k in your hand and a set of candidates —
+                        three businesses to invest in, three nonprofits to support. The prompts
+                        so far have named what the records contain and what they leave out.
+                        Neither of those is the decision itself. Whether to invest, whether to
+                        contribute, and to which organization, is yours to make.
+                    </p>
+                    <p className="mb-3">
+                        But accounting is not silent on it. Its role is to <strong>inform</strong> the
+                        decision — not to make it. What the records contain can help narrow a
+                        long list of candidates to a shorter one, focus attention on a more
+                        relevant set to investigate further, surface questions worth asking, and
+                        flag when something that matters is sitting outside the records and
+                        needs to be looked into by other means.
+                    </p>
+                    <p>
+                        No financial statement tells you whether a mission is worth supporting
+                        or whether a business will live up to its idea. The statements give
+                        you a more focused place to start.
+                    </p>
+                </SetupBlock>
+
+                <PromptBlock>
+                    <p className="font-bold mb-2" style={{ color: colors.primary }}>Prompt 7</p>
+                    <p>
+                        Suppose you actually had the $25k. Would you invest it in one of the
+                        businesses from Part 1, contribute it to one of the nonprofits from
+                        Part 2, or split it between the two? Pick a specific candidate (or
+                        candidates). Then say how the financial information you saw in the
+                        tutorials informed your pick — what it helped you rule out, what it
+                        helped you rule in, and what non-financial information you would still
+                        want before committing.
+                    </p>
+                </PromptBlock>
+
+                <ExpandableHint open={p7HintOpen} setOpen={setP7HintOpen}>
+                    <p>
+                        There is no single right answer here. A good response names at least
+                        one thing the balance sheet or the companion statement helped you see,
+                        at least one candidate the records helped you narrow away from or
+                        toward, and at least one piece of information that was <em>not</em> in
+                        the records but that would still shape your decision. If you are torn
+                        between investing and contributing, that is itself a legitimate
+                        reflection — say what is pulling you each way.
+                    </p>
+                </ExpandableHint>
+
+                <ReflectionTextarea
+                    value={p7} setValue={setP7}
+                    submitted={p7Submitted} setSubmitted={setP7Submitted}
+                    onAdvance={() => goTo('complete')}
+                    placeholder="Invest, contribute, or split — and how the records informed the choice..."
+                />
+            </div>
+        );
+
+        // -------- Complete --------
+        const renderComplete = () => (
+            <div>
+                <div className="text-center mb-6">
+                    <div
+                        className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
+                        style={{ backgroundColor: colors.accent }}
+                    >
+                        <span className="text-3xl" aria-hidden="true">🧭</span>
+                    </div>
+                    <h2 className="text-2xl font-bold" style={{ color: colors.primary }}>
+                        Reflections Complete
+                    </h2>
+                </div>
+
+                <div
+                    className="rounded-lg p-4 mb-4 border-2"
+                    style={{ backgroundColor: 'white', borderColor: colors.success }}
+                >
+                    <h3 className="font-bold mb-3" style={{ color: colors.primary }}>What the two threads add up to</h3>
+                    <ol className="space-y-3 text-sm" style={{ color: colors.earthDark }}>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>
+                                <strong>A shared structure.</strong> For-profits and nonprofits
+                                both track financial resources and obligations, both report an
+                                identity at a point in time, and both produce a companion
+                                statement that explains how the residual changed. The same
+                                frame accommodates organizations as different as a software
+                                company, a manufacturer, a museum, and a food bank.
+                            </span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>
+                                <strong>Tailored at the right side.</strong> The arithmetic of
+                                Assets minus Liabilities is universal; the name of the residual
+                                and the way it is broken into subparts are tailored to the kind
+                                of organization. Equities with Contributed Capital and Retained
+                                Earnings says something different about the organization than
+                                Net Assets with and without donor restrictions.
+                            </span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>
+                                <strong>Changes in the records, not in reality.</strong> The
+                                activity statement decomposes changes in what the records
+                                recognize. Things that never cleared the evidence bar cannot
+                                change on the records — they were never there to change.
+                            </span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>
+                                <strong>Gaps are structural, not failures.</strong> Even a
+                                for-profit's records leave out real things — brand, in-house
+                                know-how, reputation, workforce expertise. The exclusions are a
+                                feature of the convention, not an inability to write a number
+                                down.
+                            </span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>
+                                <strong>The gap is not the same size everywhere.</strong> For
+                                organizations whose purpose is itself financial, the records are
+                                a broad picture of the purpose. For organizations whose mission
+                                is not financial, the records track the resources that support
+                                the mission but not the mission itself. Someone reading only the
+                                financial statements of a nonprofit is, almost by design,
+                                reading a partial picture.
+                            </span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>
+                                <strong>Informing, not deciding.</strong> Financial statements
+                                are there to narrow a decision, not to make it — to help focus
+                                attention on a shorter list of candidates worth investigating,
+                                and to raise questions worth asking. Whether to invest, whether
+                                to contribute, and to which organization, remains a call the
+                                reader has to make using information the records were never
+                                meant to supply on their own.
+                            </span>
+                        </li>
+                    </ol>
+                </div>
+
+                <KeyInsightBox>
+                    <p className="font-semibold mb-2">The through-line</p>
+                    <p className="text-sm">
+                        Financial statements use a common structure that tailors, bends, and
+                        accommodates. The structure is remarkably general — it fits almost any
+                        organization with financial resources and obligations. But every
+                        instance of it is partial. What it admits, and what it leaves outside,
+                        is a standing choice by the convention. Reading a set of financial
+                        statements well is partly about knowing that structure — and partly
+                        about knowing what it is not telling you.
+                    </p>
+                </KeyInsightBox>
+
+                <div
+                    className="rounded-lg p-4 mb-4 border-2"
+                    style={{ backgroundColor: 'white', borderColor: colors.primary }}
+                >
+                    <h3 className="font-bold mb-3" style={{ color: colors.primary }}>Why this is worth your attention</h3>
+                    <p className="mb-3 text-sm" style={{ color: colors.earthDark }}>
+                        That last point — that the records inform but do not decide — has a
+                        flip side. For the records to inform your decisions well, you have to
+                        know enough about what they are and how they work. Not because
+                        accounting is elegant, and not because every reader needs to be able
+                        to prepare financial statements. Because the statements you end up
+                        reading, in a case you actually care about, are an instance of a
+                        convention that made choices. Reading them well means knowing what
+                        those choices were.
+                    </p>
+                    <p className="mb-3 text-sm" style={{ color: colors.earthDark }}>
+                        Think about the kinds of questions that sharpen your read of a
+                        specific set of financial statements — a business you are thinking of
+                        investing in, a nonprofit you are thinking of contributing to, an
+                        employer you are considering, an organization whose decisions affect
+                        a community you care about:
+                    </p>
+                    <ul className="space-y-2 text-sm mb-3" style={{ color: colors.earthDark }}>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            <span>
+                                <strong>What is left out?</strong> What kinds of resources did
+                                the convention let this organization record, and what did it
+                                leave outside? A brand, a community of loyal users, a
+                                volunteer base, a reputation for artistic quality, in-house
+                                know-how — these can be much of what makes an organization
+                                worth engaging with, and they can sit entirely outside the
+                                records.
+                            </span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            <span>
+                                <strong>Resource or expense?</strong> An organization that
+                                builds know-how, a reputation, or a loyal community over years
+                                may show that investment as ordinary expenses of operating —
+                                with nothing on the balance sheet to show for it. The records
+                                do not call that a mistake; the convention chose it. Knowing
+                                the choice changes how you read the numbers.
+                            </span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            <span>
+                                <strong>How do the specific rules for this kind of organization shape the picture?</strong>{' '}
+                                A nonprofit's Net Assets with and without donor restrictions
+                                tell you something a for-profit's Equities cannot. A software
+                                company's intangibles tell you something a factory's plant and
+                                equipment cannot. The tailoring matters, and it matters in
+                                ways that are specific to the case.
+                            </span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            <span>
+                                <strong>Real change, or change in what is recorded?</strong>{' '}
+                                When the activity statement shows a big shift from one period
+                                to another, you want to be able to ask whether the underlying
+                                work shifted or whether what the convention decided to
+                                recognize shifted. Those are very different reads of the same
+                                number.
+                            </span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            <span>
+                                <strong>Which lessons depend on what is in the records — and which on what is not?</strong>{' '}
+                                Any conclusion you draw about the organization rests on some
+                                of each. Sorting out which is which is the difference between
+                                a careful read and an overconfident one.
+                            </span>
+                        </li>
+                    </ul>
+                    <p className="text-sm" style={{ color: colors.earthDark }}>
+                        The case for learning some accounting is not that the statements tell
+                        the whole story. It is that they tell a large part of the story in a
+                        careful shorthand, and reading them well is a skill that compounds.
+                        The more specific cases you have worked through — the business you
+                        might invest in, the nonprofit you might support, the employer you
+                        are considering — the more quickly you can tell what the picture is
+                        likely to leave out and where to look next. The next several modules
+                        build that skill. You are doing the groundwork here.
+                    </p>
+                </div>
+
+                <div
+                    className="rounded-lg p-4 mb-4"
+                    style={{ backgroundColor: colors.clayLight }}
+                >
+                    <h3 className="font-bold mb-2" style={{ color: colors.primary }}>Coming next</h3>
+                    <p className="text-sm" style={{ color: colors.earthDark }}>
+                        You've now seen the system applied to three for-profits and three nonprofits —
+                        same identity, two different residual labels, the same evidence test in both
+                        settings. Module 3 takes the final step: real organizations' real audited
+                        statements. CVS Health (a for-profit under US GAAP) and Yale University (a
+                        nonprofit under FASB's nonprofit standards). Same skeleton, two customizations.
+                    </p>
+                    <p className="font-bold mt-2 text-sm" style={{ color: colors.primary }}>
+                        Next: Module 3 — Real Statements
+                    </p>
+                    <p className="text-xs italic mt-1" style={{ color: colors.earth }}>
+                        Module 3 is in development. For now, return to the main page.
+                    </p>
+                </div>
+
+                <button
+                    onClick={() => { playContinueClick(); window.location.href = '../index.html'; }}
+                    className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 mb-3"
+                    style={{ backgroundColor: colors.primary }}
+                >
+                    Return to Main <span aria-hidden="true">→</span>
+                </button>
+                <button
+                    onClick={handleRestart}
+                    className="w-full py-3 rounded-lg font-bold border-2 flex items-center justify-center gap-2 hover:bg-gray-50"
+                    style={{ borderColor: colors.primary, color: colors.primary }}
+                >
+                    <span aria-hidden="true">↺</span> Restart Reflections
+                </button>
+            </div>
+        );
+
+        // -------- Dispatch --------
+        let content = null;
+        if (phase === 'welcome') content = renderWelcome();
+        else if (phase === 'shared-left') content = renderSharedLeft();
+        else if (phase === 'different-right') content = renderDifferentRight();
+        else if (phase === 'generality') content = renderGenerality();
+        else if (phase === 'changes') content = renderChanges();
+        else if (phase === 'forprofit-gap') content = renderForProfitGap();
+        else if (phase === 'completeness') content = renderCompleteness();
+        else if (phase === 'decision') content = renderDecision();
+        else if (phase === 'complete') content = renderComplete();
+
+        return (
+            <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                <div className="p-4 max-w-3xl mx-auto">
+                    <HeaderWithControls />
+                    <div key={phase} className="fade-in">{content}</div>
+                </div>
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Tutorial />);
+    </script>
+</body>
+</html>

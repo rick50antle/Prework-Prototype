@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One Donation, Three Nonprofits — Accounting Prework</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        .mono {
+            font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        }
+        .fade-in {
+            animation: fadeIn 0.35s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+    /**
+     * One Donation, Three Nonprofits
+     * CMU METALS Accounting Prework — Part 2 (Nonprofit side of the $25k decision)
+     *
+     * @version 1.0
+     * @date 2026-04-18
+     * @description Discovery-based introduction to nonprofit financial statement
+     *              structure, built as the companion to Part 1 ("Three Businesses,
+     *              One Decision"). Carries forward the accounting identity and the
+     *              evidence test; restates the residual as Net Assets; decomposes
+     *              the residual into Without/With Donor Restrictions; introduces the
+     *              Statement of Activities' double duty (value changes plus
+     *              restriction reclassifications); and walks two nonprofit recognition
+     *              questions — contributed services and the collection-capitalization
+     *              choice — that put the evidence test visibly on display.
+     */
+
+    const { useState } = React;
+
+    // ---------------- Colors ----------------
+    const colors = {
+        primary: '#00356b',
+        sand: '#f5f1e8',
+        earth: '#8b7355',
+        earthLight: '#d4c4a8',
+        earthDark: '#5c4d3d',
+        accent: '#c9a227',
+        clay: '#c4a574',
+        clayLight: '#e8dcc8',
+        clayDark: '#a08050',
+        success: '#22c55e',
+        successBg: '#f0fdf4',
+        warning: '#f59e0b',
+        warningBg: '#fffbeb',
+        error: '#dc2626',
+        errorBg: '#fef2f2'
+    };
+
+    // ---------------- NPOs ----------------
+    // Three fictional social-services nonprofits that parallel Part 1's Biz A/B/C.
+    // Harbor carries the "clean baseline" role, Bridgeway carries donor-intent
+    // (restricted building), Northline carries "records show less than entity has."
+    const NPOs = {
+        H: { short: 'Harbor', name: 'Harbor Youth Mentors', tagline: 'One-to-one mentoring for at-risk teens' },
+        B: { short: 'Bridgeway', name: 'Bridgeway Counseling Center', tagline: 'Licensed counseling for adolescents' },
+        N: { short: 'Northline', name: 'Northline Youth Services', tagline: 'Mentoring, counseling, and after-school programs' }
+    };
+    const NPO_KEYS = ['H', 'B', 'N'];
+    const npoOptions = NPO_KEYS.map(k => ({ key: k, label: NPOs[k].short }));
+
+    // ---------------- Sounds ----------------
+    const createAudioContext = () => new (window.AudioContext || window.webkitAudioContext)();
+
+    const playSuccessTone = () => {
+        try {
+            const ctx = createAudioContext();
+            const notes = [523.25, 659.25, 783.99];
+            const startTime = ctx.currentTime;
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = freq; osc.type = 'sine';
+                const noteStart = startTime + (i * 0.1);
+                const noteEnd = noteStart + 0.15;
+                gain.gain.setValueAtTime(0, noteStart);
+                gain.gain.linearRampToValueAtTime(0.3, noteStart + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, noteEnd);
+                osc.start(noteStart); osc.stop(noteEnd + 0.1);
+            });
+            setTimeout(() => ctx.close(), 600);
+        } catch (e) { /* silent */ }
+    };
+
+    const playSoftNope = () => {
+        try {
+            const ctx = createAudioContext();
+            const notes = [400, 300];
+            const startTime = ctx.currentTime;
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = freq; osc.type = 'sine';
+                const noteStart = startTime + (i * 0.12);
+                const noteEnd = noteStart + 0.12;
+                gain.gain.setValueAtTime(0, noteStart);
+                gain.gain.linearRampToValueAtTime(0.2, noteStart + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, noteEnd);
+                osc.start(noteStart); osc.stop(noteEnd + 0.05);
+            });
+            setTimeout(() => ctx.close(), 400);
+        } catch (e) { /* silent */ }
+    };
+
+    const playBuzzer = () => {
+        try {
+            const ctx = createAudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 150; osc.type = 'sawtooth';
+            const startTime = ctx.currentTime;
+            gain.gain.setValueAtTime(0.25, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+            osc.start(startTime); osc.stop(startTime + 0.35);
+            setTimeout(() => ctx.close(), 400);
+        } catch (e) { /* silent */ }
+    };
+
+    const playContinueClick = () => {
+        try {
+            const ctx = createAudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 600; osc.type = 'sine';
+            const startTime = ctx.currentTime;
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.08);
+            osc.start(startTime); osc.stop(startTime + 0.1);
+            setTimeout(() => ctx.close(), 150);
+        } catch (e) { /* silent */ }
+    };
+
+    // ---------------- Glossary ----------------
+    const glossaryTerms = [
+        { term: 'Accounting identity', definition: 'The definitional relationship that Assets minus Liabilities equals a residual. For for-profits the residual is called Equities; for nonprofits it is called Net Assets. The identity holds at every point in time, for every entity, by construction.' },
+        { term: 'Net Assets', definition: 'The definitional residual on the right side of a nonprofit balance sheet — the difference between recorded assets and recorded liabilities. Shown in two subparts that track the status of donor restrictions, not ownership.' },
+        { term: 'Without Donor Restrictions', definition: 'The part of Net Assets where either no donor restriction was ever attached, or a prior donor restriction has since been satisfied and released.' },
+        { term: 'With Donor Restrictions', definition: 'The part of Net Assets made up of donor-restricted contributions whose restriction has not yet been met. Only donors can create binding restrictions.' },
+        { term: 'Contribution', definition: 'A voluntary, nonreciprocal transfer of cash or other assets to a nonprofit. The donor receives no direct benefit in return.' },
+        { term: 'Contributed services', definition: 'Donated labor. Recognized only if it creates or enhances a nonfinancial asset, or requires specialized skills the organization would otherwise purchase. Most volunteer labor does not meet these criteria and stays outside the records.' },
+        { term: 'Capitalize', definition: 'Record as an asset on the balance sheet. When an organization does not capitalize an item, the item does not appear in the accounting records \u2014 even though the organization still holds it.' },
+        { term: 'Collection', definition: 'Items held for public exhibition, education, or research; preserved; and subject to a policy requiring that any sale proceeds be reinvested in the collection. The convention allows an organization to choose whether to record its collection as an asset.' },
+        { term: 'Statement of Activities', definition: 'The nonprofit explanatory statement that decomposes the change in Net Assets during the period \u2014 both value changes (revenues, expenses, gains, losses) and restriction reclassifications (releases from donor restrictions).' },
+        { term: 'Recognition', definition: 'The process of admitting an item onto the accounting records. The convention requires sufficient evidence that an item exists and that its effects are at least in part financial \u2014 that they bear on future cash flows. Carried over from Part 1.' }
+    ];
+
+    // ---------------- Presentational components (module scope) ----------------
+    // IMPORTANT: these live at module scope, not inside Tutorial. If they were
+    // defined inside Tutorial, their function identity would change on every
+    // render, causing React to unmount/remount their subtrees — which made text
+    // inputs lose focus after each keystroke.
+
+    const NarrativeBlock = ({ children }) => (
+        <div
+            className="p-4 rounded-lg border-l-4 mb-4"
+            style={{ backgroundColor: colors.sand, borderColor: colors.accent }}
+        >
+            <div style={{ color: colors.earthDark }}>{children}</div>
+        </div>
+    );
+
+    const InsightPanel = ({ title, children }) => (
+        <div
+            className="p-4 rounded-lg border-2 mb-4 fade-in"
+            style={{ backgroundColor: colors.successBg, borderColor: colors.success }}
+        >
+            <div className="flex items-start gap-2">
+                <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                <div>
+                    {title && <p className="font-bold mb-2" style={{ color: colors.success }}>{title}</p>}
+                    <div style={{ color: '#166534' }}>{children}</div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const KeyInsightBox = ({ children }) => (
+        <div
+            className="p-4 rounded-lg border-2 mb-4"
+            style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}
+        >
+            <div className="flex items-start gap-3">
+                <span className="flex-shrink-0" aria-hidden="true">💡</span>
+                <div style={{ color: colors.earthDark }}>{children}</div>
+            </div>
+        </div>
+    );
+
+    const WarningPanel = ({ title, children }) => (
+        <div
+            className="p-4 rounded-lg border-2 mb-4"
+            style={{ backgroundColor: colors.warningBg, borderColor: colors.warning }}
+        >
+            <div className="flex items-start gap-2">
+                <span aria-hidden="true">⚠</span>
+                <div>
+                    {title && <p className="font-bold mb-2" style={{ color: '#92400e' }}>{title}</p>}
+                    <div style={{ color: '#92400e' }}>{children}</div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const ContinueButton = ({ onClick, disabled, children = 'Continue' }) => (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50"
+            style={{ backgroundColor: colors.primary }}
+        >
+            {children} <span aria-hidden="true">→</span>
+        </button>
+    );
+
+    const StatementCard = ({ title, subtitle, rows, footer }) => (
+        <div
+            className="rounded-lg border-2 p-4 bg-white flex flex-col"
+            style={{ borderColor: colors.earthLight }}
+        >
+            <div className="mb-2">
+                <p className="font-bold" style={{ color: colors.primary }}>{title}</p>
+                {subtitle && <p className="text-xs" style={{ color: colors.earth }}>{subtitle}</p>}
+            </div>
+            <div className="space-y-1 text-sm mono" style={{ color: colors.earthDark }}>
+                {rows.map((r, i) => (
+                    <div
+                        key={i}
+                        className={`flex justify-between ${r.isTotal ? 'border-t pt-1 font-bold' : ''} ${r.isSubheader ? 'font-semibold pt-2' : ''}`}
+                        style={r.isTotal ? { borderColor: colors.earthLight, color: colors.primary } : {}}
+                    >
+                        <span style={{ paddingLeft: r.indent ? 12 : 0 }}>{r.label}</span>
+                        <span>{r.value}</span>
+                    </div>
+                ))}
+            </div>
+            {footer && <div className="mt-3 text-xs italic" style={{ color: colors.earth }}>{footer}</div>}
+        </div>
+    );
+
+    const ThreeCardGrid = ({ cards }) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            {cards}
+        </div>
+    );
+
+    // Parameterized for Part 2: options is an array of {key, label}.
+    const PickAndRationale = ({
+        options,
+        pick, setPick, rationale, setRationale, submitted, setSubmitted,
+        onAdvance, prompt
+    }) => {
+        const canSubmit = pick && rationale.trim().length >= 8;
+
+        const handleSubmit = () => {
+            if (!canSubmit || submitted) return;
+            playSuccessTone();
+            setSubmitted(true);
+        };
+
+        return (
+            <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                <p className="mb-3 text-sm" style={{ color: colors.earthDark }}>{prompt}</p>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                    {options.map(opt => {
+                        const selected = pick === opt.key;
+                        return (
+                            <button
+                                key={opt.key}
+                                onClick={() => !submitted && setPick(opt.key)}
+                                disabled={submitted}
+                                className="p-3 rounded-lg border-2 text-center font-bold transition-all"
+                                style={{
+                                    borderColor: selected ? colors.primary : colors.earthLight,
+                                    backgroundColor: selected ? colors.sand : 'white',
+                                    color: selected ? colors.primary : colors.earthDark
+                                }}
+                            >
+                                {opt.label}
+                            </button>
+                        );
+                    })}
+                </div>
+                <label className="block text-xs mb-1" style={{ color: colors.earth }}>
+                    One sentence about why.
+                </label>
+                <textarea
+                    value={rationale}
+                    onChange={(e) => setRationale(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey && !submitted && canSubmit) {
+                            e.preventDefault(); handleSubmit();
+                        }
+                    }}
+                    disabled={submitted}
+                    placeholder="Write a short reason..."
+                    rows={2}
+                    className="w-full p-3 border rounded text-sm resize-none mb-3"
+                    style={{ borderColor: colors.earthLight }}
+                />
+                {!submitted ? (
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!canSubmit}
+                        className="w-full py-2 rounded font-bold text-white disabled:opacity-50"
+                        style={{ backgroundColor: colors.primary }}
+                    >
+                        Record my thinking
+                    </button>
+                ) : (
+                    <div>
+                        <InsightPanel title="Captured.">
+                            <p className="text-sm">Your thinking is captured. You can revise it at the next reveal.</p>
+                        </InsightPanel>
+                        <ContinueButton onClick={onAdvance}>Continue</ContinueButton>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const TwoChoiceWithExplanation = ({
+        question,
+        optionALabel = 'Yes',
+        optionBLabel = 'No',
+        optionAValue = 'yes',
+        optionBValue = 'no',
+        correctAnswer,
+        hints,
+        revealCopy,
+        successCopy,
+        choice, setChoice,
+        explanation, setExplanation,
+        attempts, setAttempts,
+        submitted, setSubmitted,
+        onAdvance,
+        hideContinue = false
+    }) => {
+        const canCheck = choice && explanation.trim().length >= 8;
+
+        const handleSubmit = () => {
+            if (submitted) return;
+            if (!canCheck) return;
+            if (choice === correctAnswer) {
+                playSuccessTone();
+                setSubmitted(true);
+                return;
+            }
+            const nextAttempts = attempts + 1;
+            setAttempts(nextAttempts);
+            if (nextAttempts >= 3) {
+                playBuzzer();
+                setSubmitted(true);
+            } else {
+                playSoftNope();
+            }
+        };
+
+        const wasCorrect = submitted && choice === correctAnswer;
+        const wasRevealed = submitted && choice !== correctAnswer;
+
+        const opts = [
+            { v: optionAValue, label: optionALabel },
+            { v: optionBValue, label: optionBLabel }
+        ];
+
+        return (
+            <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                <p className="mb-3 text-sm" style={{ color: colors.earthDark }}>
+                    <strong>Question:</strong> {question}
+                </p>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                    {opts.map(opt => {
+                        const selected = choice === opt.v;
+                        const showAsCorrect = submitted && opt.v === correctAnswer;
+                        return (
+                            <button
+                                key={opt.v}
+                                onClick={() => !submitted && setChoice(opt.v)}
+                                disabled={submitted}
+                                className="p-3 rounded-lg border-2 text-center font-bold transition-all"
+                                style={{
+                                    borderColor: showAsCorrect
+                                        ? colors.success
+                                        : selected ? colors.primary : colors.earthLight,
+                                    backgroundColor: showAsCorrect
+                                        ? colors.successBg
+                                        : selected ? colors.sand : 'white',
+                                    color: colors.earthDark
+                                }}
+                            >
+                                {opt.label}
+                            </button>
+                        );
+                    })}
+                </div>
+                {choice && !submitted && (
+                    <div className="mb-3">
+                        <label className="block text-xs mb-1" style={{ color: colors.earth }}>
+                            Say briefly why.
+                        </label>
+                        <textarea
+                            value={explanation}
+                            onChange={(e) => setExplanation(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey && canCheck) {
+                                    e.preventDefault(); handleSubmit();
+                                }
+                            }}
+                            disabled={submitted}
+                            placeholder="Your reasoning..."
+                            rows={2}
+                            className="w-full p-3 border rounded text-sm resize-none"
+                            style={{ borderColor: colors.earthLight }}
+                        />
+                    </div>
+                )}
+                {!submitted && choice && (
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!canCheck}
+                        className="w-full py-2 rounded font-bold text-white disabled:opacity-50"
+                        style={{ backgroundColor: colors.primary }}
+                    >
+                        Check
+                    </button>
+                )}
+                {attempts > 0 && attempts < 3 && !submitted && (
+                    <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: colors.warningBg }}>
+                        <p className="text-sm" style={{ color: '#92400e' }}>
+                            <strong>Hint {attempts}/2:</strong> {hints[attempts - 1]}
+                        </p>
+                    </div>
+                )}
+                {wasCorrect && (
+                    <InsightPanel title="Yes — that's it.">
+                        {successCopy}
+                    </InsightPanel>
+                )}
+                {wasRevealed && (
+                    <WarningPanel title="Here's what the exercise was pointing to:">
+                        {revealCopy}
+                    </WarningPanel>
+                )}
+                {submitted && !hideContinue && (
+                    <div className="mt-3">
+                        <ContinueButton onClick={onAdvance}>Continue</ContinueButton>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // ---------------- Main component ----------------
+    const Tutorial = () => {
+        // Phase control
+        const [phase, setPhase] = useState('welcome');
+
+        // UI state
+        const [showGlossary, setShowGlossary] = useState(false);
+        const [showSimplificationsNote, setShowSimplificationsNote] = useState(false);
+        const [devMode, setDevMode] = useState(false);
+        const [headerClickCount, setHeaderClickCount] = useState(0);
+
+        // Phase 2: totals — pick + rationale
+        const [totalsPick, setTotalsPick] = useState('');
+        const [totalsRationale, setTotalsRationale] = useState('');
+        const [totalsSubmitted, setTotalsSubmitted] = useState(false);
+
+        // Phase 3: asset-breakdown — pick + rationale
+        const [assetsPick, setAssetsPick] = useState('');
+        const [assetsRationale, setAssetsRationale] = useState('');
+        const [assetsSubmitted, setAssetsSubmitted] = useState(false);
+
+        // Phase 4: net-assets-breakdown — pick + rationale
+        const [netAssetsPick, setNetAssetsPick] = useState('');
+        const [netAssetsRationale, setNetAssetsRationale] = useState('');
+        const [netAssetsSubmitted, setNetAssetsSubmitted] = useState(false);
+
+        // Phase 5: statement-of-activities — two-choice-with-explanation
+        const [soaChoice, setSoaChoice] = useState('');
+        const [soaExplanation, setSoaExplanation] = useState('');
+        const [soaAttempts, setSoaAttempts] = useState(0);
+        const [soaSubmitted, setSoaSubmitted] = useState(false);
+
+        // Phase 6: recognition — contributed services
+        const [servChoice, setServChoice] = useState('');
+        const [servExplanation, setServExplanation] = useState('');
+        const [servAttempts, setServAttempts] = useState(0);
+        const [servSubmitted, setServSubmitted] = useState(false);
+
+        // Phase 7: collection-election
+        const [collChoice, setCollChoice] = useState('');
+        const [collExplanation, setCollExplanation] = useState('');
+        const [collAttempts, setCollAttempts] = useState(0);
+        const [collSubmitted, setCollSubmitted] = useState(false);
+
+        // Phase 8: consolidation reflection
+        const [consolidationReflection, setConsolidationReflection] = useState('');
+        const [consolidationSubmitted, setConsolidationSubmitted] = useState(false);
+
+        const phaseOrder = [
+            'welcome', 'totals', 'asset-breakdown', 'net-assets-breakdown',
+            'statement-of-activities', 'recognition-tests', 'collection-election',
+            'consolidation', 'complete'
+        ];
+        const currentPhaseIndex = Math.max(0, phaseOrder.indexOf(phase));
+        const progress = Math.round((currentPhaseIndex / (phaseOrder.length - 1)) * 100);
+
+        const handleRestart = () => {
+            playContinueClick();
+            setPhase('welcome');
+            setTotalsPick(''); setTotalsRationale(''); setTotalsSubmitted(false);
+            setAssetsPick(''); setAssetsRationale(''); setAssetsSubmitted(false);
+            setNetAssetsPick(''); setNetAssetsRationale(''); setNetAssetsSubmitted(false);
+            setSoaChoice(''); setSoaExplanation(''); setSoaAttempts(0); setSoaSubmitted(false);
+            setServChoice(''); setServExplanation(''); setServAttempts(0); setServSubmitted(false);
+            setCollChoice(''); setCollExplanation(''); setCollAttempts(0); setCollSubmitted(false);
+            setConsolidationReflection(''); setConsolidationSubmitted(false);
+            setShowSimplificationsNote(false);
+        };
+
+        const handleHeaderClick = () => {
+            const newCount = headerClickCount + 1;
+            setHeaderClickCount(newCount);
+            if (newCount >= 3) {
+                setDevMode(!devMode);
+                setHeaderClickCount(0);
+            }
+        };
+
+        const goTo = (p) => { playContinueClick(); setPhase(p); window.scrollTo(0, 0); };
+
+        // -------- HeaderWithControls (in-component — reads dev mode + phase state) --------
+        const HeaderWithControls = () => (
+            <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary }}>
+                <div className="flex justify-between items-start">
+                    <div onClick={handleHeaderClick} style={{ cursor: 'pointer' }}>
+                        <div className="flex items-center gap-2">
+                            <span className="text-white" aria-hidden="true">📖</span>
+                            <h1 className="text-lg font-bold text-white">One Donation, Three Nonprofits</h1>
+                        </div>
+                        <p className="text-sm mt-1" style={{ color: colors.earthLight }}>
+                            Accounting Prework • Part 2 • ~20 min
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <a
+                            href="../index.html"
+                            aria-label="Return to Main"
+                            title="Return to Main"
+                            className="p-2 rounded-lg hover:bg-white/10 no-underline inline-flex items-center justify-center"
+                        >
+                            <span className="text-white" aria-hidden="true">🏠</span>
+                        </a>
+                        <button
+                            onClick={() => setShowGlossary(true)}
+                            aria-label="Open glossary"
+                            title="Glossary"
+                            className="p-2 rounded-lg hover:bg-white/10"
+                        >
+                            <span className="text-white" aria-hidden="true">📖</span>
+                        </button>
+                        <button
+                            onClick={handleRestart}
+                            aria-label="Restart tutorial"
+                            title="Restart tutorial"
+                            className="p-2 rounded-lg hover:bg-white/10"
+                        >
+                            <span className="text-white text-lg" aria-hidden="true">↺</span>
+                        </button>
+                    </div>
+                </div>
+                <div className="mt-4">
+                    <div className="flex justify-between text-xs text-white/70 mb-1">
+                        <span>Progress</span>
+                        <span>{progress}%</span>
+                    </div>
+                    <div
+                        className="h-2 rounded-full"
+                        role="progressbar"
+                        aria-valuenow={progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                    >
+                        <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${progress}%`, backgroundColor: colors.accent }}
+                        />
+                    </div>
+                </div>
+                {devMode && (
+                    <div className="mt-3 pt-3 border-t border-white/20">
+                        <p className="text-xs text-white/70 mb-2">Dev Mode: skip to phase</p>
+                        <div className="flex flex-wrap gap-1">
+                            {phaseOrder.map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => setPhase(p)}
+                                    className={`px-2 py-1 rounded text-xs ${phase === p ? 'bg-white text-blue-900' : 'bg-white/20 text-white'}`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+
+        // -------- Glossary modal --------
+        const GlossaryModal = () => (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                    <div className="p-4 border-b sticky top-0 bg-white flex justify-between items-center">
+                        <h3 className="font-bold" style={{ color: colors.primary }}>Glossary</h3>
+                        <button
+                            onClick={() => setShowGlossary(false)}
+                            className="text-gray-500 hover:text-gray-700 text-xl"
+                            aria-label="Close glossary"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    <div className="p-4 space-y-3 text-sm">
+                        {glossaryTerms.map((item, i) => (
+                            <div key={i}>
+                                <p className="font-medium" style={{ color: colors.primary }}>{item.term}</p>
+                                <p className="text-gray-600 text-xs">{item.definition}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        // =================================================================
+        // PHASE RENDERERS — placeholders populated in subsequent edits
+        // =================================================================
+
+        const renderWelcome = () => (
+            <div>
+                <NarrativeBlock>
+                    <p className="mb-2">
+                        You still have <strong>$25k</strong>. You have decided that, if you give
+                        to a nonprofit, it will be to a nonprofit that helps youth and have
+                        identified three candidates.
+                    </p>
+                    <p>
+                        They are Harbor, Bridgeway, and Northline. You will walk through their
+                        records the same way you walked through the three for-profits in Part 1.
+                        The same identity organizes everything. What changes is the name of the
+                        residual and a few new questions about when items are allowed onto the
+                        records at all.
+                    </p>
+                </NarrativeBlock>
+
+                <div
+                    className="rounded-lg p-4 mb-4 border-2"
+                    style={{ backgroundColor: 'white', borderColor: colors.primary }}
+                >
+                    <p className="font-bold mb-3" style={{ color: colors.primary }}>What you'll discover</p>
+                    <ul className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            That the nonprofit balance sheet is built around the same identity you
+                            saw in Part 1 — the residual just carries a different name.
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            That the residual is shown in two parts tracking whether donor-imposed
+                            restrictions still apply — a split the for-profit side has no analog for.
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                            That the same evidence test from Part 1 decides what is admitted to
+                            the records — and real resources can end up on the wrong side of that
+                            line.
+                        </li>
+                    </ul>
+                </div>
+
+                <div
+                    className="rounded-lg mb-4 border"
+                    style={{ backgroundColor: colors.clayLight, borderColor: colors.clayDark }}
+                >
+                    <button
+                        onClick={() => setShowSimplificationsNote(!showSimplificationsNote)}
+                        className="w-full p-3 flex justify-between items-center"
+                        style={{ color: colors.earthDark }}
+                    >
+                        <span className="font-bold text-sm">A note on simplifications</span>
+                        <span aria-hidden="true">{showSimplificationsNote ? '▲' : '▼'}</span>
+                    </button>
+                    {showSimplificationsNote && (
+                        <div className="px-3 pb-3 text-sm fade-in" style={{ color: colors.earthDark }}>
+                            <p className="mb-2">
+                                Real nonprofit statements have many more lines than what appears here,
+                                and the rules that govern what is allowed onto them are more detailed
+                                than what is covered in this exercise.
+                            </p>
+                            <p>
+                                The purpose is to carry Part 1's structural bones over to the nonprofit
+                                setting — the same identity, the same evidence test, the same idea of
+                                an explanatory statement — and to see the handful of places where the
+                                nonprofit side asks questions the for-profit side never had to ask.
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                <ContinueButton onClick={() => goTo('totals')}>Begin</ContinueButton>
+            </div>
+        );
+
+        const renderTotals = () => {
+            const cards = NPO_KEYS.map(k => (
+                <StatementCard
+                    key={k}
+                    title={NPOs[k].short}
+                    subtitle="Balance Sheet — Year-end"
+                    rows={[
+                        { label: 'Total Assets', value: '$500', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Total Net Assets', value: '$500', isTotal: true }
+                    ]}
+                />
+            ));
+            return (
+                <div>
+                    <NarrativeBlock>
+                        <p>
+                            Here is each nonprofit's year-end record, reduced to totals. Three
+                            nonprofits, all doing work with teens — mentoring, counseling, after-school
+                            programs.
+                        </p>
+                    </NarrativeBlock>
+                    <ThreeCardGrid cards={cards} />
+                    <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            <strong>Notice:</strong> For each nonprofit,
+                            Total Assets minus Liabilities is <span className="mono">$500</span>.
+                            Total Net Assets is also <span className="mono">$500</span>.
+                        </p>
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            This is the same relationship you saw in Part 1 — Assets minus Liabilities
+                            equals a residual, by definition, at every point in time — the{' '}
+                            <strong>accounting identity</strong>. The only change from Part 1 is the
+                            name of the residual: in the for-profit setting it was called{' '}
+                            <em>Equities</em>; in the nonprofit setting it is called{' '}
+                            <em>Net Assets</em>. The statement itself is still the balance sheet —
+                            same structural job, showing the identity at a point in time.
+                        </p>
+                    </div>
+                    <PickAndRationale
+                        options={npoOptions}
+                        pick={totalsPick}
+                        setPick={setTotalsPick}
+                        rationale={totalsRationale}
+                        setRationale={setTotalsRationale}
+                        submitted={totalsSubmitted}
+                        setSubmitted={setTotalsSubmitted}
+                        onAdvance={() => goTo('asset-breakdown')}
+                        prompt={'If you decide to donate, your $25k has to go to one of these three. Based on what you see now, which do you pick?'}
+                    />
+                </div>
+            );
+        };
+
+        const renderAssetBreakdown = () => {
+            const cards = [
+                <StatementCard
+                    key="H"
+                    title={NPOs.H.short}
+                    subtitle="Balance Sheet — Year-end"
+                    rows={[
+                        { label: 'Assets', isSubheader: true, value: '' },
+                        { label: 'Cash', value: '$500', indent: true },
+                        { label: 'Total Assets', value: '$500', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Total Net Assets', value: '$500', isTotal: true }
+                    ]}
+                />,
+                <StatementCard
+                    key="B"
+                    title={NPOs.B.short}
+                    subtitle="Balance Sheet — Year-end"
+                    rows={[
+                        { label: 'Assets', isSubheader: true, value: '' },
+                        { label: 'Cash', value: '$100', indent: true },
+                        { label: 'Building', value: '$400', indent: true },
+                        { label: 'Total Assets', value: '$500', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Total Net Assets', value: '$500', isTotal: true }
+                    ]}
+                />,
+                <StatementCard
+                    key="N"
+                    title={NPOs.N.short}
+                    subtitle="Balance Sheet — Year-end"
+                    rows={[
+                        { label: 'Assets', isSubheader: true, value: '' },
+                        { label: 'Cash', value: '$500', indent: true },
+                        { label: 'Total Assets', value: '$500', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Total Net Assets', value: '$500', isTotal: true }
+                    ]}
+                />
+            ];
+            return (
+                <div>
+                    {totalsPick && (
+                        <KeyInsightBox>
+                            <p className="text-sm">
+                                On the totals alone, you picked <strong>{NPOs[totalsPick].short}</strong>.
+                                You wrote: <em>"{totalsRationale}"</em>
+                            </p>
+                        </KeyInsightBox>
+                    )}
+                    <NarrativeBlock>
+                        <p>
+                            Now with the asset side broken into its pieces. The identity still
+                            holds — each side still adds to $500 — but the composition is not the same
+                            for all three.
+                        </p>
+                    </NarrativeBlock>
+                    <ThreeCardGrid cards={cards} />
+                    <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            <strong>Notice:</strong> Harbor and Northline each hold their $500 in cash.
+                            Bridgeway holds $100 in cash and $400 in a <strong>building</strong>.
+                        </p>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            A building is an asset the same way cash is — it's a resource the entity
+                            controls, with a clear source of evidence for existence and for financial
+                            effects on future cash flows. What differs is how easily it can be converted
+                            back into cash. The exercise will come back to that difference.
+                        </p>
+                    </div>
+                    <PickAndRationale
+                        options={npoOptions}
+                        pick={assetsPick}
+                        setPick={setAssetsPick}
+                        rationale={assetsRationale}
+                        setRationale={setAssetsRationale}
+                        submitted={assetsSubmitted}
+                        setSubmitted={setAssetsSubmitted}
+                        onAdvance={() => goTo('net-assets-breakdown')}
+                        prompt={'With the asset composition now visible, which nonprofit would you donate the $25k to?'}
+                    />
+                </div>
+            );
+        };
+
+        const renderNetAssetsBreakdown = () => {
+            const mkCard = (k, cashRow, building, wdr, withDR, footer) => (
+                <StatementCard
+                    key={k}
+                    title={NPOs[k].short}
+                    subtitle="Balance Sheet — Year-end"
+                    rows={[
+                        { label: 'Assets', isSubheader: true, value: '' },
+                        { label: 'Cash', value: cashRow, indent: true },
+                        ...(building ? [{ label: 'Building', value: building, indent: true }] : []),
+                        { label: 'Total Assets', value: '$500', isTotal: true },
+                        { label: 'Liabilities', value: '$0' },
+                        { label: 'Net Assets', isSubheader: true, value: '' },
+                        { label: 'Without Donor Restrictions', value: wdr, indent: true },
+                        { label: 'With Donor Restrictions', value: withDR, indent: true },
+                        { label: 'Total Net Assets', value: '$500', isTotal: true }
+                    ]}
+                    footer={footer}
+                />
+            );
+            const cards = [
+                mkCard('H', '$500', null, '$500', '$0'),
+                mkCard('B', '$100', '$400', '$100', '$400'),
+                mkCard('N', '$500', null, '$500', '$0')
+            ];
+            return (
+                <div>
+                    {assetsPick && (
+                        <KeyInsightBox>
+                            <p className="text-sm">
+                                With the asset composition visible, you picked{' '}
+                                <strong>{NPOs[assetsPick].short}</strong>. You wrote:{' '}
+                                <em>"{assetsRationale}"</em>
+                            </p>
+                        </KeyInsightBox>
+                    )}
+                    <NarrativeBlock>
+                        <p>
+                            Now the right side is broken into parts too. The residual — Net Assets — is
+                            shown in two categories: <strong>Without Donor Restrictions</strong> and{' '}
+                            <strong>With Donor Restrictions</strong>. The two together still add to the
+                            Net Assets total, and the identity still holds.
+                        </p>
+                    </NarrativeBlock>
+                    <ThreeCardGrid cards={cards} />
+                    <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            <strong>What the two categories track.</strong> They track the status of{' '}
+                            <em>donor restrictions</em> on accumulated contributions — not ownership,
+                            and not spending capacity.
+                        </p>
+                        <ul className="space-y-2 text-sm mb-2" style={{ color: colors.earthDark }}>
+                            <li className="flex gap-2">
+                                <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                                <span><strong>With Donor Restrictions:</strong> contributions that came in
+                                with a donor-imposed restriction that has <em>not</em> yet been met.</span>
+                            </li>
+                            <li className="flex gap-2">
+                                <span style={{ color: colors.accent }} aria-hidden="true">•</span>
+                                <span><strong>Without Donor Restrictions:</strong> either no donor
+                                restriction was ever attached, or a prior restriction has since been
+                                satisfied and released into this category.</span>
+                            </li>
+                        </ul>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            <strong>Bridgeway's $400 With Donor Restrictions</strong> reflects donors who
+                            gave a building earmarked for counseling services for uninsured adolescents.
+                            The purpose restriction continues as long as the building is used that way —
+                            it has not been released.
+                        </p>
+                    </div>
+                    <PickAndRationale
+                        options={npoOptions}
+                        pick={netAssetsPick}
+                        setPick={setNetAssetsPick}
+                        rationale={netAssetsRationale}
+                        setRationale={setNetAssetsRationale}
+                        submitted={netAssetsSubmitted}
+                        setSubmitted={setNetAssetsSubmitted}
+                        onAdvance={() => goTo('statement-of-activities')}
+                        prompt={'With the Net Assets breakdown now visible, which nonprofit would you donate the $25k to?'}
+                    />
+                </div>
+            );
+        };
+
+        const renderStatementOfActivities = () => {
+            const soaRows = [
+                { label: 'Contribution revenue', wdr: '$50', withDR: '$30', total: '$80' },
+                { label: 'Released from restrictions', wdr: '$30', withDR: '($30)', total: '$0', accent: true },
+                { label: 'Counseling program expenses', wdr: '($40)', withDR: '—', total: '($40)' },
+                { label: 'Change in Net Assets', wdr: '$40', withDR: '$0', total: '$40', isTotal: true }
+            ];
+            return (
+                <div>
+                    {netAssetsPick && (
+                        <KeyInsightBox>
+                            <p className="text-sm">
+                                With the Net Assets breakdown visible, you picked{' '}
+                                <strong>{NPOs[netAssetsPick].short}</strong>. You wrote:{' '}
+                                <em>"{netAssetsRationale}"</em>
+                            </p>
+                        </KeyInsightBox>
+                    )}
+                    <NarrativeBlock>
+                        <p className="mb-2">
+                            The balance sheet is a snapshot — the identity at one
+                            moment. Between two snapshots, Net Assets changed. The explanatory statement
+                            that decomposes that change is the <strong>Statement of Activities</strong>.
+                        </p>
+                        <p>
+                            Part 1's income statement decomposed the change in Retained Earnings for the
+                            period. The Statement of Activities plays a similar role for Net Assets — but
+                            it does one extra job.
+                        </p>
+                    </NarrativeBlock>
+                    <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            <strong>Two things can cause Net Assets to change during a period:</strong>
+                        </p>
+                        <ul className="space-y-2 text-sm mb-2" style={{ color: colors.earthDark }}>
+                            <li className="flex gap-2">
+                                <span style={{ color: colors.accent }} aria-hidden="true">1.</span>
+                                <span><strong>Value flows</strong> — revenues coming in, expenses going
+                                out, gains and losses. These change Total Net Assets.</span>
+                            </li>
+                            <li className="flex gap-2">
+                                <span style={{ color: colors.accent }} aria-hidden="true">2.</span>
+                                <span><strong>Restriction reclassifications</strong> — a donor-imposed
+                                restriction is satisfied, and the associated amount moves from With
+                                Donor Restrictions into Without Donor Restrictions. These do{' '}
+                                <em>not</em> change Total Net Assets. They change the composition.</span>
+                            </li>
+                        </ul>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            The Statement of Activities shows both in one statement.
+                        </p>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                        <p className="font-bold mb-1" style={{ color: colors.primary }}>
+                            Bridgeway — Statement of Activities
+                        </p>
+                        <p className="text-xs mb-3" style={{ color: colors.earth }}>
+                            For the period ending year-end
+                        </p>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm mono" style={{ color: colors.earthDark }}>
+                                <thead>
+                                    <tr style={{ color: colors.primary }}>
+                                        <th className="text-left pb-2 pr-2">Activity</th>
+                                        <th className="text-right pb-2 px-2">Without DR</th>
+                                        <th className="text-right pb-2 px-2">With DR</th>
+                                        <th className="text-right pb-2 pl-2">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {soaRows.map((r, i) => (
+                                        <tr
+                                            key={i}
+                                            className={r.isTotal ? 'border-t font-bold' : ''}
+                                            style={{
+                                                borderColor: colors.earthLight,
+                                                color: r.isTotal ? colors.primary : (r.accent ? colors.earthDark : 'inherit'),
+                                                backgroundColor: r.accent ? colors.warningBg : 'transparent'
+                                            }}
+                                        >
+                                            <td className="py-1 pr-2">{r.label}</td>
+                                            <td className="py-1 px-2 text-right">{r.wdr}</td>
+                                            <td className="py-1 px-2 text-right">{r.withDR}</td>
+                                            <td className="py-1 pl-2 text-right">{r.total}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <p className="text-xs mt-3 italic" style={{ color: colors.earth }}>
+                            The highlighted row is the reclassification.
+                        </p>
+                    </div>
+                    <KeyInsightBox>
+                        <p className="text-sm mb-2">
+                            <strong>Read the "Released from restrictions" row across.</strong> It adds
+                            $30 to Without Donor Restrictions, subtracts $30 from With Donor
+                            Restrictions, and totals $0. Nothing was created or destroyed — $30 of
+                            donor-restricted funds were spent for their intended purpose, which
+                            satisfied the restriction and moved those dollars into Without Donor
+                            Restrictions.
+                        </p>
+                        <p className="text-sm">
+                            The other rows move Total Net Assets up or down. The release row only moves
+                            funds sideways between the two categories.
+                        </p>
+                    </KeyInsightBox>
+                    <TwoChoiceWithExplanation
+                        question={'Does the $30 on the "Released from restrictions" line cause Total Net Assets to change?'}
+                        optionALabel="Yes"
+                        optionBLabel="No"
+                        optionAValue="yes"
+                        optionBValue="no"
+                        correctAnswer="no"
+                        hints={[
+                            'Look at the Total column for that row. What does it sum to?',
+                            'A release moves funds from one Net Assets category to another. Compare it to a contribution or an expense, which add to or subtract from Total.'
+                        ]}
+                        revealCopy={(
+                            <p className="text-sm">
+                                <strong>No.</strong> A release is a reclassification, not a value flow.
+                                The $30 is subtracted from With Donor Restrictions and added to Without
+                                Donor Restrictions; the two moves cancel in the Total column. Total Net
+                                Assets changes only from revenues, expenses, gains, and losses — not
+                                from reclassifications.
+                            </p>
+                        )}
+                        successCopy={(
+                            <p className="text-sm">
+                                The release line zeros out in Total. It moves dollars between categories
+                                but does not create or destroy anything. Value flows (revenues,
+                                expenses, gains, losses) are what change Total Net Assets.
+                            </p>
+                        )}
+                        choice={soaChoice} setChoice={setSoaChoice}
+                        explanation={soaExplanation} setExplanation={setSoaExplanation}
+                        attempts={soaAttempts} setAttempts={setSoaAttempts}
+                        submitted={soaSubmitted} setSubmitted={setSoaSubmitted}
+                        onAdvance={() => goTo('recognition-tests')}
+                    />
+                </div>
+            );
+        };
+
+        const renderRecognitionTests = () => (
+            <div>
+                <NarrativeBlock>
+                    <p className="mb-2">
+                        Everything on the balance sheet and the Statement of Activities had to
+                        clear the <strong>evidence test</strong> from Part 1:
+                        sufficient evidence that (1) the item exists, and (2) its effects are at
+                        least in part financial — that they bear on future cash flows.
+                    </p>
+                    <p>
+                        The nonprofit setting asks this question on an item the for-profit side
+                        did not have to face: <strong>contributed services</strong> (donated
+                        labor). It is a place where a real economic event may or may not be
+                        allowed onto the records.
+                    </p>
+                </NarrativeBlock>
+
+                <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                    <p className="font-bold mb-2" style={{ color: colors.primary }}>
+                        Contributed services — most volunteer labor stays outside the records
+                    </p>
+                    <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                        Donated labor is recognized only if it meets one of two tests:
+                    </p>
+                    <ul className="space-y-1 text-sm mb-2" style={{ color: colors.earthDark }}>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">1.</span>
+                            <span>The services <strong>create or enhance a nonfinancial
+                            asset</strong> (e.g., a volunteer carpenter builds a shelter).</span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.accent }} aria-hidden="true">2.</span>
+                            <span>The services require <strong>specialized skills</strong>
+                            (license, certification, professional credential) <em>and</em>{' '}
+                            the organization would otherwise have to purchase them (e.g.,
+                            pro-bono legal work, a donated audit).</span>
+                        </li>
+                    </ul>
+                    <p className="text-sm" style={{ color: colors.earthDark }}>
+                        Volunteer hours outside these two tests do not enter the records at
+                        all — not as revenue, not as expense, nowhere.
+                    </p>
+                </div>
+
+                <TwoChoiceWithExplanation
+                    question={'Harbor runs its mentoring program with parent volunteers — roughly 500 hours per year of one-to-one sessions with teens. If parents did not volunteer, Harbor would have to hire mentors at $20/hour. Does Harbor recognize contribution revenue for these 500 hours?'}
+                    optionALabel="Yes, recognize"
+                    optionBLabel="No, do not recognize"
+                    optionAValue="yes"
+                    optionBValue="no"
+                    correctAnswer="no"
+                    hints={[
+                        'Walk through the two tests. Did the volunteers create or enhance a nonfinancial asset? If not, do their services require a professional license or certification?',
+                        'Mentoring is valuable labor, and the organization would pay for it if it had to. But "would otherwise purchase" is only half of the second test — the other half is "specialized skills" in the technical sense of a license or credential.'
+                    ]}
+                    revealCopy={(
+                        <p className="text-sm mb-2">
+                            <strong>Do not recognize.</strong> The volunteers didn't create or
+                            enhance a nonfinancial asset, and mentoring, as valuable as it is,
+                            doesn't require a professional license or certification in the
+                            sense the standard uses. The labor fails the second test.
+                        </p>
+                    )}
+                    successCopy={(
+                        <p className="text-sm">
+                            The labor is real and economically essential, but it does not
+                            enter the records. Contribution revenue shows $0 for volunteer
+                            mentoring. The standard-setters drew the evidence line so that
+                            most volunteer labor stays outside the records — even when the
+                            organization could not operate without it.
+                        </p>
+                    )}
+                    choice={servChoice} setChoice={setServChoice}
+                    explanation={servExplanation} setExplanation={setServExplanation}
+                    attempts={servAttempts} setAttempts={setServAttempts}
+                    submitted={servSubmitted} setSubmitted={setServSubmitted}
+                    onAdvance={() => goTo('collection-election')}
+                />
+
+                {servSubmitted && (
+                    <KeyInsightBox>
+                        <p className="text-sm">
+                            <strong>Records show less than the entity has.</strong> Harbor's
+                            records will not show any contributed-services revenue, even
+                            though 500 hours of real labor are powering the mentoring
+                            program. The gap between what the records show and what the
+                            entity actually relies on is real, and it is a feature of where
+                            the convention drew its evidence line — not a failure.
+                        </p>
+                    </KeyInsightBox>
+                )}
+            </div>
+        );
+
+        const renderCollectionElection = () => (
+            <div>
+                <NarrativeBlock>
+                    <p className="mb-2">
+                        One more place the convention asks a recognition question. Northline holds a{' '}
+                        <strong>community-history archive</strong> — oral histories, photographs, and
+                        memorabilia from the neighborhoods it serves. The archive is used in Northline's
+                        heritage-education program with teens.
+                    </p>
+                    <p>
+                        Items like these can qualify as a <strong>collection</strong> — items held
+                        for exhibition, education, or research; preserved; and governed by a policy
+                        that any sale proceeds must be reinvested in the collection. Northline's
+                        archive qualifies.
+                    </p>
+                </NarrativeBlock>
+
+                <KeyInsightBox>
+                    <p className="text-sm">
+                        <strong>Capitalize</strong> means <em>record as an asset on the balance
+                        sheet.</em> In everyday English "capitalize" means something different
+                        (take advantage of). In accounting it is a specific action: admit this
+                        item onto the books as an asset. When an organization does not capitalize
+                        an item, the item does not appear in the accounting records — even though
+                        the organization still holds it.
+                    </p>
+                </KeyInsightBox>
+
+                <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                    <p className="text-sm" style={{ color: colors.earthDark }}>
+                        The convention allows an organization holding a collection to choose
+                        whether to capitalize it. <strong>Northline has chosen not to
+                        capitalize its archive.</strong> The archive is real, and Northline
+                        holds it — the question is only whether it appears in the accounting
+                        records.
+                    </p>
+                </div>
+
+                <TwoChoiceWithExplanation
+                    question={'A local family donates a historical photograph to Northline\u2019s archive. A curator confirms a fair value of $100. Because Northline has chosen not to capitalize its archive, does anything appear on either of Northline\u2019s statements as a result?'}
+                    optionALabel="Something appears"
+                    optionBLabel="Nothing appears"
+                    optionAValue="something"
+                    optionBValue="nothing"
+                    correctAnswer="nothing"
+                    hints={[
+                        'Walk through both options. If Northline capitalized, the photograph would appear on the balance sheet as a $100 asset, and $100 of contribution revenue would appear on the Statement of Activities; Net Assets would increase by $100. What happens when Northline does not capitalize?',
+                        'If the photograph is not recorded as an asset, there is no asset line for it. That also means there is no contribution revenue to recognize against it — no asset, no revenue, nothing for Net Assets to absorb.'
+                    ]}
+                    revealCopy={(
+                        <div className="text-sm space-y-2">
+                            <p>
+                                <strong>Nothing appears on either statement.</strong>
+                            </p>
+                            <p>
+                                If Northline had chosen to capitalize, the photograph would appear on
+                                the balance sheet as a $100 asset; $100 of
+                                contribution revenue would appear on the Statement of Activities; Net
+                                Assets would increase by $100.
+                            </p>
+                            <p>
+                                Because Northline has chosen not to capitalize, <strong>nothing
+                                appears on either statement</strong>. The photograph is real —
+                                Northline holds it, protects it, and will use it in heritage
+                                education — but the entire economic event stays outside the records.
+                                The archive is visible only in the footnotes.
+                            </p>
+                        </div>
+                    )}
+                    successCopy={(
+                        <div className="text-sm space-y-2">
+                            <p>
+                                Right. If Northline had capitalized, the photograph would have been
+                                a $100 asset with $100 of contribution revenue, and Net Assets would
+                                have increased by $100. Because Northline has chosen not to
+                                capitalize, <strong>nothing appears on either statement.</strong>{' '}
+                                The photograph exists, and the archive is real — they are simply
+                                outside the accounting records.
+                            </p>
+                        </div>
+                    )}
+                    choice={collChoice} setChoice={setCollChoice}
+                    explanation={collExplanation} setExplanation={setCollExplanation}
+                    attempts={collAttempts} setAttempts={setCollAttempts}
+                    submitted={collSubmitted} setSubmitted={setCollSubmitted}
+                    onAdvance={() => goTo('consolidation')}
+                />
+
+                {collSubmitted && (
+                    <KeyInsightBox>
+                        <p className="text-sm">
+                            Take a step back. Northline's balance sheet shows
+                            exactly what Harbor's shows — $500 in cash, no liabilities, $500 in Net
+                            Assets Without Donor Restrictions. But Northline also holds a community
+                            archive that Harbor does not. The records are silent about it. This is the
+                            convention giving an organization permission to leave a real asset — even
+                            a major one — entirely outside the books.
+                        </p>
+                    </KeyInsightBox>
+                )}
+            </div>
+        );
+
+        const renderConsolidation = () => {
+            const canSubmit = consolidationReflection.trim().length >= 15;
+            const handleReflect = () => {
+                if (!canSubmit || consolidationSubmitted) return;
+                playSuccessTone();
+                setConsolidationSubmitted(true);
+            };
+            return (
+                <div>
+                    <NarrativeBlock>
+                        <p>
+                            Four things this exercise shows about the structure of nonprofit
+                            financial statements — and how each one relates back to Part 1.
+                        </p>
+                    </NarrativeBlock>
+                    <div
+                        className="rounded-lg p-4 mb-4 border-2"
+                        style={{ backgroundColor: 'white', borderColor: colors.primary }}
+                    >
+                        <ol className="space-y-3 text-sm" style={{ color: colors.earthDark }}>
+                            <li>
+                                <strong style={{ color: colors.primary }}>1. Same identity, different name for the residual.</strong>{' '}
+                                Assets − Liabilities = Net Assets for nonprofits, the same way
+                                Assets − Liabilities = Equities for for-profits. The identity holds
+                                at every point in time, by construction.
+                            </li>
+                            <li>
+                                <strong style={{ color: colors.primary }}>2. The residual is shown in subparts — but the question the subparts answer is different.</strong>{' '}
+                                Part 1's Equities split into Contributed Capital and Retained
+                                Earnings, which answered a "where did it come from" question. Part
+                                2's Net Assets splits into Without Donor Restrictions and With Donor
+                                Restrictions, which tracks whether donor-imposed restrictions still
+                                apply to the use of the resources.
+                            </li>
+                            <li>
+                                <strong style={{ color: colors.primary }}>3. The explanatory statement does one extra job.</strong>{' '}
+                                Part 1's income statement decomposed value changes to Retained
+                                Earnings. The Statement of Activities decomposes value changes to
+                                Net Assets <em>and</em> shows reclassifications between the two
+                                donor-restriction categories. The release row zeros out in the Total
+                                column — it moves dollars sideways, not up or down.
+                            </li>
+                            <li>
+                                <strong style={{ color: colors.primary }}>4. The evidence test still governs — and the nonprofit setting puts it on display.</strong>{' '}
+                                Most contributed services stay outside the records. A collection
+                                an organization chooses not to capitalize never enters the records
+                                at all. In each case a real economic event exists; the convention
+                                draws its evidence line somewhere that leaves it out.
+                            </li>
+                        </ol>
+                    </div>
+
+                    {(totalsPick || assetsPick || netAssetsPick) && (
+                        <div
+                            className="rounded-lg p-4 mb-4"
+                            style={{ backgroundColor: colors.clayLight }}
+                        >
+                            <p className="font-bold mb-2 text-sm" style={{ color: colors.primary }}>
+                                Your thinking through the exercise
+                            </p>
+                            <ul className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                                {totalsPick && (
+                                    <li>
+                                        <strong>Totals only:</strong> {NPOs[totalsPick].short} — <em>"{totalsRationale}"</em>
+                                    </li>
+                                )}
+                                {assetsPick && (
+                                    <li>
+                                        <strong>Asset breakdown:</strong> {NPOs[assetsPick].short} — <em>"{assetsRationale}"</em>
+                                    </li>
+                                )}
+                                {netAssetsPick && (
+                                    <li>
+                                        <strong>Net Assets breakdown:</strong> {NPOs[netAssetsPick].short} — <em>"{netAssetsRationale}"</em>
+                                    </li>
+                                )}
+                            </ul>
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                        <p className="font-semibold mb-2 text-sm" style={{ color: colors.primary }}>
+                            Before you move on
+                        </p>
+                        <label className="block text-xs mb-1" style={{ color: colors.earth }}>
+                            Write a sentence or two about what the nonprofit statements now let you
+                            see that you did not see at the start — and where they still leave
+                            something out.
+                        </label>
+                        <textarea
+                            value={consolidationReflection}
+                            onChange={(e) => setConsolidationReflection(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey && canSubmit && !consolidationSubmitted) {
+                                    e.preventDefault(); handleReflect();
+                                }
+                            }}
+                            disabled={consolidationSubmitted}
+                            placeholder="Your reflection..."
+                            rows={3}
+                            className="w-full p-3 border rounded text-sm resize-none mb-3"
+                            style={{ borderColor: colors.earthLight }}
+                        />
+                        {!consolidationSubmitted ? (
+                            <button
+                                onClick={handleReflect}
+                                disabled={!canSubmit}
+                                className="w-full py-2 rounded font-bold text-white disabled:opacity-50"
+                                style={{ backgroundColor: colors.primary }}
+                            >
+                                Submit reflection
+                            </button>
+                        ) : (
+                            <ContinueButton onClick={() => goTo('complete')}>Continue</ContinueButton>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const renderComplete = () => (
+            <div>
+                <div className="text-center mb-6">
+                    <div
+                        className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
+                        style={{ backgroundColor: colors.accent }}
+                    >
+                        <span className="text-3xl" aria-hidden="true">🏆</span>
+                    </div>
+                    <h2 className="text-2xl font-bold" style={{ color: colors.primary }}>
+                        Part 2 Complete
+                    </h2>
+                </div>
+
+                <div
+                    className="rounded-lg p-4 mb-4 border-2"
+                    style={{ backgroundColor: 'white', borderColor: colors.success }}
+                >
+                    <h3 className="font-bold mb-3" style={{ color: colors.primary }}>What you discovered</h3>
+                    <ol className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>The <strong>accounting identity</strong> organizes the nonprofit balance sheet the same way it did in Part 1. Only the name of the residual changes: Net Assets in place of Equities.</span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>Net Assets is shown in two categories that track whether <strong>donor-imposed restrictions</strong> still apply to the use of the resources — a split the for-profit side has no analog for.</span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>The <strong>Statement of Activities</strong> decomposes changes to Net Assets — both value flows (revenues, expenses, gains, losses) and reclassifications (releases from donor restrictions, which zero out in the Total column).</span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span style={{ color: colors.success }} aria-hidden="true">✓</span>
+                            <span>The <strong>evidence test</strong> governs recognition in the nonprofit setting, just as it did in Part 1. Most contributed services stay outside the records; a collection an organization chooses not to capitalize produces nothing on either statement at all.</span>
+                        </li>
+                    </ol>
+                </div>
+
+                <KeyInsightBox>
+                    <p className="font-semibold mb-2">The deeper point</p>
+                    <p className="text-sm">
+                        There is a <strong>common structure</strong> used to compile and report
+                        financial information: an identity at a point in time, a residual shown
+                        in subparts that carry specific information, and an explanatory statement
+                        that decomposes how the residual changed. But that structure is{' '}
+                        <strong>tailored to the situation</strong> — to what kind of organization
+                        is being reported on, and to what kind of financial information is useful
+                        for that kind of organization. The for-profit and nonprofit pictures in
+                        these two tutorials share a skeleton and diverge in the details that
+                        matter. Next up: what that common structure actually is, and how the
+                        tailoring happens.
+                    </p>
+                </KeyInsightBox>
+
+                <div
+                    className="rounded-lg p-4 mb-4"
+                    style={{ backgroundColor: colors.clayLight }}
+                >
+                    <h3 className="font-bold mb-2" style={{ color: colors.primary }}>Coming next</h3>
+                    <p className="text-sm" style={{ color: colors.earthDark }}>
+                        The common structure of financial reporting, and how it gets tailored to
+                        the situation. You have now seen the same skeleton applied to a for-profit
+                        and to a nonprofit. The next tutorial steps back and asks: what is that
+                        skeleton, and what decisions determine how it's tailored to the kind of
+                        organization and the kind of information that's useful?
+                    </p>
+                    <p className="font-bold mt-2 text-sm" style={{ color: colors.primary }}>
+                        Next: a common structure, tailored to the situation
+                    </p>
+                </div>
+
+                <button
+                    onClick={() => { playContinueClick(); window.location.href = '2.3-decision.html'; }}
+                    className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 mb-3"
+                    style={{ backgroundColor: colors.primary }}
+                >
+                    Next Tutorial <span aria-hidden="true">→</span>
+                </button>
+                <button
+                    onClick={handleRestart}
+                    className="w-full py-3 rounded-lg font-bold border-2 flex items-center justify-center gap-2 hover:bg-gray-50"
+                    style={{ borderColor: colors.primary, color: colors.primary }}
+                >
+                    <span aria-hidden="true">↺</span> Restart Tutorial
+                </button>
+            </div>
+        );
+
+        // -------- Dispatch --------
+        let content = null;
+        if (phase === 'welcome') content = renderWelcome();
+        else if (phase === 'totals') content = renderTotals();
+        else if (phase === 'asset-breakdown') content = renderAssetBreakdown();
+        else if (phase === 'net-assets-breakdown') content = renderNetAssetsBreakdown();
+        else if (phase === 'statement-of-activities') content = renderStatementOfActivities();
+        else if (phase === 'recognition-tests') content = renderRecognitionTests();
+        else if (phase === 'collection-election') content = renderCollectionElection();
+        else if (phase === 'consolidation') content = renderConsolidation();
+        else if (phase === 'complete') content = renderComplete();
+
+        return (
+            <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                <div className="p-4 max-w-3xl mx-auto">
+                    <HeaderWithControls />
+                    <div key={phase} className="fade-in">{content}</div>
+                </div>
+                {showGlossary && <GlossaryModal />}
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Tutorial />);
+    </script>
+</body>
+</html>

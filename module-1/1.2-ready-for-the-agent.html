@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 1.2: Ready for the Agent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        /**
+         * Tutorial 1.2: Ready for the Agent
+         * CMU METALS Accounting Prework — Module 1, Activity 2
+         *
+         * @version 1.0
+         * @date 2026-05-17
+         * @description The student preps for an insurance agent's visit (Maria). Given
+         *   30 specific bike-shop items, they aggregate them into 4 unlabeled bins,
+         *   then name each bin in their own words. Maria arrives, reads back the
+         *   labels as four coverage lines, and foreshadows that cash is a separate
+         *   conversation. A generative test (a new box of brake pads arrives — where
+         *   does it go?) confirms the categorization is usable. Pre-entity language
+         *   throughout: you organize, you label, you talk to Maria. The shop doesn't
+         *   own, possess, or have a policy.
+         */
+
+        // ============================================================
+        // Color palette (project standard — do not substitute)
+        // ============================================================
+        const colors = {
+            primary: '#00356b',
+            sand: '#f5f1e8',
+            earth: '#8b7355',
+            earthLight: '#d4c4a8',
+            earthDark: '#5c4d3d',
+            accent: '#c9a227',
+            clay: '#c4a574',
+            clayLight: '#e8dcc8',
+            clayDark: '#a08050',
+            success: '#22c55e',
+            successBg: '#f0fdf4',
+            warning: '#f59e0b',
+            warningBg: '#fffbeb',
+            error: '#dc2626',
+            errorBg: '#fef2f2',
+        };
+
+        // ============================================================
+        // Glossary (plain-language only — no accounting jargon)
+        // ============================================================
+        const glossaryTerms = [
+            { term: 'Promise', definition: 'Something you have agreed to do or pay, where the doing or paying comes later.' },
+            { term: 'Bill', definition: 'A statement of money you owe to someone.' },
+            { term: 'Deposit', definition: 'Money paid in advance for something you will receive or have done.' },
+            { term: 'Customer', definition: 'Someone who pays you for goods or services.' },
+            { term: 'Supplier', definition: 'A business you buy from.' },
+        ];
+
+        // ============================================================
+        // Sound functions (Web Audio API — no files)
+        // ============================================================
+        const createAudioContext = () =>
+            new (window.AudioContext || window.webkitAudioContext)();
+
+        const playSuccessTone = () => {
+            try {
+                const ctx = createAudioContext();
+                [523.25, 659.25, 783.99].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.frequency.value = freq; osc.type = 'sine';
+                    const t = ctx.currentTime + i * 0.1;
+                    gain.gain.setValueAtTime(0, t);
+                    gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+                    osc.start(t); osc.stop(t + 0.25);
+                });
+                setTimeout(() => ctx.close(), 600);
+            } catch(e) {}
+        };
+
+        const playSoftNope = () => {
+            try {
+                const ctx = createAudioContext();
+                [400, 300].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.frequency.value = freq; osc.type = 'sine';
+                    const t = ctx.currentTime + i * 0.12;
+                    gain.gain.setValueAtTime(0, t);
+                    gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+                    osc.start(t); osc.stop(t + 0.17);
+                });
+                setTimeout(() => ctx.close(), 400);
+            } catch(e) {}
+        };
+
+        const playBuzzer = () => {
+            try {
+                const ctx = createAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = 150; osc.type = 'sawtooth';
+                const t = ctx.currentTime;
+                gain.gain.setValueAtTime(0.25, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                osc.start(t); osc.stop(t + 0.35);
+                setTimeout(() => ctx.close(), 400);
+            } catch(e) {}
+        };
+
+        const playContinueClick = () => {
+            try {
+                const ctx = createAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = 600; osc.type = 'sine';
+                const t = ctx.currentTime;
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.15, t + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+                osc.start(t); osc.stop(t + 0.1);
+                setTimeout(() => ctx.close(), 150);
+            } catch(e) {}
+        };
+
+        // ============================================================
+        // Tutorial app
+        // ============================================================
+        const TutorialApp = () => {
+            // Navigation
+            const [phase, setPhase] = useState('welcome');
+            const [step, setStep] = useState(0);
+
+            // UI overlays
+            const [showGlossary, setShowGlossary] = useState(false);
+            const [devMode, setDevMode] = useState(false);
+            const [headerClickCount, setHeaderClickCount] = useState(0);
+
+            // Item description popover (single-open)
+            const [expandedDescId, setExpandedDescId] = useState(null);
+
+            // Phase 3: cluster
+            const [clusterDraggedId, setClusterDraggedId] = useState(null);
+            const [clusterPlacements, setClusterPlacements] = useState({});
+
+            // Phase 4: labels
+            const [binLabels, setBinLabels] = useState({ b1: '', b2: '', b3: '', b4: '' });
+
+            // Phase 6: generative test
+            const [generativeDraggedId, setGenerativeDraggedId] = useState(null);
+            const [generativePlacement, setGenerativePlacement] = useState(null);
+            const [generativeAttempts, setGenerativeAttempts] = useState(0);
+            const [generativeSubmitted, setGenerativeSubmitted] = useState(false);
+
+            // ============================================================
+            // Constants
+            // ============================================================
+            const phaseOrder = [
+                'welcome', 'preview', 'cluster', 'label',
+                'agent-arrives', 'reflect', 'complete',
+            ];
+
+            // 30 items in deliberately shuffled order for the source bin.
+            // The `cat` field is the hidden natural category, used to determine
+            // which student bin is "the parts bin" for the generative test.
+            const items = [
+                { id: 'p3', text: 'Stack of inner tubes', cat: 'parts',
+                  desc: 'Rubber tubes that go inside the tire, in the sizes you sell. The most common consumable in any bike shop.' },
+                { id: 'e1', text: 'Bicycle repair stand', cat: 'equipment',
+                  desc: 'A floor-standing clamp that holds a bike off the ground at working height. Almost every repair starts with putting the bike on the stand.' },
+                { id: 't2', text: 'Hex / Allen key set', cat: 'tool',
+                  desc: 'L-shaped keys with hexagonal heads, in metric sizes. Most modern bicycle bolts use these instead of regular wrenches.' },
+                { id: 'f3', text: 'Display rack', cat: 'fixture',
+                  desc: 'A floor or wall rack for items you want customers to see and pick up — helmets, lights, gloves, water bottles. Designed to look good, not just hold things.' },
+                { id: 'p4', text: 'Box of chains', cat: 'parts',
+                  desc: 'New bike chains in standard speeds (8-speed, 11-speed, 12-speed). A chain wears out every few thousand miles and gets replaced as a unit.' },
+                { id: 'e3', text: 'Air compressor', cat: 'equipment',
+                  desc: 'A motor-driven pump that supplies high-pressure air for inflating tires fast, seating tubeless tires, and blowing dust out of bearings.' },
+                { id: 't7', text: 'Tire levers', cat: 'tool',
+                  desc: 'Smooth plastic levers that pry a tire bead off the rim without pinching the inner tube. You usually need two or three.' },
+                { id: 'f5', text: 'Painted shop sign', cat: 'fixture',
+                  desc: 'The hand-painted board (or vinyl banner) hanging over the door with the shop name. Tells anyone walking by what kind of place this is.' },
+                { id: 't4', text: 'Cable cutters', cat: 'tool',
+                  desc: 'Specialized cutters with a clean shearing action. Regular wire cutters mash brake and shift cables; these snip them cleanly so the housing slides on without fraying.' },
+                { id: 'p5', text: 'Crate of tires', cat: 'parts',
+                  desc: 'New tires in the common sizes for road, hybrid, and mountain bikes. Tires wear, get cuts, or get replaced for upgrade reasons.' },
+                { id: 'e4', text: 'Wheel truing stand', cat: 'equipment',
+                  desc: 'A free-standing fixture that holds a bare wheel between two arms with adjustable feelers. You spin the wheel and tighten or loosen spokes until it runs straight.' },
+                { id: 'f2', text: 'Shelving units', cat: 'fixture',
+                  desc: 'Tall metal shelves for storing boxes of parts and back-stock. The "back room" of any shop, even when there’s no back room.' },
+                { id: 't6', text: 'Spoke wrench', cat: 'tool',
+                  desc: 'A small wrench that grips the nipples (the nuts at the rim end of each spoke). Used to tighten or loosen spokes when truing a wheel.' },
+                { id: 'p6', text: 'Bin of bar tape', cat: 'parts',
+                  desc: 'Rolls of cloth or padded tape that wrap around drop handlebars. Gets dirty or worn and replaced for cosmetic and grip reasons.' },
+                { id: 'e2', text: 'Workbench', cat: 'equipment',
+                  desc: 'A heavy table where you do bench work — assembling components, laying out small parts, cleaning. Drawers and shelves underneath for tools.' },
+                { id: 'f1', text: 'Cash drawer', cat: 'fixture',
+                  desc: 'A metal box with compartments for bills and coins. The drawer itself is a fixture — the cash inside it is something else, which we’ll come back to.' },
+                { id: 'p1', text: 'Box of brake pads', cat: 'parts',
+                  desc: 'Rubber blocks (for rim brakes) or pad cartridges (for disc brakes), in a few common sizes. Wear out and get replaced regularly.' },
+                { id: 't8', text: 'Pedal wrench', cat: 'tool',
+                  desc: 'A long, thin open-end wrench made specifically to fit between the pedal and the crank arm. Pedals are usually too tight for a standard wrench.' },
+                { id: 'e8', text: 'Bench grinder', cat: 'equipment',
+                  desc: 'A motor with a grinding wheel on each end, bolted to the workbench. Used to smooth burrs on cut cables, sharpen tools, and shape repair brackets.' },
+                { id: 'p8', text: 'Stack of saddles', cat: 'parts',
+                  desc: 'New bike seats in different shapes and widths. Customers often want to swap the original saddle for one that fits them better.' },
+                { id: 'p2', text: 'Spool of brake and derailleur cable', cat: 'parts',
+                  desc: 'Long coils of thin braided steel wire. Cut to length when installing new shifters or brakes. Different gauges for shift vs. brake.' },
+                { id: 't5', text: 'Chain breaker', cat: 'tool',
+                  desc: 'A small tool that pushes the pin out of a chain link so you can shorten, lengthen, or remove the chain. Bike chains are held together pin-and-plate, not by hooks.' },
+                { id: 'e7', text: 'Headset press', cat: 'equipment',
+                  desc: 'A tool with a threaded rod that presses the headset bearings (which let the front fork turn) into the head tube of the frame. You can’t install a headset by hand.' },
+                { id: 'f4', text: 'Desk', cat: 'fixture',
+                  desc: 'Where you do paperwork, take phone orders, look up parts on a laptop. Usually tucked off the main floor.' },
+                { id: 't1', text: 'Metric wrench set', cat: 'tool',
+                  desc: 'Wrenches in metric sizes (mostly 8mm–17mm). For the nuts and bolts that hold a bike together — stems, seat clamps, pedal axles, brake mounts.' },
+                { id: 'e5', text: 'Parts washer', cat: 'equipment',
+                  desc: 'A tub of solvent with a small pump and brush. Scrubs grease and grit off chains, cassettes, and bearings much faster than rags.' },
+                { id: 'p7', text: 'Box of bottom brackets', cat: 'parts',
+                  desc: 'The bearing assemblies that hold the crank axle inside the frame. A few sizes to match common bikes. Threads in or presses in depending on the frame.' },
+                { id: 'f6', text: 'First-aid kit', cat: 'fixture',
+                  desc: 'A box with bandages, gauze, scissors, and antiseptic for the inevitable minor cuts and bruises that come with working on bikes.' },
+                { id: 't3', text: 'Torque wrench', cat: 'tool',
+                  desc: 'A wrench with a calibrated handle that clicks when a bolt is tightened to a precise force. Carbon-fiber parts especially can crack if over-tightened.' },
+                { id: 'e6', text: 'Shop vacuum', cat: 'equipment',
+                  desc: 'A heavy-duty vacuum for picking up metal shavings, broken-tire debris, and the floor sweepings of any bike shop.' },
+            ];
+
+            // The new item that arrives in Phase 6 (generative test).
+            const newItem = {
+                id: 'new-brake-pads',
+                text: 'Box of brake pads (new delivery)',
+                cat: 'parts',
+                desc: 'A fresh delivery from your supplier — same as the brake pads you already have, just more of them.',
+            };
+
+            const binIds = ['b1', 'b2', 'b3', 'b4'];
+
+            // ============================================================
+            // Derived state
+            // ============================================================
+            const progress = Math.round(
+                (phaseOrder.indexOf(phase) / (phaseOrder.length - 1)) * 100
+            );
+            const itemsUnplaced = items.filter(item => !clusterPlacements[item.id]);
+            const allPlaced = Object.keys(clusterPlacements).length === items.length;
+            const trimmedLabels = binIds.map(id => binLabels[id].trim());
+            const allLabeled = trimmedLabels.every(l => l !== '');
+            const labelsLower = trimmedLabels.map(l => l.toLowerCase());
+            const hasDuplicates = new Set(labelsLower.filter(l => l !== '')).size
+                < labelsLower.filter(l => l !== '').length;
+            const labelsValid = allLabeled && !hasDuplicates;
+
+            // Determine which student bin holds the most parts items — that's the
+            // "correct" bin for the new brake-pads delivery in Phase 6.
+            const partsBinId = (() => {
+                let best = binIds[0];
+                let bestCount = -1;
+                for (const binId of binIds) {
+                    const count = items.filter(
+                        item => clusterPlacements[item.id] === binId && item.cat === 'parts'
+                    ).length;
+                    if (count > bestCount) { best = binId; bestCount = count; }
+                }
+                return best;
+            })();
+
+            // ============================================================
+            // Handlers
+            // ============================================================
+            const handleHeaderClick = () => {
+                const n = headerClickCount + 1;
+                setHeaderClickCount(n);
+                if (n >= 3) { setDevMode(!devMode); setHeaderClickCount(0); }
+            };
+
+            const handleRestart = () => {
+                playContinueClick();
+                setPhase('welcome');
+                setStep(0);
+                setExpandedDescId(null);
+                setClusterDraggedId(null); setClusterPlacements({});
+                setBinLabels({ b1: '', b2: '', b3: '', b4: '' });
+                setGenerativeDraggedId(null); setGenerativePlacement(null);
+                setGenerativeAttempts(0); setGenerativeSubmitted(false);
+            };
+
+            const handleClusterDrop = (binId) => {
+                if (!clusterDraggedId) return;
+                playSuccessTone();
+                setClusterPlacements({ ...clusterPlacements, [clusterDraggedId]: binId });
+                setClusterDraggedId(null);
+            };
+
+            const handleGenerativeDrop = (binId) => {
+                if (!generativeDraggedId || generativeSubmitted) return;
+                if (binId === partsBinId) {
+                    playSuccessTone();
+                    setGenerativePlacement(binId);
+                    setGenerativeSubmitted(true);
+                } else {
+                    const n = generativeAttempts + 1;
+                    setGenerativeAttempts(n);
+                    if (n >= 3) {
+                        playBuzzer();
+                        setGenerativePlacement(binId);
+                        setGenerativeSubmitted(true);
+                    } else {
+                        playSoftNope();
+                    }
+                }
+                setGenerativeDraggedId(null);
+            };
+
+            const toggleDescription = (itemId) => {
+                setExpandedDescId(expandedDescId === itemId ? null : itemId);
+            };
+
+            // ============================================================
+            // Reusable components
+            // ============================================================
+            const Header = () => (
+                <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary }}>
+                    <div className="flex justify-between items-start">
+                        <div onClick={handleHeaderClick} style={{ cursor: 'pointer' }}>
+                            <h1 className="text-lg font-bold text-white">Tutorial 1.2: Ready for the Agent</h1>
+                            <p className="text-sm mt-1" style={{ color: colors.earthLight }}>
+                                Bicycle repair shop &middot; ~12 min
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <a
+                                href="../index.html"
+                                className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer no-underline inline-flex items-center justify-center"
+                                title="Return to Main"
+                                aria-label="Return to Main"
+                            >🏠</a>
+                            <button
+                                onClick={() => setShowGlossary(true)}
+                                className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                title="Glossary"
+                                aria-label="Open glossary"
+                            >📖</button>
+                            <button
+                                onClick={handleRestart}
+                                className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                title="Restart tutorial"
+                                aria-label="Restart tutorial"
+                            >↺</button>
+                        </div>
+                    </div>
+
+                    <div className="mt-4">
+                        <div className="flex justify-between text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                            <span>Progress</span>
+                            <span>{progress}%</span>
+                        </div>
+                        <div
+                            className="h-2 rounded-full"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                            role="progressbar"
+                            aria-valuenow={progress}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                        >
+                            <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${progress}%`, backgroundColor: colors.accent }}
+                            />
+                        </div>
+                    </div>
+
+                    {devMode && (
+                        <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                            <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>Dev: skip to phase</p>
+                            <div className="flex flex-wrap gap-1">
+                                {phaseOrder.map(p => (
+                                    <button
+                                        key={p}
+                                        onClick={() => { setStep(0); setPhase(p); }}
+                                        className="px-2 py-1 rounded text-xs border-0 cursor-pointer"
+                                        style={{
+                                            backgroundColor: phase === p ? 'white' : 'rgba(255,255,255,0.2)',
+                                            color: phase === p ? colors.primary : 'white'
+                                        }}
+                                    >{p}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            const NarrativeBlock = ({ children }) => (
+                <div
+                    className="p-4 rounded-lg mb-4 italic"
+                    style={{
+                        backgroundColor: colors.sand,
+                        borderLeft: `4px solid ${colors.accent}`,
+                        color: '#374151'
+                    }}
+                >
+                    {children}
+                </div>
+            );
+
+            const InsightPanel = ({ title, children }) => (
+                <div
+                    className="p-4 rounded-lg border-2 mb-4"
+                    style={{ backgroundColor: colors.successBg, borderColor: colors.success }}
+                >
+                    <div className="flex items-start gap-2">
+                        <span className="text-lg mt-0.5 flex-shrink-0" style={{ color: colors.success }}>✓</span>
+                        <div>
+                            {title && (
+                                <p className="font-bold mb-2" style={{ color: colors.success }}>{title}</p>
+                            )}
+                            <div style={{ color: '#166534' }}>{children}</div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const KeyInsightBox = ({ children }) => (
+                <div
+                    className="p-4 rounded-lg border-2 mb-4"
+                    style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}
+                >
+                    <div className="flex items-start gap-3">
+                        <span className="text-lg flex-shrink-0 mt-0.5" style={{ color: colors.accent }}>💡</span>
+                        <div style={{ color: colors.earthDark }}>{children}</div>
+                    </div>
+                </div>
+            );
+
+            const MariaBox = ({ children }) => (
+                <div
+                    className="rounded-lg p-4 mb-3 border-2"
+                    style={{ borderColor: colors.clayDark, backgroundColor: 'white' }}
+                >
+                    <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.primary }}>MARIA</p>
+                    <div className="text-sm italic" style={{ color: colors.earthDark }}>{children}</div>
+                </div>
+            );
+
+            const ContinueButton = ({ onClick, children = 'Continue', disabled = false }) => (
+                <button
+                    onClick={() => { if (!disabled) { playContinueClick(); onClick(); } }}
+                    disabled={disabled}
+                    className="w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 border-0 cursor-pointer disabled:cursor-not-allowed"
+                    style={{
+                        backgroundColor: disabled ? colors.earth : colors.primary,
+                        color: 'white',
+                        opacity: disabled ? 0.5 : 1,
+                    }}
+                >
+                    {children} →
+                </button>
+            );
+
+            // Item card with clickable ⓘ for description. Used in source bin
+            // and inside placed bins. Drag is on the body; the info button has
+            // stopPropagation so clicking it doesn't initiate a drag.
+            const ItemCard = ({ item, faded }) => {
+                const isExpanded = expandedDescId === item.id;
+                return (
+                    <div
+                        draggable
+                        onDragStart={() => setClusterDraggedId(item.id)}
+                        className="rounded-lg border-2 select-none px-3 py-2"
+                        style={{
+                            borderColor: colors.primary,
+                            backgroundColor: clusterDraggedId === item.id ? colors.sand : 'white',
+                            color: colors.primary,
+                            cursor: 'grab',
+                            opacity: faded ? 0.6 : 1,
+                            maxWidth: '100%',
+                        }}
+                    >
+                        <div className="flex justify-between items-start gap-2">
+                            <span className="text-sm font-medium">{item.text}</span>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); toggleDescription(item.id); }}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                className="border-0 bg-transparent cursor-pointer text-base leading-none flex-shrink-0"
+                                style={{ color: colors.earth }}
+                                title="What is this?"
+                                aria-label="Show description"
+                                aria-expanded={isExpanded}
+                            >ⓘ</button>
+                        </div>
+                        {isExpanded && (
+                            <p
+                                className="text-xs mt-2 font-normal not-italic"
+                                style={{ color: colors.earthDark, lineHeight: '1.4' }}
+                            >
+                                {item.desc}
+                            </p>
+                        )}
+                    </div>
+                );
+            };
+
+            const GlossaryModal = () => (
+                <div
+                    className="fixed inset-0 flex items-center justify-center p-4 z-50"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                >
+                    <div className="bg-white rounded-xl max-w-md w-full" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+                        <div
+                            className="p-4 border-b flex justify-between items-center sticky top-0 bg-white"
+                            style={{ borderColor: colors.earthLight }}
+                        >
+                            <h3 className="font-bold" style={{ color: colors.primary }}>📖 Glossary</h3>
+                            <button
+                                onClick={() => setShowGlossary(false)}
+                                className="text-gray-500 hover:text-gray-700 text-2xl font-light border-0 bg-transparent cursor-pointer"
+                                aria-label="Close glossary"
+                            >✕</button>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            {glossaryTerms.map((item, i) => (
+                                <div key={i}>
+                                    <p className="font-semibold text-sm" style={{ color: colors.primary }}>{item.term}</p>
+                                    <p className="text-xs mt-0.5" style={{ color: colors.earthDark }}>{item.definition}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // ============================================================
+            // Phase renderers
+            // ============================================================
+            const renderWelcome = () => (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-2xl mx-auto">
+                        <Header />
+
+                        <NarrativeBlock>
+                            A few weeks have passed. You made the two lists, and they&rsquo;re pinned to the wall
+                            above the workbench. Tools, parts, equipment &mdash; they&rsquo;re in one column.
+                            Promises you&rsquo;ve made &mdash; in the other. They&rsquo;ve helped. But it&rsquo;s
+                            Tuesday, and something else is on the calendar this week.
+                        </NarrativeBlock>
+
+                        <div
+                            className="rounded-lg p-4 border-2 mb-4"
+                            style={{ backgroundColor: 'white', borderColor: colors.earthLight }}
+                        >
+                            <h3 className="font-bold mb-3" style={{ color: colors.primary }}>
+                                What You&rsquo;ll Discover
+                            </h3>
+                            <ul className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.accent }}>→</span>
+                                    That a list of 30 items isn&rsquo;t yet a useful summary.
+                                </li>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.accent }}>→</span>
+                                    That grouping similar things turns a long list into something you can use.
+                                </li>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.accent }}>→</span>
+                                    That the names you choose for those groups become how you talk about the shop.
+                                </li>
+                            </ul>
+                        </div>
+
+                        <ContinueButton onClick={() => { setStep(0); setPhase('preview'); }}>
+                            Begin Tutorial
+                        </ContinueButton>
+                    </div>
+                </div>
+            );
+
+            const renderPreview = () => (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-2xl mx-auto">
+                        <Header />
+
+                        <NarrativeBlock>
+                            After the fire scare a few weeks back, you&rsquo;ve decided to look into insuring the
+                            things you use in the shop. You call Maria &mdash; the agent your hardware-store friend uses.
+                        </NarrativeBlock>
+
+                        <MariaBox>
+                            &ldquo;Good idea. Eventually I&rsquo;ll need a detailed list &mdash; every wrench, every
+                            tube, every bracket, with a value for each. But to draft a policy I just need a summary.
+                            Group your stuff in a way that makes sense, give me a rough value for each group, and
+                            we&rsquo;ll work from that. Next Thursday at 2pm?&rdquo;
+                        </MariaBox>
+
+                        <NarrativeBlock>
+                            You hang up. A summary by Thursday. Time to put one together.
+                        </NarrativeBlock>
+
+                        <ContinueButton onClick={() => { setStep(0); setPhase('cluster'); }}>
+                            Get started
+                        </ContinueButton>
+                    </div>
+                </div>
+            );
+
+            const renderCluster = () => (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-2xl mx-auto">
+                        <Header />
+
+                        <NarrativeBlock>
+                            Here&rsquo;s the list of things you use in the shop &mdash; thirty items. Below are four
+                            empty bins. Drag each item into the bin where you think it belongs. Click any
+                            item&rsquo;s <strong>ⓘ</strong> if you&rsquo;re not sure what it is.
+                        </NarrativeBlock>
+
+                        {itemsUnplaced.length > 0 && (
+                            <div className="mb-4">
+                                <p className="text-sm font-medium mb-2" style={{ color: colors.earthDark }}>
+                                    Items left to place: {itemsUnplaced.length} of {items.length}
+                                </p>
+                                <div
+                                    className="p-3 rounded-lg border-2 grid grid-cols-2 gap-2"
+                                    style={{ borderColor: colors.earthLight, backgroundColor: 'white' }}
+                                >
+                                    {itemsUnplaced.map(item => (
+                                        <ItemCard key={item.id} item={item} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                            {binIds.map((binId, idx) => {
+                                const itemsInBin = items.filter(item => clusterPlacements[item.id] === binId);
+                                return (
+                                    <div
+                                        key={binId}
+                                        onDragOver={(e) => e.preventDefault()}
+                                        onDrop={() => handleClusterDrop(binId)}
+                                        className="min-h-32 p-3 rounded-lg border-2 border-dashed"
+                                        style={{
+                                            borderColor: colors.earthLight,
+                                            backgroundColor: colors.clayLight,
+                                        }}
+                                    >
+                                        <p className="text-sm font-bold mb-2" style={{ color: colors.earthDark }}>
+                                            Group {idx + 1}
+                                            <span
+                                                className="text-xs font-normal ml-2"
+                                                style={{ color: colors.earth }}
+                                            >({itemsInBin.length})</span>
+                                        </p>
+                                        <div className="flex flex-col gap-1">
+                                            {itemsInBin.map(item => (
+                                                <div
+                                                    key={item.id}
+                                                    draggable
+                                                    onDragStart={() => setClusterDraggedId(item.id)}
+                                                    className="px-2 py-1 rounded text-xs select-none"
+                                                    style={{
+                                                        backgroundColor: colors.successBg,
+                                                        color: '#166534',
+                                                        border: `1px solid ${colors.success}`,
+                                                        cursor: 'grab',
+                                                    }}
+                                                >
+                                                    {item.text}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {allPlaced && (
+                            <>
+                                <InsightPanel>
+                                    Thirty items, four bins. Now those bins need names.
+                                </InsightPanel>
+                                <ContinueButton onClick={() => { setStep(0); setPhase('label'); }}>
+                                    Name them
+                                </ContinueButton>
+                            </>
+                        )}
+                    </div>
+                </div>
+            );
+
+            const renderLabel = () => (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-2xl mx-auto">
+                        <Header />
+
+                        <NarrativeBlock>
+                            You grouped them. Now name each group &mdash; whatever fits, the words you&rsquo;d use
+                            to tell Maria what&rsquo;s in each one.
+                        </NarrativeBlock>
+
+                        <div className="space-y-4 mb-4">
+                            {binIds.map((binId, idx) => {
+                                const itemsInBin = items.filter(item => clusterPlacements[item.id] === binId);
+                                return (
+                                    <div
+                                        key={binId}
+                                        className="rounded-lg border-2 p-4"
+                                        style={{ borderColor: colors.earthLight, backgroundColor: 'white' }}
+                                    >
+                                        <label
+                                            htmlFor={`label-${binId}`}
+                                            className="text-xs font-bold mb-1 block"
+                                            style={{ color: colors.earth }}
+                                        >
+                                            Group {idx + 1} &middot; {itemsInBin.length} items
+                                        </label>
+                                        <input
+                                            id={`label-${binId}`}
+                                            type="text"
+                                            value={binLabels[binId]}
+                                            onChange={(e) => setBinLabels({ ...binLabels, [binId]: e.target.value })}
+                                            placeholder={`Name for Group ${idx + 1}…`}
+                                            className="w-full p-2 rounded border-2 mb-3 font-bold"
+                                            style={{
+                                                borderColor: colors.earthLight,
+                                                color: colors.primary,
+                                                fontSize: '16px',
+                                            }}
+                                        />
+                                        <div className="flex flex-wrap gap-1">
+                                            {itemsInBin.map(item => (
+                                                <span
+                                                    key={item.id}
+                                                    className="px-2 py-1 rounded text-xs"
+                                                    style={{
+                                                        backgroundColor: colors.clayLight,
+                                                        color: colors.earthDark
+                                                    }}
+                                                >
+                                                    {item.text}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {hasDuplicates && (
+                            <div
+                                className="p-3 rounded-lg mb-3"
+                                style={{ backgroundColor: colors.warningBg }}
+                            >
+                                <p className="text-sm" style={{ color: '#92400e' }}>
+                                    Each group needs a different name.
+                                </p>
+                            </div>
+                        )}
+                        {!allLabeled && !hasDuplicates && (
+                            <div
+                                className="p-3 rounded-lg mb-3"
+                                style={{ backgroundColor: colors.warningBg }}
+                            >
+                                <p className="text-sm" style={{ color: '#92400e' }}>
+                                    Give each of the four groups a name to continue.
+                                </p>
+                            </div>
+                        )}
+
+                        <ContinueButton
+                            onClick={() => { setStep(0); setPhase('agent-arrives'); }}
+                            disabled={!labelsValid}
+                        >
+                            Continue
+                        </ContinueButton>
+                    </div>
+                </div>
+            );
+
+            const renderAgentArrives = () => (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-2xl mx-auto">
+                        <Header />
+
+                        <NarrativeBlock>
+                            Thursday, 2pm. Maria walks in, clipboard in hand. She nods at the list on the workbench.
+                        </NarrativeBlock>
+
+                        <MariaBox>
+                            &ldquo;OK, walk me through what we&rsquo;re covering.&rdquo;
+                        </MariaBox>
+
+                        <p className="text-xs text-center mb-3" style={{ color: colors.earth }}>
+                            You walk her through the four groups, one at a time.
+                        </p>
+
+                        <MariaBox>
+                            <p className="mb-2">
+                                &ldquo;Got it. So we&rsquo;ll write four coverage lines:&rdquo;
+                            </p>
+                            <ul className="space-y-1 ml-4 not-italic">
+                                {binIds.map((binId, idx) => (
+                                    <li key={binId} style={{ color: colors.primary }}>
+                                        &middot; <strong>{trimmedLabels[idx]}</strong>
+                                    </li>
+                                ))}
+                            </ul>
+                            <p className="mt-2">
+                                &ldquo;For each one, you&rsquo;ll tell me roughly what it&rsquo;s worth, and that&rsquo;s the
+                                line on the policy.&rdquo;
+                            </p>
+                        </MariaBox>
+
+                        <MariaBox>
+                            &ldquo;One thing &mdash; the cash drawer&rsquo;s a fixture and goes on the property side.
+                            The cash inside it, though, isn&rsquo;t covered by a property policy. For that we&rsquo;d
+                            want crime coverage &mdash; another conversation. Note it for later.&rdquo;
+                        </MariaBox>
+
+                        <KeyInsightBox>
+                            <p>
+                                Four lines. Each one a group of items you grouped yourself. The list of thirty separate
+                                things you made earlier &mdash; Maria reads as four lines on her policy. That&rsquo;s the
+                                structure she&rsquo;ll work with.
+                            </p>
+                        </KeyInsightBox>
+
+                        <ContinueButton onClick={() => { setStep(0); setPhase('reflect'); }} />
+                    </div>
+                </div>
+            );
+
+            const renderReflect = () => {
+                const hints = [
+                    `Look at what's in each bin. Brake pads belong with the other things you sell or install — not with tools, big equipment, or fixtures.`,
+                    `You named one of the bins for parts you keep on hand. That's where the new brake pads go.`,
+                ];
+
+                return (
+                    <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                        <div className="p-4 max-w-2xl mx-auto">
+                            <Header />
+
+                            <NarrativeBlock>
+                                Friday morning. A delivery arrives &mdash; a new box of brake pads. Where does it go?
+                            </NarrativeBlock>
+
+                            {!generativeSubmitted && (
+                                <div className="mb-4">
+                                    <div
+                                        draggable
+                                        onDragStart={() => setGenerativeDraggedId('new')}
+                                        className="px-3 py-2 rounded-lg border-2 inline-block font-medium select-none"
+                                        style={{
+                                            borderColor: colors.primary,
+                                            backgroundColor: generativeDraggedId ? colors.sand : 'white',
+                                            color: colors.primary,
+                                            cursor: 'grab',
+                                        }}
+                                    >
+                                        {newItem.text}
+                                    </div>
+                                    <p className="text-xs mt-1 italic" style={{ color: colors.earth }}>
+                                        {newItem.desc}
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                {binIds.map((binId, idx) => {
+                                    const itemsInBin = items.filter(item => clusterPlacements[item.id] === binId);
+                                    const isCorrect = binId === partsBinId;
+                                    const isPlacement = generativePlacement === binId;
+                                    let borderColor = colors.earthLight;
+                                    let bg = colors.clayLight;
+                                    if (generativeSubmitted && isCorrect) {
+                                        borderColor = colors.success;
+                                        bg = colors.successBg;
+                                    } else if (generativeSubmitted && isPlacement && !isCorrect) {
+                                        borderColor = colors.error;
+                                        bg = colors.errorBg;
+                                    }
+                                    return (
+                                        <div
+                                            key={binId}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDrop={() => handleGenerativeDrop(binId)}
+                                            className="min-h-24 p-3 rounded-lg border-2 border-dashed"
+                                            style={{ borderColor, backgroundColor: bg }}
+                                        >
+                                            <p className="text-sm font-bold mb-1" style={{ color: colors.earthDark }}>
+                                                {trimmedLabels[idx]}
+                                            </p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {itemsInBin.slice(0, 4).map(item => (
+                                                    <span
+                                                        key={item.id}
+                                                        className="text-xs"
+                                                        style={{ color: colors.earth }}
+                                                    >
+                                                        {item.text}{itemsInBin.indexOf(item) < Math.min(itemsInBin.length, 4) - 1 ? ',' : ''}
+                                                    </span>
+                                                ))}
+                                                {itemsInBin.length > 4 && (
+                                                    <span className="text-xs" style={{ color: colors.earth }}>
+                                                        and {itemsInBin.length - 4} more
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {generativeAttempts > 0 && !generativeSubmitted && (
+                                <div
+                                    className="p-3 rounded-lg mb-3"
+                                    style={{ backgroundColor: colors.warningBg }}
+                                >
+                                    <p className="text-sm" style={{ color: '#92400e' }}>
+                                        <strong>Hint {generativeAttempts}/2:</strong> {hints[generativeAttempts - 1]}
+                                    </p>
+                                </div>
+                            )}
+                            {generativeSubmitted && generativeAttempts < 3 && (
+                                <p className="mb-3 text-sm font-medium" style={{ color: colors.success }}>
+                                    ✓ Right &mdash; goes with your <strong>{trimmedLabels[binIds.indexOf(partsBinId)]}</strong> bin.
+                                </p>
+                            )}
+                            {generativeSubmitted && generativeAttempts >= 3 && (
+                                <div
+                                    className="p-3 rounded-lg mb-3"
+                                    style={{ backgroundColor: colors.warningBg }}
+                                >
+                                    <p className="text-sm font-medium" style={{ color: '#92400e' }}>
+                                        Here&rsquo;s what we were looking for:
+                                    </p>
+                                    <p className="text-sm mt-1" style={{ color: '#92400e' }}>
+                                        Brake pads go with the other parts you keep on hand. You&rsquo;d already named that bin
+                                        <strong> {trimmedLabels[binIds.indexOf(partsBinId)]}</strong>.
+                                    </p>
+                                </div>
+                            )}
+
+                            {generativeSubmitted && (
+                                <>
+                                    <KeyInsightBox>
+                                        <p>
+                                            You found the bin without much thought &mdash; because the bin made sense.
+                                            The structure you built can absorb new things as they arrive. That&rsquo;s
+                                            what categories do. You&rsquo;ll be glad you have them.
+                                        </p>
+                                    </KeyInsightBox>
+                                    <ContinueButton onClick={() => { setStep(0); setPhase('complete'); }} />
+                                </>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderComplete = () => (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-2xl mx-auto">
+                        <Header />
+
+                        <div className="text-center mb-6">
+                            <div
+                                className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
+                                style={{ backgroundColor: colors.accent }}
+                            >
+                                <span className="text-4xl">🏆</span>
+                            </div>
+                            <h2 className="text-2xl font-bold" style={{ color: colors.primary }}>
+                                Tutorial Complete!
+                            </h2>
+                        </div>
+
+                        <div
+                            className="rounded-lg p-4 mb-4 border-2"
+                            style={{ backgroundColor: 'white', borderColor: colors.success }}
+                        >
+                            <h3 className="font-bold mb-3" style={{ color: colors.primary }}>
+                                What You Discovered
+                            </h3>
+                            <ol className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.success }}>✓</span>
+                                    A list of 30 things isn&rsquo;t useful at face value; grouping makes it tractable.
+                                </li>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.success }}>✓</span>
+                                    You found four categories by feeling which things belong together.
+                                </li>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.success }}>✓</span>
+                                    The names you chose for those categories are the structure you&rsquo;ll keep working with.
+                                </li>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.success }}>✓</span>
+                                    New things, when they arrive, fit into the structure you already built.
+                                </li>
+                            </ol>
+                        </div>
+
+                        <KeyInsightBox>
+                            <p className="font-semibold mb-2">The deeper point</p>
+                            <p>
+                                You took thirty separate items and built four lines you can think with. That&rsquo;s
+                                the move from raw detail to manageable structure. The same move applies to every list
+                                you&rsquo;ll ever maintain &mdash; and you&rsquo;re about to start maintaining yours.
+                            </p>
+                        </KeyInsightBox>
+
+                        <div
+                            className="rounded-lg p-4 mb-4"
+                            style={{ backgroundColor: colors.clayLight }}
+                        >
+                            <h3 className="font-bold mb-2" style={{ color: colors.primary }}>Coming Next</h3>
+                            <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                                You built the structure. Now things start happening &mdash; bikes get repaired, parts
+                                arrive, money moves around. Your lists have to keep up. The next activity is about
+                                updating them as things happen &mdash; and noticing what happens when the lists alone
+                                don&rsquo;t quite tell the whole story.
+                            </p>
+                            <p className="font-bold" style={{ color: colors.primary }}>
+                                Next: Tutorial 1.3 &mdash; Anna and the Bank Statement
+                            </p>
+                        </div>
+
+                        <a
+                            href="1.3-anna-and-the-bank-statement.html"
+                            className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 mb-3 border-0 cursor-pointer no-underline"
+                            style={{ backgroundColor: colors.primary }}
+                        >
+                            Next Tutorial →
+                        </a>
+
+                        <button
+                            onClick={handleRestart}
+                            className="w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 cursor-pointer"
+                            style={{
+                                border: `2px solid ${colors.primary}`,
+                                color: colors.primary,
+                                backgroundColor: 'transparent'
+                            }}
+                        >
+                            ↺ Restart Tutorial
+                        </button>
+                    </div>
+                </div>
+            );
+
+            // ============================================================
+            // Phase router
+            // ============================================================
+            const renderPhase = () => {
+                if (phase === 'welcome') return renderWelcome();
+                if (phase === 'preview') return renderPreview();
+                if (phase === 'cluster') return renderCluster();
+                if (phase === 'label') return renderLabel();
+                if (phase === 'agent-arrives') return renderAgentArrives();
+                if (phase === 'reflect') return renderReflect();
+                if (phase === 'complete') return renderComplete();
+                return null;
+            };
+
+            return (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    {renderPhase()}
+                    {showGlossary && <GlossaryModal />}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<TutorialApp />);
+    </script>
+</body>
+</html>
