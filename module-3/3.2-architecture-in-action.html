@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 3.2: The Architecture in Action</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body style="background-color: #f5f1e8;">
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        const { useState } = React;
+
+        const colors = {
+            primary: '#00356b', sand: '#f5f1e8', earth: '#8b7355', earthLight: '#d4c4a8',
+            earthDark: '#5c4d3d', accent: '#c9a227', clayLight: '#e8dcc8', clayDark: '#a08050',
+            success: '#22c55e', successBg: '#f0fdf4', warning: '#f59e0b', warningBg: '#fffbeb',
+            error: '#dc2626', errorBg: '#fef2f2',
+            dim: '#a8a08a',
+            formulaBg: '#f5f0e3',
+            clarBg: '#e6eef5', clarBorder: '#a8c5dd',
+            isChipBg: '#ede9fe', isChipText: '#5b21b6',
+            cfsChipBg: '#dcfce7', cfsChipText: '#166534',
+            soceChipBg: '#fef3c7', soceChipText: '#92400e',
+        };
+
+        // ==================================================================
+        // GLOSSARY (subset of 3.1's, focused on terms used in 3.2)
+        // ==================================================================
+        const glossaryTerms = [
+            { term: 'Accounting identity', definition: 'Assets − Liabilities = Equities, by definition. The identity holds on every balance sheet by construction.' },
+            { term: 'Revenue', definition: 'What the entity brought in from providing goods or services during the reporting period.' },
+            { term: 'Expense', definition: 'What the entity used up doing the work during the reporting period — the costs incurred to generate the revenues.' },
+            { term: 'Net Income', definition: 'Revenues minus Expenses for the reporting period. The bottom line on the Income Statement.' },
+            { term: 'Income Statement (IS)', definition: 'The statement that reports the period\'s Revenues, Expenses, and Net Income.' },
+            { term: 'Statement of Changes in Equities (SoCE)', definition: 'The statement that traces Equities from opening to closing balance, showing Net Income, owner contributions, and distributions.' },
+            { term: 'Statement of Cash Flows (CFS)', definition: 'The statement that traces cash from opening to closing balance, grouped by Operating, Investing, and Financing activities.' },
+            { term: 'Operating activities', definition: 'By convention, the CFS section for cash flows from running the business — collections from customers, payments to suppliers, payroll, interest, taxes.' },
+            { term: 'Investing activities', definition: 'By convention, the CFS section for cash flows from buying or selling long-lived assets.' },
+            { term: 'Financing activities', definition: 'By convention, the CFS section for cash flows from borrowing, repaying debt, or transactions with owners.' },
+            { term: 'Convention', definition: 'A chosen rule that solves an information-design problem — not a fact about the world. Conventions are loose at the edges.' },
+            { term: 'Depreciation', definition: 'The convention of allocating the cost of a long-lived asset across the periods of its use. Reduces the asset\'s carrying amount on the balance sheet but involves no cash flow in the period.' },
+            { term: 'Contributed capital', definition: 'The part of Equities that came from outside the entity — resources owners put in.' },
+            { term: 'Retained earnings', definition: 'The part of Equities accumulated from operating the business and not distributed to owners.' },
+            { term: 'Accounts receivable', definition: 'A customer\'s promise to pay for goods or services already delivered. An Asset on the balance sheet.' },
+            { term: 'Accounts payable', definition: 'The entity\'s promise to pay a supplier for goods or services already received. A Liability on the balance sheet.' },
+            { term: 'Inventory', definition: 'Goods the entity holds for sale, or materials it holds to make those goods. An Asset on the balance sheet.' },
+            { term: 'Accrued expenses', definition: 'Expenses the entity has incurred but not yet paid in cash. A Liability on the balance sheet.' },
+        ];
+
+        // ==================================================================
+        // DATA — all figures in $ thousands. Opening BS matches 3.1.
+        // ==================================================================
+        const opening = {
+            cash: 850, ar: 120, inv: 1800, ppe: 1200,
+            ap: 480, accrued: 90, loan: 900,
+            cc: 400, re: 2100,
+        };
+
+        const accountLabels = {
+            cash: 'Cash',
+            ar: 'Accounts receivable',
+            inv: 'Inventory',
+            ppe: 'Property & equipment, net',
+            ap: 'Accounts payable',
+            accrued: 'Accrued expenses',
+            loan: 'Bank loan',
+            cc: 'Contributed capital',
+            re: 'Retained earnings',
+        };
+
+        const assetKeys = ['cash', 'ar', 'inv', 'ppe'];
+        const liabilityKeys = ['ap', 'accrued', 'loan'];
+        const equityKeys = ['cc', 're'];
+
+        // The 15 summary entries for Year T. Each represents the year's
+        // aggregate activity of one kind. Closing balances exactly match 3.1.
+        const entries = [
+            {
+                n: 1,
+                description: "Bike sales: $5,500 in revenue. $5,475 collected in cash immediately; $25 added to Accounts Receivable (commercial fleet contracts on terms).",
+                deltas: [
+                    { account: 'Cash', value: 5475, sign: '+' },
+                    { account: 'Accounts receivable', value: 25, sign: '+' },
+                    { account: 'Retained earnings', value: 5500, sign: '+' },
+                ],
+                bsDeltas: { cash: 5475, ar: 25, re: 5500 },
+                isLine: { type: 'revenue', label: 'Revenue from new bike sales', value: 5500 },
+                cfsLine: { section: 'operating', label: 'Cash from new bike sales', value: 5475 },
+                soceLine: null,
+                affects: { is: true, soce: true, cfs: true },
+            },
+            {
+                n: 2,
+                description: "Repair services: $1,800 in revenue, all collected in cash.",
+                deltas: [
+                    { account: 'Cash', value: 1800, sign: '+' },
+                    { account: 'Retained earnings', value: 1800, sign: '+' },
+                ],
+                bsDeltas: { cash: 1800, re: 1800 },
+                isLine: { type: 'revenue', label: 'Revenue from repair services', value: 1800 },
+                cfsLine: { section: 'operating', label: 'Cash from repair services', value: 1800 },
+                soceLine: null,
+                affects: { is: true, soce: true, cfs: true },
+            },
+            {
+                n: 3,
+                description: "Parts & accessories: $900 in revenue, all collected in cash.",
+                deltas: [
+                    { account: 'Cash', value: 900, sign: '+' },
+                    { account: 'Retained earnings', value: 900, sign: '+' },
+                ],
+                bsDeltas: { cash: 900, re: 900 },
+                isLine: { type: 'revenue', label: 'Revenue from parts & accessories', value: 900 },
+                cfsLine: { section: 'operating', label: 'Cash from parts & accessories', value: 900 },
+                soceLine: null,
+                affects: { is: true, soce: true, cfs: true },
+            },
+            {
+                n: 4,
+                description: "Inventory purchased: $5,750 of new inventory acquired. $5,670 paid to suppliers in cash; $80 added to Accounts Payable (suppliers still owed at year-end).",
+                deltas: [
+                    { account: 'Cash', value: 5670, sign: '-' },
+                    { account: 'Inventory', value: 5750, sign: '+' },
+                    { account: 'Accounts payable', value: 80, sign: '+' },
+                ],
+                bsDeltas: { cash: -5670, inv: 5750, ap: 80 },
+                isLine: null,
+                cfsLine: { section: 'operating', label: 'Inventory purchases', value: -5670 },
+                soceLine: null,
+                affects: { is: false, soce: false, cfs: true },
+            },
+            {
+                n: 5,
+                description: "Inventory sold (Cost of inventory sold): $5,400 of inventory used up to make the sales. No cash moves — inventory shrinks, an expense is recognized.",
+                deltas: [
+                    { account: 'Inventory', value: 5400, sign: '-' },
+                    { account: 'Retained earnings', value: 5400, sign: '-' },
+                ],
+                bsDeltas: { inv: -5400, re: -5400 },
+                isLine: { type: 'expense', label: 'Cost of inventory sold', value: 5400 },
+                cfsLine: null,
+                soceLine: null,
+                affects: { is: true, soce: true, cfs: false },
+            },
+            {
+                n: 6,
+                description: "Salaries and wages: $1,000 paid in cash to employees during the year.",
+                deltas: [
+                    { account: 'Cash', value: 1000, sign: '-' },
+                    { account: 'Retained earnings', value: 1000, sign: '-' },
+                ],
+                bsDeltas: { cash: -1000, re: -1000 },
+                isLine: { type: 'expense', label: 'Salaries and wages', value: 1000 },
+                cfsLine: { section: 'operating', label: 'Salaries and wages paid', value: -1000 },
+                soceLine: null,
+                affects: { is: true, soce: true, cfs: true },
+            },
+            {
+                n: 7,
+                description: "Rent (six locations): $250 paid in cash to landlords.",
+                deltas: [
+                    { account: 'Cash', value: 250, sign: '-' },
+                    { account: 'Retained earnings', value: 250, sign: '-' },
+                ],
+                bsDeltas: { cash: -250, re: -250 },
+                isLine: { type: 'expense', label: 'Rent (six locations)', value: 250 },
+                cfsLine: { section: 'operating', label: 'Rent paid', value: -250 },
+                soceLine: null,
+                affects: { is: true, soce: true, cfs: true },
+            },
+            {
+                n: 8,
+                description: "Utilities, marketing, other operating: $150 paid in cash.",
+                deltas: [
+                    { account: 'Cash', value: 150, sign: '-' },
+                    { account: 'Retained earnings', value: 150, sign: '-' },
+                ],
+                bsDeltas: { cash: -150, re: -150 },
+                isLine: { type: 'expense', label: 'Utilities, marketing, other operating', value: 150 },
+                cfsLine: { section: 'operating', label: 'Utilities, marketing, other', value: -150 },
+                soceLine: null,
+                affects: { is: true, soce: true, cfs: true },
+            },
+            {
+                n: 9,
+                description: "Depreciation: $200 of stores and equipment used up during the year. No cash moves — PP&E (a noncash asset) just shrank, an expense is recognized.",
+                deltas: [
+                    { account: 'Property & equipment', value: 200, sign: '-' },
+                    { account: 'Retained earnings', value: 200, sign: '-' },
+                ],
+                bsDeltas: { ppe: -200, re: -200 },
+                isLine: { type: 'expense', label: 'Depreciation of stores and equipment', value: 200 },
+                cfsLine: null,
+                soceLine: null,
+                affects: { is: true, soce: true, cfs: false },
+            },
+            {
+                n: 10,
+                description: "Interest on the bank loan: $60 paid in cash.",
+                deltas: [
+                    { account: 'Cash', value: 60, sign: '-' },
+                    { account: 'Retained earnings', value: 60, sign: '-' },
+                ],
+                bsDeltas: { cash: -60, re: -60 },
+                isLine: { type: 'expense', label: 'Interest on bank loan', value: 60 },
+                cfsLine: { section: 'operating', label: 'Interest paid', value: -60 },
+                soceLine: null,
+                affects: { is: true, soce: true, cfs: true },
+            },
+            {
+                n: 11,
+                description: "Income tax expense: $200 for the year. $185 paid in cash; $15 still accrued and owed to the tax authority at year-end.",
+                deltas: [
+                    { account: 'Cash', value: 185, sign: '-' },
+                    { account: 'Accrued expenses', value: 15, sign: '+' },
+                    { account: 'Retained earnings', value: 200, sign: '-' },
+                ],
+                bsDeltas: { cash: -185, accrued: 15, re: -200 },
+                isLine: { type: 'expense', label: 'Income tax expense', value: 200 },
+                cfsLine: { section: 'operating', label: 'Income tax paid', value: -185 },
+                soceLine: null,
+                affects: { is: true, soce: true, cfs: true },
+            },
+            {
+                n: 12,
+                description: "New store buildout (capital expenditure): $650 spent in cash on fixtures, equipment, and leasehold improvements for the sixth store.",
+                deltas: [
+                    { account: 'Cash', value: 650, sign: '-' },
+                    { account: 'Property & equipment', value: 650, sign: '+' },
+                ],
+                bsDeltas: { cash: -650, ppe: 650 },
+                isLine: null,
+                cfsLine: { section: 'investing', label: 'New store buildout', value: -650 },
+                soceLine: null,
+                affects: { is: false, soce: false, cfs: true },
+            },
+            {
+                n: 13,
+                description: "You and Anna contributed $300 of additional personal capital — partly to fund the sixth-store buildout without leaning further on the bank.",
+                deltas: [
+                    { account: 'Cash', value: 300, sign: '+' },
+                    { account: 'Contributed capital', value: 300, sign: '+' },
+                ],
+                bsDeltas: { cash: 300, cc: 300 },
+                isLine: null,
+                cfsLine: { section: 'financing', label: 'Owner contributions', value: 300 },
+                soceLine: { type: 'contribution', value: 300 },
+                affects: { is: false, soce: true, cfs: true },
+            },
+            {
+                n: 14,
+                description: "Bank borrowing: $200 drawn on the bank line of credit.",
+                deltas: [
+                    { account: 'Cash', value: 200, sign: '+' },
+                    { account: 'Bank loan', value: 200, sign: '+' },
+                ],
+                bsDeltas: { cash: 200, loan: 200 },
+                isLine: null,
+                cfsLine: { section: 'financing', label: 'Bank borrowing', value: 200 },
+                soceLine: null,
+                affects: { is: false, soce: false, cfs: true },
+            },
+            {
+                n: 15,
+                description: "Distributions to you and Anna as owners: $80 paid in cash.",
+                deltas: [
+                    { account: 'Cash', value: 80, sign: '-' },
+                    { account: 'Retained earnings', value: 80, sign: '-' },
+                ],
+                bsDeltas: { cash: -80, re: -80 },
+                isLine: null,
+                cfsLine: { section: 'financing', label: 'Distributions to owners', value: -80 },
+                soceLine: { type: 'distribution', value: 80 },
+                affects: { is: false, soce: true, cfs: true },
+            },
+        ];
+
+        // ==================================================================
+        // STAGES & STATE
+        // ==================================================================
+        // 0 = welcome, 1 = starting point, 2..16 = after entry 1..15 applied,
+        // 17 = synthesis (all 15 entries applied)
+        const TOTAL_STAGES = 18;
+        const STAGE_LABELS = [
+            'welcome', 'starting',
+            ...Array.from({length: 15}, (_, i) => `entry ${i+1}`),
+            'synthesis',
+        ];
+
+        const applyEntries = (opening, applied) => {
+            const bs = { ...opening };
+            for (const e of applied) {
+                for (const k in e.bsDeltas) bs[k] += e.bsDeltas[k];
+            }
+            return bs;
+        };
+
+        const totalA = bs => assetKeys.reduce((s, k) => s + bs[k], 0);
+        const totalL = bs => liabilityKeys.reduce((s, k) => s + bs[k], 0);
+        const totalE = bs => equityKeys.reduce((s, k) => s + bs[k], 0);
+
+        const computeStateAt = (stage) => {
+            let count;
+            if (stage === 0 || stage === 1) count = 0;
+            else if (stage === 17) count = entries.length;
+            else count = stage - 1;
+            const prevCount = (stage >= 2 && stage <= 16) ? count - 1 : count;
+            const applied = entries.slice(0, count);
+            const currBS = applyEntries(opening, applied);
+            const prevBS = applyEntries(opening, entries.slice(0, prevCount));
+            const isLines = applied.filter(e => e.isLine).map(e => ({ ...e.isLine, entryN: e.n }));
+            const cfsLines = applied.filter(e => e.cfsLine).map(e => ({ ...e.cfsLine, entryN: e.n }));
+            const contributions = applied.filter(e => e.soceLine && e.soceLine.type === 'contribution').map(e => ({ value: e.soceLine.value, entryN: e.n }));
+            const distributions = applied.filter(e => e.soceLine && e.soceLine.type === 'distribution').map(e => ({ value: e.soceLine.value, entryN: e.n }));
+            const niAccum = isLines.reduce((s, l) => s + (l.type === 'revenue' ? l.value : -l.value), 0);
+            const lastEntry = (stage >= 2 && stage <= 16) ? entries[stage - 2] : null;
+            return { currBS, prevBS, isLines, cfsLines, contributions, distributions, niAccum, lastEntry, count };
+        };
+
+        const fmt = v => Math.abs(v).toLocaleString('en-US');
+        const fmtSigned = v => v < 0 ? `(${fmt(v)})` : `${fmt(v)}`;
+
+        const App = () => {
+            const [stage, setStage] = useState(0);
+            const [showGlossary, setShowGlossary] = useState(false);
+            const [devMode, setDevMode] = useState(false);
+            const [hdrClicks, setHdrClicks] = useState(0);
+
+            const state = computeStateAt(stage);
+
+            const handleHdrClick = () => {
+                const n = hdrClicks + 1; setHdrClicks(n);
+                if (n >= 3) { setDevMode(!devMode); setHdrClicks(0); }
+            };
+            const reset = () => { setStage(0); setShowGlossary(false); };
+            const advance = () => setStage(s => Math.min(s + 1, TOTAL_STAGES - 1));
+            const goBack = () => setStage(s => Math.max(s - 1, 0));
+            const goTo = (s) => setStage(s);
+
+            const progress = Math.round((stage / (TOTAL_STAGES - 1)) * 100);
+
+            // ============================================================
+            // COMPONENTS
+            // ============================================================
+            const Header = () => (
+                <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary }}>
+                    <div className="flex justify-between items-start">
+                        <div onClick={handleHdrClick} style={{ cursor: 'pointer' }}>
+                            <h1 className="text-lg font-bold text-white">Tutorial 3.2: The Architecture in Action</h1>
+                            <p className="text-sm mt-1" style={{ color: colors.earthLight }}>
+                                Bicycle retail chain &middot; same year, entry by entry &middot; ~20 min
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setShowGlossary(true)}
+                                    className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                    title="Glossary" aria-label="Open glossary">📖</button>
+                            <a href="../index.html"
+                               className="p-2 rounded-lg hover:bg-white/10 text-white text-xl no-underline inline-flex items-center justify-center"
+                               title="Return to Main">🏠</a>
+                            <button onClick={reset}
+                                    className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                    title="Restart">↺</button>
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <div className="flex justify-between text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                            <span>Progress</span><span>{progress}%</span>
+                        </div>
+                        <div className="h-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+                            <div className="h-full rounded-full transition-all duration-500"
+                                 style={{ width: `${progress}%`, backgroundColor: colors.accent }} />
+                        </div>
+                    </div>
+                    {devMode && (
+                        <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                            <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>Dev: jump to stage</p>
+                            <div className="flex flex-wrap gap-1">
+                                {STAGE_LABELS.map((lab, i) => (
+                                    <button key={i} onClick={() => goTo(i)}
+                                            className="px-2 py-1 rounded text-xs border-0 cursor-pointer"
+                                            style={{
+                                                backgroundColor: stage === i ? 'white' : 'rgba(255,255,255,0.2)',
+                                                color: stage === i ? colors.primary : 'white'
+                                            }}>{lab}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            const GlossaryModal = () => (
+                <div className="fixed inset-0 flex items-center justify-center p-4 z-50"
+                     style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="bg-white rounded-xl max-w-md w-full" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+                        <div className="p-4 border-b flex justify-between items-center sticky top-0 bg-white"
+                             style={{ borderColor: colors.earthLight }}>
+                            <h3 className="font-bold" style={{ color: colors.primary }}>📖 Glossary</h3>
+                            <button onClick={() => setShowGlossary(false)}
+                                    className="text-gray-500 hover:text-gray-700 text-2xl font-light border-0 bg-transparent cursor-pointer"
+                                    aria-label="Close glossary">✕</button>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            {glossaryTerms.map((item, i) => (
+                                <div key={i}>
+                                    <p className="font-semibold text-sm" style={{ color: colors.primary }}>{item.term}</p>
+                                    <p className="text-xs mt-0.5" style={{ color: colors.earthDark }}>{item.definition}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const AnnaBox = ({ children }) => (
+                <div className="rounded-lg p-5 mb-4" style={{ backgroundColor: colors.clayLight, border: `1px solid ${colors.clayDark}` }}>
+                    <p className="text-xs uppercase tracking-wider font-bold mb-2" style={{ color: colors.clayDark }}>Anna</p>
+                    <div className="text-sm italic leading-relaxed" style={{ color: colors.earthDark }}>{children}</div>
+                </div>
+            );
+
+            const NarrativeCard = ({ label, children }) => (
+                <div className="rounded-lg p-5 mb-4 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                    <p className="font-bold text-sm uppercase tracking-wider mb-3" style={{ color: colors.accent }}>{label}</p>
+                    <div className="text-sm leading-relaxed" style={{ color: colors.earthDark }}>{children}</div>
+                </div>
+            );
+
+            const IdentityBar = ({ bs }) => {
+                const A = totalA(bs), L = totalL(bs), E = totalE(bs);
+                return (
+                    <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary, color: 'white' }}>
+                        <div className="grid grid-cols-3 gap-2 mb-1 text-center">
+                            <p className="text-xs uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.7)' }}>Assets</p>
+                            <p className="text-xs uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.7)' }}>Liabilities</p>
+                            <p className="text-xs uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.7)' }}>Equities</p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center mono">
+                            <p className="text-2xl font-bold">${fmt(A)}</p>
+                            <p className="text-2xl font-bold"><span className="opacity-60 mr-1">−</span>${fmt(L)}</p>
+                            <p className="text-2xl font-bold"><span className="opacity-60 mr-1">=</span>${fmt(E)}</p>
+                        </div>
+                    </div>
+                );
+            };
+
+            const Chip = ({ label, bg, text }) => (
+                <span className="px-2 py-1 rounded text-xs font-semibold whitespace-nowrap"
+                      style={{ backgroundColor: bg, color: text }}>
+                    {label}
+                </span>
+            );
+
+            const EntryCard = ({ entry, total }) => (
+                <div className="rounded-lg p-5 mb-4 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                    <p className="font-bold text-xs uppercase tracking-wider mb-2" style={{ color: colors.accent }}>
+                        Entry {entry.n} of {total}
+                    </p>
+                    <p className="text-sm mb-4 leading-relaxed" style={{ color: colors.earthDark }}>{entry.description}</p>
+                    <div className="rounded-lg p-3 mb-3" style={{ backgroundColor: colors.formulaBg }}>
+                        <p className="text-xs uppercase tracking-wider mb-2 font-bold" style={{ color: colors.earth }}>
+                            Accounts changed in the current balance sheet
+                        </p>
+                        <div className="space-y-1 mono text-sm">
+                            {entry.deltas.map((d, i) => (
+                                <div key={i} className="flex justify-between">
+                                    <span style={{ color: colors.earthDark }}>{d.account}</span>
+                                    <span className="font-semibold" style={{ color: d.sign === '-' ? colors.error : colors.success }}>
+                                        {d.sign === '-' ? `(${fmt(d.value)})` : `+${fmt(d.value)}`}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                        {entry.deltas.some(d => d.sign === '-') && (
+                            <p className="text-xs mt-2 italic" style={{ color: colors.earth }}>( ) denotes a negative amount</p>
+                        )}
+                    </div>
+                    <div>
+                        <p className="text-xs uppercase tracking-wider mb-2 font-bold" style={{ color: colors.earth }}>
+                            Affected flow statement(s)
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {entry.affects.soce && <Chip label="Statement of Changes in Equities" bg={colors.soceChipBg} text={colors.soceChipText} />}
+                            {entry.affects.cfs && <Chip label="Cash Flow Statement" bg={colors.cfsChipBg} text={colors.cfsChipText} />}
+                            {entry.affects.is && <Chip label="Income Statement" bg={colors.isChipBg} text={colors.isChipText} />}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const BSLine = ({ k, currBS, prevBS, dim }) => {
+                const cur = currBS[k];
+                const prev = prevBS ? prevBS[k] : cur;
+                const changed = prev !== undefined && prev !== cur;
+                const increased = changed && cur > prev;
+                const decreased = changed && cur < prev;
+                const bg = increased ? colors.successBg : decreased ? colors.errorBg : 'transparent';
+                return (
+                    <>
+                        {changed && (
+                            <div className="text-right text-xs mono" style={{ color: colors.earth, marginTop: '0.25rem' }}>
+                                Previously ${fmt(prev)}
+                            </div>
+                        )}
+                        <div className="flex justify-between py-1 text-sm"
+                             style={{
+                                 backgroundColor: bg,
+                                 color: dim ? colors.dim : colors.earthDark,
+                                 paddingLeft: changed ? '0.4rem' : 0,
+                                 paddingRight: changed ? '0.4rem' : 0,
+                                 borderRadius: changed ? '0.25rem' : 0,
+                             }}>
+                            <span>{accountLabels[k]}</span>
+                            <span className="mono">${fmt(cur)}</span>
+                        </div>
+                    </>
+                );
+            };
+
+            const BalanceSheet = ({ bs, prevBS, title, subtitle, dim }) => (
+                <div className="rounded-lg p-4 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                    <p className="font-bold mb-1" style={{ color: dim ? colors.dim : colors.primary }}>{title}</p>
+                    {subtitle && <p className="text-xs mb-3" style={{ color: dim ? colors.dim : colors.earth }}>{subtitle}</p>}
+                    <p className="text-xs uppercase tracking-wider font-bold mt-2 mb-1" style={{ color: dim ? colors.dim : colors.primary }}>Assets</p>
+                    {assetKeys.map(k => <BSLine key={k} k={k} currBS={bs} prevBS={prevBS} dim={dim} />)}
+                    <div className="flex justify-between py-1 text-sm font-bold border-t pt-1 mt-1"
+                         style={{ borderColor: colors.earthLight, color: dim ? colors.dim : colors.primary }}>
+                        <span>Total Assets</span><span className="mono">${fmt(totalA(bs))}</span>
+                    </div>
+                    <p className="text-xs uppercase tracking-wider font-bold mt-3 mb-1" style={{ color: dim ? colors.dim : colors.primary }}>Liabilities</p>
+                    {liabilityKeys.map(k => <BSLine key={k} k={k} currBS={bs} prevBS={prevBS} dim={dim} />)}
+                    <div className="flex justify-between py-1 text-sm font-bold border-t pt-1 mt-1"
+                         style={{ borderColor: colors.earthLight, color: dim ? colors.dim : colors.primary }}>
+                        <span>Total Liabilities</span><span className="mono">${fmt(totalL(bs))}</span>
+                    </div>
+                    <p className="text-xs uppercase tracking-wider font-bold mt-3 mb-1" style={{ color: dim ? colors.dim : colors.primary }}>Equities</p>
+                    {equityKeys.map(k => <BSLine key={k} k={k} currBS={bs} prevBS={prevBS} dim={dim} />)}
+                    <div className="flex justify-between py-1 text-sm font-bold border-t pt-1 mt-1"
+                         style={{ borderColor: colors.earthLight, color: dim ? colors.dim : colors.primary }}>
+                        <span>Total Equities</span><span className="mono">${fmt(totalE(bs))}</span>
+                    </div>
+                </div>
+            );
+
+            const FlowStatementsPanel = ({ state }) => {
+                const { isLines, cfsLines, contributions, distributions, niAccum, currBS, lastEntry } = state;
+                const openingEquities = totalE(opening);
+                const currentEquities = totalE(currBS);
+                const openingCash = opening.cash;
+                const currentCash = currBS.cash;
+                const netCash = currentCash - openingCash;
+                const empty = isLines.length === 0 && cfsLines.length === 0 && contributions.length === 0 && distributions.length === 0;
+
+                const lastEntryN = lastEntry ? lastEntry.n : null;
+                const lastEntryAffectsSoCE = lastEntry && lastEntry.affects.soce;
+
+                const Section = ({ title, border, children, body }) => (
+                    <div className="rounded-lg p-3 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}`, borderLeft: `4px solid ${border}` }}>
+                        <p className="text-xs uppercase tracking-wider font-bold mb-2" style={{ color: border }}>{title}</p>
+                        {children}
+                    </div>
+                );
+
+                const SubExplanation = ({ children }) => (
+                    <div className="rounded p-2 mt-2 text-xs" style={{ backgroundColor: colors.formulaBg, color: colors.earth }}>
+                        <p className="font-bold uppercase tracking-wider mb-1" style={{ fontSize: '0.65rem' }}>What this statement explains</p>
+                        {children}
+                    </div>
+                );
+
+                const hi = (cond) => cond ? { backgroundColor: colors.soceChipBg, paddingLeft: '0.3rem', paddingRight: '0.3rem', borderRadius: '0.25rem' } : {};
+                const hiCfs = (cond) => cond ? { backgroundColor: colors.cfsChipBg, paddingLeft: '0.3rem', paddingRight: '0.3rem', borderRadius: '0.25rem' } : {};
+                const hiIs = (cond) => cond ? { backgroundColor: colors.isChipBg, paddingLeft: '0.3rem', paddingRight: '0.3rem', borderRadius: '0.25rem' } : {};
+
+                return (
+                    <div>
+                        {/* Statement of Changes in Equities */}
+                        <Section title="Statement of Changes in Equities" border={colors.soceChipText}>
+                            {contributions.length === 0 && distributions.length === 0 && isLines.length === 0 ? (
+                                <p className="text-xs italic" style={{ color: colors.earth }}>No entries yet</p>
+                            ) : (
+                                <>
+                                    <div className="mono text-sm space-y-1" style={{ color: colors.earthDark }}>
+                                        <div className="flex justify-between" style={{ color: colors.earth }}>
+                                            <span>Opening equities</span><span>${fmt(openingEquities)}</span>
+                                        </div>
+                                        {isLines.length > 0 && (
+                                            <div className="flex justify-between" style={hi(lastEntryAffectsSoCE && lastEntry && lastEntry.affects.is)}>
+                                                <span>Net income (so far)</span>
+                                                <span style={{ color: niAccum < 0 ? colors.error : colors.earthDark }}>
+                                                    {fmtSigned(niAccum)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {contributions.map((c, i) => (
+                                            <div key={`c${i}`} className="flex justify-between" style={hi(c.entryN === lastEntryN)}>
+                                                <span>Owner contributions</span><span>${fmt(c.value)}</span>
+                                            </div>
+                                        ))}
+                                        {distributions.map((d, i) => (
+                                            <div key={`d${i}`} className="flex justify-between" style={hi(d.entryN === lastEntryN)}>
+                                                <span>Distributions to owners</span>
+                                                <span style={{ color: colors.error }}>({fmt(d.value)})</span>
+                                            </div>
+                                        ))}
+                                        <div className="flex justify-between font-bold pt-1 border-t mt-1" style={{ borderColor: colors.earthLight, color: colors.primary }}>
+                                            <span>Closing equities</span><span>${fmt(currentEquities)}</span>
+                                        </div>
+                                    </div>
+                                    <SubExplanation>
+                                        Opening equities: <strong>${fmt(openingEquities)}</strong> → Closing equities: <strong>${fmt(currentEquities)}</strong>. Net change in equities: <strong>${fmt(currentEquities - openingEquities)}</strong>.
+                                    </SubExplanation>
+                                </>
+                            )}
+                        </Section>
+
+                        {/* Cash Flow Statement */}
+                        <Section title="Cash Flow Statement" border={colors.cfsChipText}>
+                            {cfsLines.length === 0 ? (
+                                <p className="text-xs italic" style={{ color: colors.earth }}>No entries yet</p>
+                            ) : (
+                                <>
+                                    <div className="mono text-sm space-y-1" style={{ color: colors.earthDark }}>
+                                        <div className="flex justify-between" style={{ color: colors.earth }}>
+                                            <span>Opening cash</span><span>${fmt(openingCash)}</span>
+                                        </div>
+                                        {['operating', 'investing', 'financing'].map(section => {
+                                            const lines = cfsLines.filter(l => l.section === section);
+                                            if (lines.length === 0) return null;
+                                            return (
+                                                <React.Fragment key={section}>
+                                                    <div className="mt-2 text-xs uppercase tracking-wider" style={{ color: colors.earth }}>{section}</div>
+                                                    {lines.map((l, i) => (
+                                                        <div key={i} className="flex justify-between pl-2" style={hiCfs(l.entryN === lastEntryN)}>
+                                                            <span>{l.label}</span>
+                                                            <span style={{ color: l.value < 0 ? colors.error : colors.earthDark }}>
+                                                                {fmtSigned(l.value)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </React.Fragment>
+                                            );
+                                        })}
+                                        <div className="flex justify-between font-bold pt-1 border-t mt-2" style={{ borderColor: colors.earthLight, color: colors.primary }}>
+                                            <span>Net change in cash</span>
+                                            <span style={{ color: netCash < 0 ? colors.error : colors.earthDark }}>
+                                                {fmtSigned(netCash)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <SubExplanation>
+                                        Opening cash: <strong>${fmt(openingCash)}</strong> → Closing cash: <strong>${fmt(currentCash)}</strong>. Net change in cash: <strong>{fmtSigned(netCash)}</strong>.
+                                    </SubExplanation>
+                                </>
+                            )}
+                        </Section>
+
+                        {/* Income Statement */}
+                        <Section title="Income Statement" border={colors.isChipText}>
+                            {isLines.length === 0 ? (
+                                <p className="text-xs italic" style={{ color: colors.earth }}>No entries yet</p>
+                            ) : (
+                                <div className="mono text-sm space-y-1" style={{ color: colors.earthDark }}>
+                                    {isLines.filter(l => l.type === 'revenue').map((l, i) => (
+                                        <div key={`r${i}`} className="flex justify-between" style={hiIs(l.entryN === lastEntryN)}>
+                                            <span>{l.label}</span><span>${fmt(l.value)}</span>
+                                        </div>
+                                    ))}
+                                    {isLines.filter(l => l.type === 'expense').map((l, i) => (
+                                        <div key={`e${i}`} className="flex justify-between" style={hiIs(l.entryN === lastEntryN)}>
+                                            <span>{l.label}</span>
+                                            <span style={{ color: colors.error }}>({fmt(l.value)})</span>
+                                        </div>
+                                    ))}
+                                    <div className="flex justify-between font-bold pt-1 border-t mt-1" style={{ borderColor: colors.earthLight, color: colors.primary }}>
+                                        <span>Net income (so far)</span>
+                                        <span style={{ color: niAccum < 0 ? colors.error : colors.earthDark }}>
+                                            {fmtSigned(niAccum)}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </Section>
+                    </div>
+                );
+            };
+
+            const Dashboard = ({ state, showPrev }) => (
+                <div>
+                    <IdentityBar bs={state.currBS} />
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                        <BalanceSheet bs={opening} title="Opening Balance Sheet" subtitle="Dec 31, Year T−1 · (in thousands)" dim={true} />
+                        <FlowStatementsPanel state={state} />
+                        <BalanceSheet
+                            bs={state.currBS}
+                            prevBS={showPrev ? state.prevBS : null}
+                            title={stage === 17 ? "Closing Balance Sheet" : "Current Balance Sheet"}
+                            subtitle={stage === 17 ? "Dec 31, Year T · (in thousands)" : "(in thousands)"}
+                        />
+                    </div>
+                </div>
+            );
+
+            const NavBar = () => (
+                <div className="flex justify-between mb-4">
+                    <button onClick={goBack} disabled={stage === 0}
+                            className="px-4 py-2 rounded-lg border bg-white text-sm cursor-pointer disabled:cursor-not-allowed"
+                            style={{ borderColor: colors.earthLight, color: stage === 0 ? colors.earth : colors.primary, opacity: stage === 0 ? 0.5 : 1 }}>
+                        ← Back
+                    </button>
+                    <button onClick={advance} disabled={stage >= TOTAL_STAGES - 1}
+                            className="px-4 py-2 rounded-lg font-bold text-white text-sm border-0 cursor-pointer disabled:cursor-not-allowed"
+                            style={{ backgroundColor: colors.primary, opacity: stage >= TOTAL_STAGES - 1 ? 0.5 : 1 }}>
+                        Next →
+                    </button>
+                </div>
+            );
+
+            // ============================================================
+            // STAGE RENDERERS
+            // ============================================================
+            const renderWelcome = () => (
+                <>
+                    <NarrativeCard label="Same Year, Entry by Entry">
+                        <p className="mb-3">
+                            In Tutorial 3.1, you met the three new statements (Income Statement, Statement of
+                            Changes in Equities, Cash Flow Statement) and saw how they explain the year's
+                            change between two Balance Sheets — top down, from the 12 aggregate lines.
+                        </p>
+                        <p>
+                            Now you'll watch the same year run forward, one summary entry at a time. Same
+                            opening balance sheet. Same closing balance sheet. Same statements. But built
+                            up from the entries instead of revealed from the aggregates.
+                        </p>
+                    </NarrativeCard>
+                    <AnnaBox>
+                        <p className="mb-2">
+                            "Each entry summarizes a year's worth of one kind of activity — all the bike sales,
+                            all the rent payments, the one buildout, the one owner contribution. Click Next
+                            and you'll see each one's ripple: what changes on the current Balance Sheet, and
+                            which flow statements pick up the change."
+                        </p>
+                        <p>
+                            "Some entries touch all three statements. Some touch only one. The pattern is the
+                            architecture in action."
+                        </p>
+                    </AnnaBox>
+                </>
+            );
+
+            const renderStartingPoint = () => (
+                <>
+                    <NarrativeCard label="Starting Point">
+                        <p className="mb-3">
+                            Here's the opening balance sheet for Year T — the same one you saw at the start of
+                            Tutorial 3.1. The accounting identity holds: Assets − Liabilities = Equities.
+                        </p>
+                        <p>
+                            The three flow statements (Statement of Changes in Equities, Cash Flow Statement,
+                            Income Statement) start empty. As entries are added, each one fills in with the
+                            activity that affects it.
+                        </p>
+                    </NarrativeCard>
+                </>
+            );
+
+            const renderEntry = () => {
+                const entry = entries[stage - 2];
+                return <EntryCard entry={entry} total={entries.length} />;
+            };
+
+            const renderSynthesis = () => (
+                <>
+                    <NarrativeCard label="Two Paths, Same Architecture">
+                        <p className="mb-3">
+                            All 15 entries are applied. The closing Balance Sheet matches what you saw in
+                            Tutorial 3.1 to the dollar:{' '}
+                            <span className="mono font-bold">${fmt(totalA(state.currBS))} − ${fmt(totalL(state.currBS))} = ${fmt(totalE(state.currBS))}</span>.
+                        </p>
+                        <p className="mb-3">
+                            The Income Statement, Statement of Changes in Equities, and Cash Flow Statement
+                            built up here are the same statements 3.1 revealed top-down from the 12 aggregates.
+                            The Income Statement shows Net Income of <span className="mono font-bold">${fmt(state.niAccum)}</span>{' '}
+                            (Revenues − Expenses). The Statement of Changes in Equities shows how Equities
+                            moved from <span className="mono">${fmt(totalE(opening))}</span> to{' '}
+                            <span className="mono">${fmt(totalE(state.currBS))}</span>. The Cash Flow Statement
+                            shows Cash moving from <span className="mono">${fmt(opening.cash)}</span> to{' '}
+                            <span className="mono">${fmt(state.currBS.cash)}</span>, classified into Operating,
+                            Investing, and Financing.
+                        </p>
+                        <p>
+                            Two paths. Same architecture. The 12 aggregates in 3.1 are what you get when you
+                            roll up the 15 entries you just stepped through.
+                        </p>
+                    </NarrativeCard>
+                    <AnnaBox>
+                        "When the underwriter sees our audited statements, they'll see them the way 3.1 showed
+                        them — as finished statements. But every line in those statements got there through
+                        entries like the ones we just walked. Once you can see both directions, the
+                        architecture stops feeling magical."
+                    </AnnaBox>
+                </>
+            );
+
+            const stageContent = (() => {
+                if (stage === 0) return renderWelcome();
+                if (stage === 1) return renderStartingPoint();
+                if (stage >= 2 && stage <= 16) return renderEntry();
+                if (stage === 17) return renderSynthesis();
+                return null;
+            })();
+
+            const showDashboard = stage >= 1;
+            const showPrev = stage >= 2 && stage <= 16;
+
+            return (
+                <div className="max-w-6xl mx-auto p-4">
+                    <Header />
+
+                    <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#fef9e7', border: `2px solid ${colors.accent}` }}>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            <strong>Mockup:</strong> Tutorial 3.2 ("The Architecture in Action"). Step-by-step
+                            walkthrough of the same Year T data 3.1 revealed top-down. Same opening balance
+                            sheet, same 15 summary entries, same closing balance sheet — but built up
+                            entry by entry, OLI-style. Color-coded chips on the entry card show which
+                            flow statements the entry affects: yellow = SoCE, green = CFS, purple = IS.
+                        </p>
+                    </div>
+
+                    {stageContent}
+
+                    <NavBar />
+
+                    {showDashboard && <Dashboard state={state} showPrev={showPrev} />}
+
+                    <div className="mt-6 p-4 rounded-lg bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <div className="flex justify-between items-start mb-2">
+                            <p className="text-sm font-bold" style={{ color: colors.primary }}>For refinement</p>
+                            <button onClick={reset} className="text-xs underline border-0 bg-transparent cursor-pointer" style={{ color: colors.earth }}>Reset</button>
+                        </div>
+                        <ul className="text-sm space-y-1 list-disc list-inside" style={{ color: colors.earthDark }}>
+                            <li><strong>18 stages</strong>: welcome → starting point → 15 entry stages (one per summary entry) → synthesis closer.</li>
+                            <li><strong>OLI Activity 8 dynamics</strong>: live identity bar (A − L = E) at the top of the dashboard; 3-column layout with Opening BS (dimmed, left) | Flow Statements (middle) | Current BS (right, with "Previously $X" annotations on rows the latest entry changed, plus a light green or light red background depending on direction). Color-coded chips on the entry card showing which flow statements the entry affects.</li>
+                            <li><strong>Entries 4 and 9 are diagnostic</strong>: inventory purchases (entry 4) touches Cash Flow Statement only — no income statement effect because inventory is an asset, not an expense yet. Depreciation (entry 9) touches the Income Statement and Statement of Changes in Equities but not the Cash Flow Statement — PP&E shrinks without cash moving. These are exactly the cases that explain the NI vs CFO gap, made visible without naming the gap.</li>
+                            <li><strong>Aggregate "transactions"</strong>: each of the 15 entries summarizes a year's worth of one kind of activity. They're not literal transactions — they're aggregated summary entries. Honest framing avoids the realism trap of pretending each step is one event.</li>
+                            <li><strong>Numbers reconcile to 3.1 exactly</strong>: Opening BS (3,970 − 1,470 = 2,500). Closing BS (5,425 − 1,765 = 3,660). NI 940 = Revenue 8,200 − Expenses 7,260. SoCE 2,500 + 940 + 300 − 80 = 3,660. CFS net 860 − 650 + 420 = 630 = ΔCash. Per-account closing values match 3.1's closing BS to the dollar.</li>
+                            <li><strong>Dev mode</strong>: triple-click the header to reveal a stage-jump bar with all 18 stages.</li>
+                        </ul>
+                    </div>
+
+                    {showGlossary && <GlossaryModal />}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
