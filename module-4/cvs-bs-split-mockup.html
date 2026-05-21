@@ -2043,7 +2043,11 @@
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <a href="../index-mockup.html"
+                            {/* Home button — points to parent repo's welcome mockup
+                                when served from Module-1-Redesign/Mockups/, and to
+                                the published site's index.html when served from
+                                module-4/ on the GitHub Pages site. */}
+                            <a href={(typeof window !== 'undefined' && window.location.pathname.includes('/module-4/')) ? '../index.html' : '../index-mockup.html'}
                                className="p-2 rounded-lg hover:bg-white/10 text-white text-xl no-underline inline-flex items-center justify-center"
                                title="Return to Main">🏠</a>
                             <button onClick={reset}
