@@ -1,0 +1,2416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVS Balance Sheet — Split Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .bs-row {
+            height: 1.5rem;
+            opacity: 1;
+            overflow: hidden;
+            transition: height 500ms ease-out, opacity 500ms ease-out, margin-top 500ms ease-out, padding-top 500ms ease-out, border-top-color 500ms ease-out;
+        }
+        .bs-row.bs-row-total { height: 1.75rem; }
+        .bs-row-doc.collapsed .bs-row:not(.bs-row-total),
+        .bs-snapshot.collapsed .bs-row:not(.bs-row-total) {
+            height: 0;
+            opacity: 0;
+            margin-top: 0;
+            padding-top: 0;
+            border-top-color: transparent;
+        }
+        .id-check-box {
+            height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: height 500ms ease-out 200ms, opacity 500ms ease-out 200ms, margin-top 500ms ease-out;
+        }
+        .bs-row-doc.collapsed .id-check-box {
+            height: 5.5rem;
+            opacity: 1;
+        }
+
+        /* View Transitions API — animates year-labeled elements between
+           the document layout (phase 1-2) and the snapshot layout (phase 3-4).
+           Elements that share a view-transition-name in old and new DOM
+           snapshots get a FLIP animation. They appear to physically move. */
+        ::view-transition-old(year-2025),
+        ::view-transition-new(year-2025),
+        ::view-transition-old(year-2024),
+        ::view-transition-new(year-2024) {
+            animation-duration: 3000ms;
+            animation-timing-function: ease-in-out;
+        }
+        ::view-transition-old(bs-frame),
+        ::view-transition-new(bs-frame) {
+            animation-duration: 3000ms;
+        }
+        .year-tag-2025 { view-transition-name: year-2025; }
+        .year-tag-2024 { view-transition-name: year-2024; }
+        .bs-frame { view-transition-name: bs-frame; }
+
+        /* Compact BS — Cash highlighted */
+        .cash-row {
+            background-color: #dbeafe;
+            border-radius: 0.25rem;
+            padding: 0.4rem 0.5rem;
+            margin: 0 -0.5rem;
+            transition: background-color 400ms ease-out;
+        }
+        /* Restricted-cash-bearing rows — highlighted starting in phase 7 */
+        .restricted-row {
+            border-radius: 0.25rem;
+            padding: 0.4rem 0.5rem;
+            margin: 0 -0.5rem;
+            background-color: transparent;
+            transition: background-color 500ms ease-out, box-shadow 500ms ease-out;
+        }
+        .restricted-row.lit {
+            background-color: #f0fdf4;
+            box-shadow: inset 3px 0 0 0 #22c55e;
+        }
+        .restricted-annotation {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 400ms ease-out, opacity 400ms ease-out, margin 400ms ease-out;
+            margin: 0 -0.5rem;
+        }
+        .restricted-annotation.shown {
+            max-height: 2rem;
+            opacity: 1;
+        }
+
+        /* CFS section rows (Operating / Investing / Financing) — sequential reveal */
+        .cfs-section-row {
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity 500ms ease-out, transform 500ms ease-out;
+        }
+        .cfs-section-row.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Expandable section details (phase 9) */
+        .cfs-detail-panel {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 350ms ease-out, opacity 350ms ease-out, padding 350ms ease-out;
+        }
+        .cfs-detail-panel.open {
+            max-height: 600px;
+            opacity: 1;
+        }
+        .cfs-section-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+        .cfs-section-toggle:hover { background-color: #f5f1e8; }
+
+        /* CFS document-form column dimming (phase 6 → 7) */
+        .cfs-col {
+            opacity: 1;
+            transition: opacity 700ms ease-out;
+        }
+        .cfs-col.dim {
+            opacity: 0.15;
+        }
+        /* CFS document-form row collapse (phases 8 and 9 — progressive narrowing
+           from line items → section subtotals → just net change). */
+        .cfs-doc-row {
+            max-height: 5rem;
+            opacity: 1;
+            overflow: hidden;
+            transition:
+                max-height 500ms ease-out,
+                opacity 500ms ease-out,
+                margin-top 500ms ease-out,
+                padding-top 500ms ease-out,
+                border-top-color 500ms ease-out;
+        }
+        .cfs-doc-row.hidden {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+            border-top-color: transparent !important;
+        }
+
+        /* Reveal box for the "lesson" callout */
+        .reveal-box {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 500ms ease-out, opacity 500ms ease-out, margin 500ms ease-out;
+            margin-top: 0;
+        }
+        .reveal-box.shown {
+            max-height: 600px;
+            opacity: 1;
+            margin-top: 0.75rem;
+        }
+    </style>
+</head>
+<body style="background-color: #f5f1e8;">
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const colors = {
+            primary: '#00356b', sand: '#f5f1e8', earth: '#8b7355', earthLight: '#d4c4a8',
+            earthDark: '#5c4d3d', accent: '#c9a227', clayLight: '#e8dcc8', clayDark: '#a08050',
+            success: '#22c55e', warning: '#f59e0b', error: '#dc2626',
+            paper: '#fafaf7',
+        };
+
+        // CVS Health Consolidated Balance Sheets, FY2025 10-K (printed page 95 / PDF page 97).
+        // All figures in $ millions.
+        const cvsBS = [
+            { type: 'section', label: 'Assets:' },
+            { type: 'line', label: 'Cash and cash equivalents', y2025: 8453, y2024: 8586 },
+            { type: 'line', label: 'Investments', y2025: 2145, y2024: 2407 },
+            { type: 'line', label: 'Accounts receivable, net', y2025: 39779, y2024: 36469 },
+            { type: 'line', label: 'Inventories', y2025: 19246, y2024: 18107 },
+            { type: 'line', label: 'Other current assets', y2025: 5091, y2024: 3076 },
+            { type: 'subtotal', label: 'Total current assets', y2025: 74714, y2024: 68645 },
+            { type: 'line', label: 'Long-term investments', y2025: 32669, y2024: 28934 },
+            { type: 'line', label: 'Property and equipment, net', y2025: 13083, y2024: 12993 },
+            { type: 'line', label: 'Operating lease right-of-use assets', y2025: 14973, y2024: 15944 },
+            { type: 'line', label: 'Goodwill', y2025: 85478, y2024: 91272 },
+            { type: 'line', label: 'Intangible assets, net', y2025: 25508, y2024: 27323 },
+            { type: 'line', label: 'Separate accounts assets', y2025: 1994, y2024: 3311 },
+            { type: 'line', label: 'Other assets', y2025: 5119, y2024: 4793 },
+            { type: 'total', label: 'Total assets', y2025: 253538, y2024: 253215 },
+
+            { type: 'section', label: 'Liabilities:' },
+            { type: 'line', label: 'Accounts payable', y2025: 17641, y2024: 15892 },
+            { type: 'line', label: 'Pharmacy claims and discounts payable', y2025: 26344, y2024: 24166 },
+            { type: 'line', label: 'Health care costs payable', y2025: 15399, y2024: 15064 },
+            { type: 'line', label: 'Accrued expenses and other current liabilities', y2025: 22387, y2024: 20810 },
+            { type: 'line', label: 'Other insurance liabilities', y2025: 1116, y2024: 1183 },
+            { type: 'line', label: 'Current portion of operating lease liabilities', y2025: 1737, y2024: 1751 },
+            { type: 'line', label: 'Short-term debt', y2025: 0, y2024: 2119, dashIf: 'y2025' },
+            { type: 'line', label: 'Current portion of long-term debt', y2025: 4068, y2024: 3624 },
+            { type: 'subtotal', label: 'Total current liabilities', y2025: 88692, y2024: 84609 },
+            { type: 'line', label: 'Long-term operating lease liabilities', y2025: 13643, y2024: 14899 },
+            { type: 'line', label: 'Long-term debt', y2025: 60502, y2024: 60527 },
+            { type: 'line', label: 'Deferred income taxes', y2025: 3832, y2024: 3806 },
+            { type: 'line', label: 'Separate accounts liabilities', y2025: 1994, y2024: 3311 },
+            { type: 'line', label: 'Other long-term insurance liabilities', y2025: 4716, y2024: 4902 },
+            { type: 'line', label: 'Other long-term liabilities', y2025: 4777, y2024: 5431 },
+            { type: 'total', label: 'Total liabilities', y2025: 178156, y2024: 177485 },
+
+            { type: 'section', label: "Shareholders' equity:" },
+            { type: 'line', label: 'Preferred stock', y2025: 0, y2024: 0, dashOnly: true },
+            { type: 'line', label: 'Common stock and capital surplus', y2025: 50402, y2024: 49661 },
+            { type: 'line', label: 'Treasury stock, at cost', y2025: -36790, y2024: -36818 },
+            { type: 'line', label: 'Retained earnings', y2025: 61196, y2024: 62837 },
+            { type: 'line', label: 'Accumulated other comprehensive income (loss)', y2025: 406, y2024: -120 },
+            { type: 'subtotal', label: "Total CVS Health shareholders' equity", y2025: 75214, y2024: 75560 },
+            { type: 'line', label: 'Noncontrolling interests', y2025: 168, y2024: 170 },
+            { type: 'total', label: "Total shareholders' equity", y2025: 75382, y2024: 75730 },
+        ];
+
+        // CVS Health Consolidated Statements of Cash Flows, FY2025 10-K (printed page 96 / PDF page 98).
+        // Direct method (rare — CVS deliberately chosen for this).
+        // All figures in $ millions. Only 2025 column shown in the mockup (the year between our two BSes).
+        const cvsCFS = {
+            operating: {
+                label: 'Net cash provided by operating activities',
+                subtotal: 10639,
+                items: [
+                    { label: 'Cash receipts from customers', value: 389128 },
+                    { label: 'Cash paid for inventory, prescriptions dispensed and health services rendered', value: -216493 },
+                    { label: 'Insurance benefits paid', value: -121238 },
+                    { label: 'Cash paid to other suppliers and employees', value: -37570 },
+                    { label: 'Interest and investment income received', value: 1969 },
+                    { label: 'Interest paid', value: -2991 },
+                    { label: 'Income taxes paid', value: -2166 },
+                ],
+            },
+            investing: {
+                label: 'Net cash used in investing activities',
+                subtotal: -5871,
+                items: [
+                    { label: 'Proceeds from sales and maturities of investments', value: 12383 },
+                    { label: 'Purchases of investments', value: -15012 },
+                    { label: 'Purchases of property and equipment', value: -2832 },
+                    { label: 'Acquisitions (net of cash and restricted cash acquired)', value: -436 },
+                    { label: 'Other', value: 26 },
+                ],
+            },
+            financing: {
+                label: 'Net cash used in financing activities',
+                subtotal: -4940,
+                items: [
+                    { label: 'Commercial paper borrowings (repayments), net', value: -2119 },
+                    { label: 'Proceeds from issuance of short-term loan', value: 0, dash: true },
+                    { label: 'Repayment of short-term loan', value: 0, dash: true },
+                    { label: 'Proceeds from issuance of long-term debt', value: 3969 },
+                    { label: 'Repayments of long-term debt', value: -3629 },
+                    { label: 'Repurchase of common stock', value: 0, dash: true },
+                    { label: 'Dividends paid', value: -3397 },
+                    { label: 'Proceeds from exercise of stock options', value: 394 },
+                    { label: 'Payments for taxes related to net share settlement of equity awards', value: -158 },
+                    { label: 'Other', value: 0, dash: true },
+                ],
+            },
+            netChange: -172,
+            beginning: 8884,
+            ending: 8712,
+        };
+
+        // Restricted cash reconciliation (from 10-K Note 1, "Restricted Cash"), $ millions.
+        // Cash & cash equivalents (BS face) + restricted-cash-elsewhere = Cash, cash equivalents and
+        // restricted cash (per CFS). This is the linchpin of the phase 8/9 discovery moment.
+        const cashRecon = {
+            // Beginning of period = Dec 31, 2024
+            beg: { ccEquiv: 8586, restrCurr: 95, restrOther: 203, total: 8884 },
+            // End of period = Dec 31, 2025
+            end: { ccEquiv: 8453, restrCurr: 59, restrOther: 200, total: 8712 },
+        };
+
+        // Three-year CFS data — drives the document-form view in phase 6.
+        // After phase 7 strips to the 2025 column, the single-year `cvsCFS` data above is used.
+        const cvsCFS3Year = {
+            sections: [
+                {
+                    key: 'operating',
+                    header: 'Cash flows from operating activities:',
+                    items: [
+                        { label: 'Cash receipts from customers', y2025: 389128, y2024: 357995, y2023: 345464 },
+                        { label: 'Cash paid for inventory, prescriptions dispensed and health services rendered', y2025: -216493, y2024: -197726, y2023: -208848 },
+                        { label: 'Insurance benefits paid', y2025: -121238, y2024: -109464, y2023: -84097 },
+                        { label: 'Cash paid to other suppliers and employees', y2025: -37570, y2024: -38821, y2023: -34735 },
+                        { label: 'Interest and investment income received', y2025: 1969, y2024: 1735, y2023: 1584 },
+                        { label: 'Interest paid', y2025: -2991, y2024: -2909, y2023: -2418 },
+                        { label: 'Income taxes paid', y2025: -2166, y2024: -1703, y2023: -3524 },
+                    ],
+                    subtotal: { label: 'Net cash provided by operating activities', y2025: 10639, y2024: 9107, y2023: 13426 },
+                },
+                {
+                    key: 'investing',
+                    header: 'Cash flows from investing activities:',
+                    items: [
+                        { label: 'Proceeds from sales and maturities of investments', y2025: 12383, y2024: 10353, y2023: 7729 },
+                        { label: 'Purchases of investments', y2025: -15012, y2024: -15191, y2023: -9043 },
+                        { label: 'Purchases of property and equipment', y2025: -2832, y2024: -2781, y2023: -3031 },
+                        { label: 'Acquisitions (net of cash and restricted cash acquired)', y2025: -436, y2024: -95, y2023: -16612 },
+                        { label: 'Other', y2025: 26, y2024: 101, y2023: 68 },
+                    ],
+                    subtotal: { label: 'Net cash used in investing activities', y2025: -5871, y2024: -7613, y2023: -20889 },
+                },
+                {
+                    key: 'financing',
+                    header: 'Cash flows from financing activities:',
+                    items: [
+                        { label: 'Commercial paper borrowings (repayments), net', y2025: -2119, y2024: 1919, y2023: 200 },
+                        { label: 'Proceeds from issuance of short-term loan', y2025: 0, y2024: 0, y2023: 5000, dashFor: ['y2025','y2024'] },
+                        { label: 'Repayment of short-term loan', y2025: 0, y2024: 0, y2023: -5000, dashFor: ['y2025','y2024'] },
+                        { label: 'Proceeds from issuance of long-term debt', y2025: 3969, y2024: 7913, y2023: 10898 },
+                        { label: 'Repayments of long-term debt', y2025: -3629, y2024: -4773, y2023: -3166 },
+                        { label: 'Repurchase of common stock', y2025: 0, y2024: -3023, y2023: -2012, dashFor: ['y2025'] },
+                        { label: 'Dividends paid', y2025: -3397, y2024: -3373, y2023: -3132 },
+                        { label: 'Proceeds from exercise of stock options', y2025: 394, y2024: 361, y2023: 277 },
+                        { label: 'Payments for taxes related to net share settlement of equity awards', y2025: -158, y2024: -185, y2023: -181 },
+                        { label: 'Other', y2025: 0, y2024: 26, y2023: -201, dashFor: ['y2025'] },
+                    ],
+                    subtotal: { label: 'Net cash provided by (used in) financing activities', y2025: -4940, y2024: -1135, y2023: 2683 },
+                },
+            ],
+            netChange: { label: 'Net increase (decrease) in cash, cash equivalents and restricted cash', y2025: -172, y2024: 359, y2023: -4780 },
+            beginning: { label: 'Cash, cash equivalents and restricted cash at the beginning of the period', y2025: 8884, y2024: 8525, y2023: 13305 },
+            ending: { label: 'Cash, cash equivalents and restricted cash at the end of the period', y2025: 8712, y2024: 8884, y2023: 8525 },
+        };
+
+        // CVS Health Consolidated Statements of Shareholders' Equity, FY2025 10-K
+        // (printed page 98 / PDF page 100). Drives the SoCE document-form view
+        // in phases 15–18 and the bucketed view from phase 17 onward.
+        // Sign convention: balance and movement values use balance-direction signs.
+        //   Treasury Shares: positive number = shares held in treasury (subtract from
+        //     issued to get outstanding). Movement positive = more added to treasury;
+        //     negative = treasury reissued (e.g., ESPP).
+        //   Treasury Stock: negative dollar (cost basis, shown in parens in 10-K).
+        //     Movement negative = more dollars added to treasury; positive = treasury
+        //     reissued at less than cost basis.
+        const cvsSoCE3Year = {
+            columns: [
+                { key: 'commonShares', label: 'Common Shares', isShares: true, bucket: null },
+                { key: 'treasuryShares', label: 'Treasury Shares', isShares: true, bucket: null },
+                { key: 'commonStock', label: 'Common Stock & Capital Surplus', bucket: 'contributed' },
+                { key: 'treasuryStock', label: 'Treasury Stock', bucket: 'contributed' },
+                { key: 'retainedEarnings', label: 'Retained Earnings', bucket: 'earnedRetained' },
+                { key: 'aoci', label: 'AOCI', bucket: 'earnedRetained' },
+                { key: 'totalCVS', label: 'Total CVS HSE', isSubtotal: true },
+                { key: 'nci', label: 'Noncontrolling Interests', bucket: 'nci' },
+                { key: 'total', label: 'Total Shareholders’ Equity', isTotal: true },
+            ],
+            rows: [
+                { type: 'balance', year: 2022, label: 'Balance at December 31, 2022',
+                  commonShares: 1758, treasuryShares: 458, commonStock: 48193, treasuryStock: -31858,
+                  retainedEarnings: 56398, aoci: -1264, totalCVS: 71469, nci: 300, total: 71769 },
+                { type: 'movement', year: 2023, label: 'Net income',
+                  retainedEarnings: 8344, totalCVS: 8344, nci: 24, total: 8368 },
+                { type: 'movement', year: 2023, label: 'Other comprehensive income',
+                  aoci: 967, totalCVS: 967, total: 967 },
+                { type: 'movement', year: 2023, label: 'Stock option activity, stock awards and other',
+                  commonShares: 10, commonStock: 795, totalCVS: 795, total: 795 },
+                { type: 'movement', year: 2023, label: 'Purchase of treasury shares, net of ESPP issuances',
+                  treasuryShares: 22, commonStock: -12, treasuryStock: -1980, totalCVS: -1992, total: -1992 },
+                { type: 'movement', year: 2023, label: 'Common stock dividends ($2.42 per share)',
+                  retainedEarnings: -3138, totalCVS: -3138, total: -3138 },
+                { type: 'movement', year: 2023, label: 'Acquisition of noncontrolling interests',
+                  nci: 66, total: 66 },
+                { type: 'movement', year: 2023, label: 'Other increases (decreases) in noncontrolling interests',
+                  commonStock: 16, totalCVS: 16, nci: -215, total: -199 },
+                { type: 'balance', year: 2023, label: 'Balance at December 31, 2023',
+                  commonShares: 1768, treasuryShares: 480, commonStock: 48992, treasuryStock: -33838,
+                  retainedEarnings: 61604, aoci: -297, totalCVS: 76461, nci: 175, total: 76636 },
+                { type: 'movement', year: 2024, label: 'Net income',
+                  retainedEarnings: 4614, totalCVS: 4614, nci: -28, total: 4586 },
+                { type: 'movement', year: 2024, label: 'Other comprehensive income',
+                  aoci: 177, totalCVS: 177, total: 177 },
+                { type: 'movement', year: 2024, label: 'Stock option activity, stock awards and other',
+                  commonShares: 10, commonStock: 700, totalCVS: 700, total: 700 },
+                { type: 'movement', year: 2024, label: 'Purchase of treasury shares, net of ESPP issuances',
+                  treasuryShares: 38, commonStock: -22, treasuryStock: -2980, totalCVS: -3002, total: -3002 },
+                { type: 'movement', year: 2024, label: 'Common stock dividends ($2.66 per share)',
+                  retainedEarnings: -3381, totalCVS: -3381, total: -3381 },
+                { type: 'movement', year: 2024, label: 'Other increases (decreases) in noncontrolling interests',
+                  commonStock: -9, totalCVS: -9, nci: 23, total: 14 },
+                { type: 'balance', year: 2024, label: 'Balance at December 31, 2024',
+                  commonShares: 1778, treasuryShares: 518, commonStock: 49661, treasuryStock: -36818,
+                  retainedEarnings: 62837, aoci: -120, totalCVS: 75560, nci: 170, total: 75730 },
+                { type: 'movement', year: 2025, label: 'Net income',
+                  retainedEarnings: 1768, totalCVS: 1768, nci: -40, total: 1728 },
+                { type: 'movement', year: 2025, label: 'Other comprehensive income',
+                  aoci: 526, totalCVS: 526, total: 526 },
+                { type: 'movement', year: 2025, label: 'Stock option activity, stock awards and other',
+                  commonShares: 9, commonStock: 741, totalCVS: 741, total: 741 },
+                { type: 'movement', year: 2025, label: 'ESPP issuances, net of purchase of treasury shares',
+                  treasuryShares: -2, treasuryStock: 28, totalCVS: 28, total: 28 },
+                { type: 'movement', year: 2025, label: 'Common stock dividends ($2.66 per share)',
+                  retainedEarnings: -3409, totalCVS: -3409, total: -3409 },
+                { type: 'movement', year: 2025, label: 'Other increases in noncontrolling interests',
+                  nci: 38, total: 38 },
+                { type: 'balance', year: 2025, label: 'Balance at December 31, 2025',
+                  commonShares: 1787, treasuryShares: 516, commonStock: 50402, treasuryStock: -36790,
+                  retainedEarnings: 61196, aoci: 406, totalCVS: 75214, nci: 168, total: 75382 },
+            ],
+        };
+
+        // Helper: sum a row's dollar columns by bucket (for the bucketed view).
+        const soceBucketValue = (row, bucket) => {
+            let total = 0;
+            cvsSoCE3Year.columns.forEach(col => {
+                if (col.bucket === bucket && typeof row[col.key] === 'number') {
+                    total += row[col.key];
+                }
+            });
+            return total;
+        };
+
+        // CVS Health Consolidated Statements of Operations (Income Statement),
+        // FY2025 10-K (printed page 93 / PDF page 95). Drives the IS document-form
+        // view in phases 21–25 and the bucketed/compact view from phase 26 onward.
+        // Costs are stored as negative numbers so that summing all line items in
+        // a year column yields Net income directly.
+        const cvsIS3Year = {
+            sections: [
+                {
+                    key: 'revenues',
+                    header: 'Revenues:',
+                    items: [
+                        { label: 'Products', y2025: 249908, y2024: 231521, y2023: 245138 },
+                        { label: 'Premiums', y2025: 134751, y2024: 122896, y2023: 99192 },
+                        { label: 'Services', y2025: 15175, y2024: 16239, y2023: 12293 },
+                        { label: 'Net investment income', y2025: 2233, y2024: 2153, y2023: 1153 },
+                    ],
+                    subtotal: { label: 'Total revenues', y2025: 402067, y2024: 372809, y2023: 357776 },
+                },
+                {
+                    key: 'opcosts',
+                    header: 'Operating costs:',
+                    items: [
+                        { label: 'Cost of products sold', y2025: -221167, y2024: -206287, y2023: -217098 },
+                        { label: 'Health care costs', y2025: -125538, y2024: -115121, y2023: -86247 },
+                        { label: 'Operating expenses', y2025: -44977, y2024: -41706, y2023: -39832 },
+                        { label: 'Goodwill impairment', y2025: -5725, y2024: 0, y2023: 0, dashFor: ['y2024','y2023'] },
+                        { label: 'Restructuring charges', y2025: 0, y2024: -1179, y2023: -507, dashFor: ['y2025'] },
+                        { label: 'Loss on assets held for sale', y2025: 0, y2024: 0, y2023: -349, dashFor: ['y2025','y2024'] },
+                    ],
+                    subtotal: { label: 'Total operating costs', y2025: -397407, y2024: -364293, y2023: -344033 },
+                },
+            ],
+            operatingIncome: { label: 'Operating income', y2025: 4660, y2024: 8516, y2023: 13743 },
+            nonOperating: [
+                { label: 'Interest expense', y2025: -3119, y2024: -2958, y2023: -2658 },
+                { label: 'Gain on early extinguishment of debt', y2025: 0, y2024: 491, y2023: 0, dashFor: ['y2025','y2023'] },
+                { label: 'Gain on deconsolidation of subsidiary', y2025: 483, y2024: 0, y2023: 0, dashFor: ['y2024','y2023'] },
+                { label: 'Other income', y2025: 112, y2024: 99, y2023: 88 },
+            ],
+            incomeBeforeTax: { label: 'Income before income tax provision', y2025: 2136, y2024: 6148, y2023: 11173 },
+            incomeTax: { label: 'Income tax provision', y2025: -408, y2024: -1562, y2023: -2805 },
+            netIncome: { label: 'Net income', y2025: 1728, y2024: 4586, y2023: 8368 },
+            // 10-K presentation: positive value = loss attributable to NCI; add to
+            // total NI to arrive at CVS Health share. 2025: 1,728 + 40 = 1,768 ✓
+            nciLine: { label: 'Net (income) loss attributable to noncontrolling interests', y2025: 40, y2024: 28, y2023: -24 },
+            netIncomeCVS: { label: 'Net income attributable to CVS Health', y2025: 1768, y2024: 4614, y2023: 8344 },
+        };
+
+        // CVS Health Consolidated Statements of Comprehensive Income, FY2025 10-K
+        // (printed page 94 / PDF page 96). Bridges from Net income to Comprehensive
+        // income via OCI items; the OCI total ($526 in 2025) lands in AOCI on the BS,
+        // which is part of the Earned & Retained bucket in our SoCE bucketing.
+        const cvsCI3Year = {
+            netIncome: { label: 'Net income', y2025: 1728, y2024: 4586, y2023: 8368 },
+            ociItems: [
+                { label: 'Net unrealized investment gains', y2025: 605, y2024: 30, y2023: 1090 },
+                { label: 'Change in discount rate on long-duration insurance reserves', y2025: -50, y2024: 113, y2023: -67 },
+                { label: 'Foreign currency translation adjustments', y2025: 11, y2024: -4, y2023: 0, dashFor: ['y2023'] },
+                { label: 'Net cash flow hedges', y2025: -13, y2024: -15, y2023: 5 },
+                { label: 'Pension and other postretirement benefits', y2025: -27, y2024: 53, y2023: -61 },
+            ],
+            oci: { label: 'Other comprehensive income', y2025: 526, y2024: 177, y2023: 967 },
+            comprehensiveIncome: { label: 'Comprehensive income', y2025: 2254, y2024: 4763, y2023: 9335 },
+            nciLine: { label: 'Comprehensive (income) loss attributable to noncontrolling interests', y2025: 40, y2024: 28, y2023: -24 },
+            ciCVS: { label: 'Comprehensive income attributable to CVS Health', y2025: 2294, y2024: 4791, y2023: 9311 },
+        };
+
+        // Aggregated 2025 movement rows for the bucketed views (phase 17+).
+        // Combines two pairs that share a bucket destination:
+        //   Net income + OCI         → "Comprehensive income"   (both hit Earned & retained / NCI)
+        //   Stock option + ESPP      → one Contributed row
+        // Dividends and NCI activity stay as their own rows. 4 rows instead of 6.
+        const cvsSoCE2025Aggregated = [
+            { type: 'movement', year: 2025, label: 'Comprehensive income (Net income + OCI)',
+              retainedEarnings: 1768, aoci: 526, totalCVS: 2294, nci: -40, total: 2254 },
+            { type: 'movement', year: 2025, label: 'Stock option activity, awards & ESPP',
+              commonStock: 741, treasuryStock: 28, totalCVS: 769, total: 769 },
+            { type: 'movement', year: 2025, label: 'Common stock dividends ($2.66 per share)',
+              retainedEarnings: -3409, totalCVS: -3409, total: -3409 },
+            { type: 'movement', year: 2025, label: 'Other increases in noncontrolling interests',
+              nci: 38, total: 38 },
+        ];
+
+        // Compact BS data per year — drives CompactSnapshot.
+        // The two "Other..." asset rows are kept visible (not rolled into the catch-all)
+        // because they are where restricted cash lives. Phase 7 highlights them.
+        // The equity composition (Contributed = Common Stock & APIC − Treasury,
+        // Earned & Retained = RE + AOCI, NCI) drives the equity bucket expansion
+        // from phase 14 onward when the SoCE comes into focus.
+        const compactBS = {
+            y2025: {
+                cash: 8453, otherCurrent: 5091, otherAssets: 5119,
+                totalAssets: 253538, totalLiab: 178156, totalEq: 75382,
+                restrCurr: 59, restrOther: 200,
+                contributed: 13612, earnedRetained: 61602, nci: 168,
+            },
+            y2024: {
+                cash: 8586, otherCurrent: 3076, otherAssets: 4793,
+                totalAssets: 253215, totalLiab: 177485, totalEq: 75730,
+                restrCurr: 95, restrOther: 203,
+                contributed: 12843, earnedRetained: 62717, nci: 170,
+            },
+        };
+
+        const fmt = (v) => {
+            if (v === 0) return '—';
+            const abs = Math.abs(v).toLocaleString('en-US');
+            return v < 0 ? `(${abs})` : abs;
+        };
+
+        const isTotal = (r) => r.type === 'total';
+        const isVisibleInCollapsed = (r) => r.type === 'total' || r.type === 'section';
+
+        const PHASES = [
+            { n: 1, label: 'Document form', narrative: "Here is the Consolidated Balance Sheets table as it appears in CVS's 10-K (page 95). One table, two date columns. Item-level detail across roughly thirty rows." },
+            { n: 2, label: 'Strip to totals', narrative: "The architecture works on three numbers per date — Total assets, Total liabilities, Total shareholders' equity — because that is what the identity uses. The non-total rows fade away to expose just those three." },
+            { n: 3, label: 'Split into snapshots', narrative: "Now rearrange. The 2024 column becomes the beginning Balance Sheet on the left. The 2025 column becomes the ending Balance Sheet on the right. A year sits between them — three statements will explain what happened in it." },
+            { n: 4, label: 'Re-expand each snapshot', narrative: "All the line-item detail returns, this time in two independent snapshot Balance Sheets — beginning on the left, ending on the right, gap in the middle ready for the Income Statement, Statement of Changes in Equity, and Cash Flow Statement." },
+            { n: 5, label: 'Compact to ask about cash', narrative: "A new question. CVS's recorded cash went down by $133 million. Out of nearly $254 billion in recorded assets, where did the cash go? To focus, compact both Balance Sheets to four lines: Cash, Other current assets, Other assets, and All other noncash assets — with Liabilities and Equities below. The identity still holds. Cash is highlighted on both dates." },
+            { n: 6, label: 'Meet the Cash Flow Statement', narrative: "Here is the Cash Flow Statement, as it appears on page 96 of the 10-K. The Balance Sheets step aside for a moment. CVS reports three years of cash flow activity — three columns, three full sets of operating, investing, and financing line items. Each column is its own story. Look at the structure." },
+            { n: 7, label: 'Dim the other two columns', narrative: "Each CFS column covers one fiscal year — a period that runs from one fiscal-year-end to the next. The 2025 column covers Jan 1 through Dec 31, 2025: exactly the period between our two Balance Sheets at Dec 31, 2024 and Dec 31, 2025. The other two columns cover earlier periods that don't connect anything we're holding. Drop them out of the picture." },
+            { n: 8, label: 'Collapse to section totals', narrative: "Inside the 2025 column, the line items collapse away. Only the section subtotals remain — Net cash from Operating, from Investing, from Financing — plus the reconciliation footer. The architecture of the CFS is three sections that sum to a single change in cash." },
+            { n: 9, label: 'Collapse to just the change in cash', narrative: "Even the section subtotals fall away. What's left is the CFS's bottom-line answer to the cash question: cash, cash equivalents and restricted cash decreased by $172 million." },
+            { n: 10, label: 'Two strips, one mismatch', narrative: "Pull the CFS's bottom-line out into its own strip — beginning, change, ending — and place it directly under the Balance Sheet's cash question. The BS says cash decreased by $133. The CFS says $172. The labels are different — read them carefully — but the numbers don't match. Something is off." },
+            { n: 11, label: 'Present the solution', narrative: "The BS line reports \"Cash and cash equivalents.\" The CFS bottom-line reports \"Cash, cash equivalents and restricted cash\" — a broader category. The difference is restricted cash that sits inside Other current assets and Other assets on the BS face. Add it back at both dates and the two strips reconcile exactly. Each explanatory statement explains a specific change defined by its own scope. Read the labels." },
+            { n: 12, label: 'Architecture restored — three sections', narrative: "Strips give way to the architecture. Beginning Balance Sheet on the left, Ending Balance Sheet on the right, the 2025 Cash Flow Statement column between them. The restricted-cash-bearing rows on the BSes stay highlighted so the connection is visible. The three CFS sections appear — Operating, Investing, Financing — summing to the net change in cash." },
+            { n: 13, label: 'Explore the details', narrative: "Each section is now expandable. Click any section to see the line items behind its subtotal. CVS uses the direct method for operating activities — actual cash receipts and payments by category, not a back-calculation from Net Income. (Roughly 98% of US public companies use the indirect method; CVS is unusual.)" },
+            { n: 14, label: 'Bucket the equity on both BSes', narrative: "Now turn to equity. The single \"Total equities\" row on each BS expands into three buckets: Contributed (Common Stock & Capital Surplus net of Treasury), Earned & Retained (Retained Earnings plus AOCI), and Noncontrolling Interests (the minority equity in consolidated subsidiaries). The identity A − L = E still holds. The buckets between Beg and End reveal where the SoCE will have work to do: Contributed went up by $769, Earned & Retained went down by $1,115, NCI fell by $2. The SoCE explains all three." },
+            { n: 15, label: 'Meet the Statement of Shareholders’ Equity', narrative: "Here is the SoCE, as it appears on page 98 of the 10-K. The Balance Sheets step aside. CVS reports three years of equity activity. Nine columns of detail (share counts, five equity components, two subtotals, NCI, total). Look at the structure: every change in equity, from any source — earnings, dividends, stock-based comp, share repurchases, OCI, NCI activity — flows through this statement, organized by component and period." },
+            { n: 16, label: 'Dim the irrelevant year-bands', narrative: "Like the CFS, the SoCE shows three fiscal years. Each year is a horizontal band of activity bracketed by a beginning and ending balance row. The 2023 and 2024 bands cover earlier periods that don't connect our two BSes. Drop them out of the picture. What remains is the Dec 31, 2024 balance, the 2025 activity, and the Dec 31, 2025 balance." },
+            { n: 17, label: 'Bucket the columns', narrative: "The five equity-component columns (plus the share-count columns and the CVS-only subtotal) collapse into the same three buckets as the BS: Contributed, Earned & Retained, NCI. Plus a Total column. The architectural skeleton pops: every row of 2025 activity now lands cleanly in one or two buckets." },
+            { n: 18, label: 'Trace each bucket’s change', narrative: "Six movement rows fire one at a time. Watch the running totals at the bottom of each bucket update with every row. Net Income lands in Earned & Retained ($1,768) and a small piece in NCI ($-40 = the loss attributable to subsidiary minority owners — we’ll come back to this when we look at the Income Statement). OCI lands in Earned & Retained. Stock option activity + ESPP land in Contributed. Dividends pull down Earned & Retained. NCI activity hits NCI. The bottom-line per bucket equals exactly what the BSes show." },
+            { n: 19, label: 'Architecture restored — SoCE in the middle', narrative: "Strips give way to the architecture again. The 2025 SoCE column slots into the middle, between the two Balance Sheets. Each BS shows its bucketed equity rows; each row connects to the corresponding bucket column in the SoCE. The CFS we explored earlier still belongs in this middle column — but the SoCE is the focus now. Together, the explanatory statements explain the full path between two Balance Sheets." },
+            { n: 20, label: 'Expand a bucket for the original detail', narrative: "Click any bucket header to see the original 10-K columns underneath: Contributed splits into Common Stock & Capital Surplus and Treasury Stock; Earned & Retained splits into Retained Earnings and AOCI. The bucket framing makes the architecture clear; the original columns preserve the granularity of CVS’s actual presentation." },
+            { n: 21, label: 'Meet the Income Statement', narrative: "Now the third explanatory statement. Here is CVS's Consolidated Statements of Operations as it appears on page 93 of the 10-K. The Balance Sheets step aside. Revenue at the top ($402 billion in 2025), operating costs in the middle, non-operating items below, then Net Income at the bottom — split between CVS shareholders and noncontrolling interests. Three years of data, all line items." },
+            { n: 22, label: 'Dim 2024 and 2023', narrative: "Same move as the CFS and SoCE: the 2025 column covers the period between our two BSes (Jan 1 → Dec 31, 2025). The other two columns cover earlier periods that don't connect anything we're holding. Drop them out of the picture." },
+            { n: 23, label: 'Collapse to subtotals', narrative: "Inside the 2025 column, the line items collapse. What remains is the architectural skeleton: Total revenues, Total operating costs, Operating income, then non-operating items, Income before tax, Income tax, and Net income — followed by the NCI line and Net income attributable to CVS Health." },
+            { n: 24, label: 'Collapse to the bottom line and the NCI split', narrative: "Even the operating subtotals fall away. Three numbers remain: Net income $1,728 (the consolidated total), Net (income) loss attributable to NCI $40 (the loss CVS's subsidiaries' minority owners absorbed), and Net income attributable to CVS Health $1,768. The $40 NCI piece is what we flagged back in the SoCE — here it is, on the IS, where it formally lives." },
+            { n: 25, label: 'Add OCI from the Comprehensive Income statement', narrative: "But Net income is not the whole story of equity-affecting earnings. The separate Statement of Comprehensive Income (page 94 of the 10-K) adds five OCI items — unrealized investment gains, foreign currency, hedges, pensions — summing to $526 of Other Comprehensive Income. Net income + OCI = Comprehensive Income of $2,254. The $526 OCI is what landed in AOCI on the BS and in the AOCI column of the SoCE." },
+            { n: 26, label: 'Pull out the IS strip — connect to the SoCE buckets', narrative: "The IS narrows to a strip showing where each piece lands in the SoCE buckets: $1,768 of NI attributable to CVS goes into Earned & Retained (specifically Retained Earnings); $526 of OCI also goes into Earned & Retained (specifically AOCI). Together $2,294 lands in the Earned & Retained bucket — exactly the Comprehensive income attributable to CVS Health. Separately, $-40 of NI attributable to NCI goes into the NCI bucket. The IS connects to the SoCE." },
+            { n: 27, label: 'Architecture restored — IS in the middle', narrative: "Strips give way to the architecture. The 2025 Income Statement column slots into the middle between the two Balance Sheets. Each BS shows its bucketed equity rows; the IS shows the path from Revenue ($402B) down to Net income attributable to CVS Health ($1,768) plus the OCI piece ($526). The CFS and SoCE we explored earlier still belong in this middle column — but the IS is the focus now." },
+            { n: 28, label: 'Synthesis — all three explanatory statements at once', narrative: "All three explanatory statements together. The middle column stacks them: Income Statement at top (where Net Income comes from), Statement of Shareholders' Equity in the middle (where NI + OCI + owner transactions all flow), Cash Flow Statement at the bottom (where the cash story lives). Together they explain the full path from the Beginning Balance Sheet to the Ending Balance Sheet — the architecture from Module 3, operating at the scale of a $400-billion company." },
+        ];
+
+        // ============================================================
+        // BS COMPONENTS — hoisted out of App so React doesn't remount
+        // them on every phase change (which would break CSS transitions
+        // since new DOM nodes have no "before" state to transition from).
+        // ============================================================
+
+        const renderValue = (r, year) => {
+            if (r.dashOnly) return <span style={{ color: colors.earth }}>—</span>;
+            if (r.dashIf === year && r[year] === 0) return <span style={{ color: colors.earth }}>—</span>;
+            return <span className="mono" style={{ color: r[year] < 0 ? colors.error : 'inherit' }}>{fmt(r[year])}</span>;
+        };
+
+        const BSDocumentForm = ({ phase }) => {
+            const collapsed = phase === 2;
+            const rowGrid = { display: 'grid', gridTemplateColumns: '1fr 7rem 7rem', columnGap: '0.5rem' };
+            return (
+                <div className={`bs-frame bs-row-doc bg-white rounded-lg p-6 mx-auto ${collapsed ? 'collapsed' : ''}`} style={{ maxWidth: '760px', backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Index to Consolidated Financial Statements</p>
+                    <h2 className="text-lg font-bold mt-1" style={{ color: colors.primary }}>Consolidated Balance Sheets</h2>
+                    <p className="text-xs italic mt-1" style={{ color: colors.earth }}>At December 31,</p>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>In millions, except per share amounts</p>
+
+                    <div className="mt-4 text-sm">
+                        <div style={{ ...rowGrid, paddingBottom: '0.25rem', borderBottom: `1px solid ${colors.earthLight}` }}>
+                            <div></div>
+                            <div className="text-right font-semibold year-tag-2025" style={{ color: colors.primary }}>2025</div>
+                            <div className="text-right font-semibold year-tag-2024" style={{ color: colors.primary }}>2024</div>
+                        </div>
+
+                        {cvsBS.map((r, i) => {
+                            if (r.type === 'section') {
+                                return <div key={i} className="font-bold mt-3" style={{ color: colors.primary }}>{r.label}</div>;
+                            }
+                            const collapsedHidden = collapsed && !isTotal(r);
+                            const baseStyle = {
+                                marginTop: isTotal(r) ? '0.25rem' : 0,
+                                paddingTop: isTotal(r) ? '0.25rem' : 0,
+                                borderTop: isTotal(r) ? `1px solid ${colors.earthDark}` : 'none',
+                            };
+                            const textStyle = isTotal(r)
+                                ? { fontWeight: 700, color: colors.primary }
+                                : r.type === 'subtotal'
+                                    ? { fontWeight: 600, color: colors.earthDark }
+                                    : { color: colors.earthDark };
+                            return (
+                                <div key={i} className={`bs-row${isTotal(r) ? ' bs-row-total' : ''}`} style={baseStyle}>
+                                    <div style={{ ...rowGrid, ...textStyle }}>
+                                        <div>{r.label}</div>
+                                        <div className="text-right">{renderValue(r, 'y2025')}</div>
+                                        <div className="text-right">{renderValue(r, 'y2024')}</div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div className="id-check-box">
+                        <div className="mt-4 p-3 rounded text-xs" style={{ backgroundColor: '#fef9e7', border: `1px solid ${colors.accent}`, color: colors.earthDark }}>
+                            <p className="font-semibold mb-1">Identity check at both dates</p>
+                            <p className="mono">2025: $253,538 − $178,156 = $75,382 ✓</p>
+                            <p className="mono">2024: $253,215 − $177,485 = $75,730 ✓</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Snapshot = ({ year, label, showAll }) => {
+            const rowGrid = { display: 'grid', gridTemplateColumns: '1fr 6rem', columnGap: '0.5rem' };
+            const yearStr = year === 'y2025' ? '2025' : '2024';
+            const tagClass = year === 'y2025' ? 'year-tag-2025' : 'year-tag-2024';
+            return (
+                <div className={`bs-snapshot bg-white rounded-lg p-4 ${showAll ? '' : 'collapsed'}`} style={{ backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>{label}</p>
+                    <h3 className="text-base font-bold" style={{ color: colors.primary }}>Balance Sheet</h3>
+                    <p className={`text-xs italic ${tagClass}`} style={{ color: colors.earth }}>December 31, {yearStr} · in $ millions</p>
+                    <div className="mt-3 text-sm">
+                        {cvsBS.map((r, i) => {
+                            if (r.type === 'section') {
+                                return <div key={i} className="font-bold mt-3" style={{ color: colors.primary }}>{r.label}</div>;
+                            }
+                            const hidden = !showAll && !isTotal(r);
+                            const baseStyle = {
+                                marginTop: isTotal(r) ? '0.25rem' : 0,
+                                paddingTop: isTotal(r) ? '0.25rem' : 0,
+                                borderTop: isTotal(r) ? `1px solid ${colors.earthDark}` : 'none',
+                            };
+                            const textStyle = isTotal(r)
+                                ? { fontWeight: 700, color: colors.primary }
+                                : r.type === 'subtotal'
+                                    ? { fontWeight: 600, color: colors.earthDark }
+                                    : { color: colors.earthDark };
+                            return (
+                                <div key={i} className={`bs-row${isTotal(r) ? ' bs-row-total' : ''}`} style={baseStyle}>
+                                    <div style={{ ...rowGrid, ...textStyle }}>
+                                        <div>{r.label}</div>
+                                        <div className="text-right">{renderValue(r, year)}</div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        const BSSplit = ({ phase }) => {
+            const showAll = phase === 4;
+            return (
+                <div className="grid gap-3" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+                    <Snapshot year="y2024" label="Beginning" showAll={showAll} />
+                    <div className="rounded-lg p-4 flex items-center justify-center"
+                         style={{ backgroundColor: '#fef9e7', border: `2px dashed ${colors.accent}`, color: colors.earth, minHeight: '200px' }}>
+                        <p className="text-sm text-center italic">
+                            A year between them.<br/><br/>
+                            The Income Statement,<br/>
+                            Statement of Changes in Equity,<br/>
+                            and Cash Flow Statement<br/>
+                            will fill this space.
+                        </p>
+                    </div>
+                    <Snapshot year="y2025" label="Ending" showAll={showAll} />
+                </div>
+            );
+        };
+
+        // ============================================================
+        // COMPACT BS — four lines: Cash, Noncash Assets, Total Assets,
+        // − Liabilities, = Equities. Models A − L = E in its purest
+        // form. Cash is highlighted to set up the CFS-as-explanation
+        // moment. Used from phase 5 onward.
+        // ============================================================
+        const CompactSnapshot = ({ year, label, highlightRestricted, showEquityBuckets }) => {
+            const d = compactBS[year];
+            const allOther = d.totalAssets - d.cash - d.otherCurrent - d.otherAssets;
+            const yearStr = year === 'y2025' ? '2025' : '2024';
+            const rowGrid = { display: 'grid', gridTemplateColumns: '1fr 5.5rem', columnGap: '0.5rem', alignItems: 'baseline' };
+
+            return (
+                <div className="bg-white rounded-lg p-4" style={{ backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>{label}</p>
+                    <h3 className="text-base font-bold" style={{ color: colors.primary }}>Balance Sheet</h3>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>December 31, {yearStr} · in $ millions</p>
+
+                    <div className="mt-4 text-sm">
+                        {/* Cash — highlighted in blue */}
+                        <div className="cash-row" style={{ ...rowGrid, fontWeight: 600 }}>
+                            <div style={{ color: colors.primary }}>Cash and cash equivalents</div>
+                            <div className="text-right mono" style={{ color: colors.primary }}>{fmt(d.cash)}</div>
+                        </div>
+
+                        {/* Other current assets — held visible, highlighted in phase 7+ */}
+                        <div className={`restricted-row ${highlightRestricted ? 'lit' : ''}`} style={{ ...rowGrid, marginTop: '0.4rem', color: colors.earthDark }}>
+                            <div>Other current assets</div>
+                            <div className="text-right mono">{fmt(d.otherCurrent)}</div>
+                        </div>
+                        <div className={`restricted-annotation ${highlightRestricted ? 'shown' : ''}`}>
+                            <div className="text-xs italic mono pl-3 pr-2" style={{ color: colors.success }}>
+                                ↳ of which restricted cash: {fmt(d.restrCurr)}
+                            </div>
+                        </div>
+
+                        {/* Other assets — held visible, highlighted in phase 7+ */}
+                        <div className={`restricted-row ${highlightRestricted ? 'lit' : ''}`} style={{ ...rowGrid, marginTop: '0.4rem', color: colors.earthDark }}>
+                            <div>Other assets</div>
+                            <div className="text-right mono">{fmt(d.otherAssets)}</div>
+                        </div>
+                        <div className={`restricted-annotation ${highlightRestricted ? 'shown' : ''}`}>
+                            <div className="text-xs italic mono pl-3 pr-2" style={{ color: colors.success }}>
+                                ↳ of which restricted cash: {fmt(d.restrOther)}
+                            </div>
+                        </div>
+
+                        {/* All other noncash assets — the rolled-up catch-all */}
+                        <div style={{ ...rowGrid, marginTop: '0.4rem', color: colors.earthDark }}>
+                            <div>All other noncash assets</div>
+                            <div className="text-right mono">{fmt(allOther)}</div>
+                        </div>
+
+                        {/* Total Assets */}
+                        <div style={{ ...rowGrid, marginTop: '0.4rem', paddingTop: '0.3rem', borderTop: `1px solid ${colors.earthDark}`, fontWeight: 700, color: colors.primary }}>
+                            <div>Total assets</div>
+                            <div className="text-right mono">{fmt(d.totalAssets)}</div>
+                        </div>
+
+                        {/* − Liabilities */}
+                        <div style={{ ...rowGrid, marginTop: '0.6rem', color: colors.earthDark }}>
+                            <div>− Total liabilities</div>
+                            <div className="text-right mono">{fmt(d.totalLiab)}</div>
+                        </div>
+
+                        {/* = Equities (or expanded into buckets when SoCE work begins) */}
+                        {showEquityBuckets ? (
+                            <>
+                                <div style={{ ...rowGrid, marginTop: '0.4rem', paddingTop: '0.3rem', borderTop: `1px solid ${colors.earthDark}`, color: colors.earthDark }}>
+                                    <div>= Contributed</div>
+                                    <div className="text-right mono">{fmt(d.contributed)}</div>
+                                </div>
+                                <div style={{ ...rowGrid, marginTop: '0.2rem', color: colors.earthDark }}>
+                                    <div>+ Earned and retained</div>
+                                    <div className="text-right mono">{fmt(d.earnedRetained)}</div>
+                                </div>
+                                <div style={{ ...rowGrid, marginTop: '0.2rem', color: colors.earthDark, fontSize: '0.9em' }}>
+                                    <div>+ Noncontrolling interests</div>
+                                    <div className="text-right mono">{fmt(d.nci)}</div>
+                                </div>
+                                <div style={{ ...rowGrid, marginTop: '0.25rem', paddingTop: '0.25rem', borderTop: `1px solid ${colors.earthDark}`, fontWeight: 700, color: colors.primary }}>
+                                    <div>= Total equities</div>
+                                    <div className="text-right mono">{fmt(d.totalEq)}</div>
+                                </div>
+                            </>
+                        ) : (
+                            <div style={{ ...rowGrid, marginTop: '0.4rem', paddingTop: '0.3rem', borderTop: `1px solid ${colors.earthDark}`, fontWeight: 700, color: colors.primary }}>
+                                <div>= Total equities</div>
+                                <div className="text-right mono">{fmt(d.totalEq)}</div>
+                            </div>
+                        )}
+
+                        {/* Identity check */}
+                        <p className="text-xs italic mt-3 mono" style={{ color: colors.earth, textAlign: 'right' }}>
+                            {fmt(d.totalAssets)} − {fmt(d.totalLiab)} = {fmt(d.totalEq)} ✓
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SectionLine — one of the three CFS section subtotal rows.
+        // In phase 8: shows label + value. In phase 9: also expandable.
+        // ============================================================
+        const SectionLine = ({ section, data, visible, expandable, expanded, onToggle }) => {
+            const isNeg = data.subtotal < 0;
+            return (
+                <div className={`cfs-section-row ${visible ? 'visible' : ''}`}>
+                    <div
+                        className={expandable ? 'cfs-section-toggle' : ''}
+                        onClick={expandable ? onToggle : undefined}
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1.25rem 1fr 6rem',
+                            alignItems: 'center',
+                            padding: '0.5rem 0.25rem',
+                            borderBottom: `1px solid ${colors.earthLight}`,
+                            borderRadius: '0.25rem',
+                        }}
+                    >
+                        <div style={{ color: colors.earth, fontSize: '0.75rem' }}>
+                            {expandable ? (expanded ? '▼' : '▶') : ''}
+                        </div>
+                        <div className="text-sm" style={{ color: colors.earthDark, fontWeight: 600 }}>
+                            {data.label}
+                        </div>
+                        <div className="text-right mono text-sm" style={{ color: isNeg ? colors.error : colors.primary, fontWeight: 600 }}>
+                            {fmt(data.subtotal)}
+                        </div>
+                    </div>
+                    <div className={`cfs-detail-panel ${expanded ? 'open' : ''}`}
+                         style={{ backgroundColor: '#fafaf7', padding: expanded ? '0.5rem 0.5rem 0.5rem 1.25rem' : '0 0.5rem 0 1.25rem', borderRadius: '0 0 0.25rem 0.25rem' }}>
+                        {data.items.map((item, i) => (
+                            <div key={i} className="grid" style={{ gridTemplateColumns: '1fr 5rem', padding: '0.2rem 0', columnGap: '0.5rem' }}>
+                                <div style={{ color: colors.earthDark, fontSize: '0.78rem', lineHeight: '1.3' }}>{item.label}</div>
+                                <div className="text-right mono" style={{ fontSize: '0.78rem', color: item.dash ? colors.earth : (item.value < 0 ? colors.error : colors.earthDark) }}>
+                                    {item.dash ? '—' : fmt(item.value)}
+                                </div>
+                            </div>
+                        ))}
+                        <div className="grid mt-1 pt-1" style={{ gridTemplateColumns: '1fr 5rem', borderTop: `1px solid ${colors.earthDark}`, columnGap: '0.5rem' }}>
+                            <div style={{ fontSize: '0.78rem', color: colors.primary, fontWeight: 700 }}>{data.label}</div>
+                            <div className="text-right mono" style={{ fontSize: '0.78rem', color: isNeg ? colors.error : colors.primary, fontWeight: 700 }}>{fmt(data.subtotal)}</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // CFSCenter — the middle-column content for phases 5-9.
+        //   Phase 5: question card setting up "what happened to cash?"
+        //   Phase 6: CFS reconciliation footer arrives; numbers don't match BS Cash. Notice prompt.
+        //   Phase 7: restricted cash reconciliation revealed; lesson explicit.
+        //   Phase 8: 3 section subtotals appear sequentially, sum to net change.
+        //   Phase 9: sections become expandable; student opens to see direct-method detail.
+        // ============================================================
+        const CFSCenter = ({ phase, sectionsVisible, expanded, toggleSection }) => {
+            // Phase 5 — set up the question
+            if (phase === 5) {
+                return (
+                    <div className="rounded-lg p-5 flex flex-col"
+                         style={{ backgroundColor: '#fef9e7', border: `2px dashed ${colors.accent}`, minHeight: '200px' }}>
+                        <p className="text-xs uppercase tracking-wider font-bold" style={{ color: colors.accent }}>The question</p>
+                        <h3 className="text-base font-bold mt-1" style={{ color: colors.primary }}>What happened to cash?</h3>
+                        <div className="mt-4 text-sm space-y-3" style={{ color: colors.earthDark, lineHeight: '1.5' }}>
+                            <p>Cash and cash equivalents decreased by</p>
+                            <p className="text-2xl font-bold mono text-center" style={{ color: colors.error }}>$133 million</p>
+                            <p className="text-center mono text-sm" style={{ color: colors.earth }}>$8,586 → $8,453</p>
+                            <p className="pt-2 italic">CVS earned roughly $400 billion in revenue this year. Cash on the Balance Sheet barely moved. Where did money come from, and where did it go?</p>
+                        </div>
+                        <p className="mt-auto pt-4 text-xs italic" style={{ color: colors.earth }}>
+                            The Cash Flow Statement is the explanatory statement that traces what happened to cash.
+                        </p>
+                    </div>
+                );
+            }
+
+            // Phase 12+ — CFS card in the 3-up grid. The reconciliation footer
+            // shows from the start; section subtotals appear sequentially via
+            // sectionsVisible; sections become expandable at phase 13.
+            const showBody = phase >= 12;
+
+            return (
+                <div className="rounded-lg p-4 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>From the 10-K · page 96</p>
+                    <h3 className="text-base font-bold" style={{ color: colors.primary }}>Cash Flow Statement</h3>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>Year ended December 31, 2025 · in $ millions</p>
+
+                    {/* CFS reconciliation footer — visible from phase 6 on */}
+                    <div className="mt-4 p-3 rounded text-sm" style={{ backgroundColor: '#fff8e1', border: `1px solid ${colors.accent}` }}>
+                        <p className="text-xs uppercase font-bold mb-2" style={{ color: colors.accent }}>What the CFS reconciles</p>
+                        <p className="text-xs italic mb-2" style={{ color: colors.earth }}>
+                            "Cash, cash equivalents and restricted cash"
+                        </p>
+                        <div className="mono" style={{ fontSize: '0.85rem', color: colors.earthDark }}>
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 5rem' }}>
+                                <div>Beginning of period</div>
+                                <div className="text-right">{fmt(cvsCFS.beginning)}</div>
+                            </div>
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 5rem' }}>
+                                <div>+ Net change</div>
+                                <div className="text-right" style={{ color: colors.error }}>{fmt(cvsCFS.netChange)}</div>
+                            </div>
+                            <div className="grid mt-1 pt-1 font-bold" style={{ gridTemplateColumns: '1fr 5rem', borderTop: `1px solid ${colors.earthDark}`, color: colors.primary }}>
+                                <div>End of period</div>
+                                <div className="text-right">{fmt(cvsCFS.ending)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Phase 12+ — three section subtotals + sum */}
+                    {showBody && (
+                        <div className="mt-5">
+                            <p className="text-xs uppercase font-bold mb-2" style={{ color: colors.primary }}>The three sections</p>
+                            <SectionLine
+                                section="operating"
+                                data={cvsCFS.operating}
+                                visible={sectionsVisible >= 1}
+                                expandable={phase >= 13}
+                                expanded={expanded.operating}
+                                onToggle={() => toggleSection('operating')}
+                            />
+                            <SectionLine
+                                section="investing"
+                                data={cvsCFS.investing}
+                                visible={sectionsVisible >= 2}
+                                expandable={phase >= 13}
+                                expanded={expanded.investing}
+                                onToggle={() => toggleSection('investing')}
+                            />
+                            <SectionLine
+                                section="financing"
+                                data={cvsCFS.financing}
+                                visible={sectionsVisible >= 3}
+                                expandable={phase >= 13}
+                                expanded={expanded.financing}
+                                onToggle={() => toggleSection('financing')}
+                            />
+                            <div className={`cfs-section-row ${sectionsVisible >= 3 ? 'visible' : ''}`}>
+                                <div className="grid mt-2 pt-2 mono font-bold"
+                                     style={{ gridTemplateColumns: '1.25rem 1fr 6rem', borderTop: `2px solid ${colors.primary}`, color: colors.primary, padding: '0.5rem 0.25rem' }}>
+                                    <div></div>
+                                    <div className="text-sm">Net change in cash, cash equivalents &amp; restricted cash</div>
+                                    <div className="text-right text-sm" style={{ color: colors.error }}>{fmt(cvsCFS.netChange)}</div>
+                                </div>
+                            </div>
+                            {phase >= 13 && sectionsVisible >= 3 && (
+                                <p className="text-xs italic mt-3" style={{ color: colors.earth }}>
+                                    Click any section above to expand its line items.
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================================
+        // CompactSplit — 3-column layout for phases 5-9. Compact BSes
+        // flanking, CFSCenter in the middle.
+        // ============================================================
+        const CompactSplit = ({ phase, sectionsVisible, expanded, toggleSection, middle, soceMovementsVisible, soceExpanded, toggleSoceBucket }) => {
+            const highlightRestricted = phase >= 12;
+            const showEquityBuckets = phase >= 14;
+            const renderMiddle = () => {
+                if (middle === 'synthesis') {
+                    return <SynthesisCenter phase={phase} />;
+                }
+                if (middle === 'is') {
+                    return <ISCenter phase={phase} />;
+                }
+                if (middle === 'soce') {
+                    return (
+                        <SoCECenter
+                            phase={phase}
+                            movementsVisible={soceMovementsVisible}
+                            expanded={soceExpanded}
+                            toggleBucket={toggleSoceBucket}
+                        />
+                    );
+                }
+                return (
+                    <CFSCenter
+                        phase={phase}
+                        sectionsVisible={sectionsVisible}
+                        expanded={expanded}
+                        toggleSection={toggleSection}
+                    />
+                );
+            };
+            return (
+                <div className="grid gap-3" style={{ gridTemplateColumns: '1fr 1.2fr 1fr', alignItems: 'start' }}>
+                    <CompactSnapshot year="y2024" label="Beginning" highlightRestricted={highlightRestricted} showEquityBuckets={showEquityBuckets} />
+                    {renderMiddle()}
+                    <CompactSnapshot year="y2025" label="Ending" highlightRestricted={highlightRestricted} showEquityBuckets={showEquityBuckets} />
+                </div>
+            );
+        };
+
+        // ============================================================
+        // BSReferenceStrip — compact horizontal recap of the cash
+        // question shown above the CFS document form in phase 6, while
+        // the full BSes are temporarily stepped aside.
+        // ============================================================
+        const BSReferenceStrip = () => {
+            const beg = compactBS.y2024;
+            const end = compactBS.y2025;
+            const delta = end.cash - beg.cash;
+            return (
+                <div className="bg-white rounded-lg p-3 mb-4 grid gap-2"
+                     style={{ border: `1px solid ${colors.earthLight}`, gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'center' }}>
+                    <div className="text-center">
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Beginning BS</p>
+                        <p className="text-xs" style={{ color: colors.earthDark }}>Dec 31, 2024</p>
+                        <p className="text-sm font-bold mono mt-1" style={{ color: colors.primary }}>Cash {fmt(beg.cash)}</p>
+                    </div>
+                    <div className="text-center" style={{ borderLeft: `1px solid ${colors.earthLight}`, borderRight: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.error }}>Question</p>
+                        <p className="text-lg font-bold mono" style={{ color: colors.error }}>{fmt(delta)}</p>
+                        <p className="text-xs italic" style={{ color: colors.earth }}>What happened to cash?</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Ending BS</p>
+                        <p className="text-xs" style={{ color: colors.earthDark }}>Dec 31, 2025</p>
+                        <p className="text-sm font-bold mono mt-1" style={{ color: colors.primary }}>Cash {fmt(end.cash)}</p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // CFSDocumentForm — the full 3-column document-form CFS as it
+        // appears in CVS's 10-K. Phase 6: all three columns at full
+        // opacity. Phase 7: 2024 and 2023 columns dim to ~15% then the
+        // layout swaps out to CompactSplit (handled by the parent).
+        // ============================================================
+        const CFSDocumentForm = ({ dimmedColumns, collapse }) => {
+            // collapse: 'none' | 'subtotals' | 'netchange'
+            //   'none'      — everything visible (phases 6, 7)
+            //   'subtotals' — line items + section headers hidden, subtotals + full reconciliation footer visible (phase 8)
+            //   'netchange' — only the net change row of the reconciliation footer visible (phase 9)
+            const years = ['y2025', 'y2024', 'y2023'];
+            const yearLabels = { y2025: '2025', y2024: '2024', y2023: '2023' };
+            const isDim = (y) => dimmedColumns && dimmedColumns.includes(y);
+            const hideLineItems = collapse !== 'none';
+            const hideSectionHeaders = collapse !== 'none';
+            const hideSubtotals = collapse === 'netchange';
+            const hideReconBegEnd = collapse === 'netchange';
+            const renderCell = (item, y) => {
+                if (item.dashFor && item.dashFor.includes(y)) {
+                    return <span style={{ color: colors.earth }}>—</span>;
+                }
+                const v = item[y];
+                return <span className="mono" style={{ color: v < 0 ? colors.error : 'inherit' }}>{fmt(v)}</span>;
+            };
+            const gridStyle = { display: 'grid', gridTemplateColumns: '1fr 4.5rem 4.5rem 4.5rem', columnGap: '0.75rem', alignItems: 'baseline' };
+
+            return (
+                <div className="bg-white rounded-lg p-6 mx-auto" style={{ maxWidth: '880px', backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Index to Consolidated Financial Statements</p>
+                    <h2 className="text-lg font-bold mt-1" style={{ color: colors.primary }}>Consolidated Statements of Cash Flows</h2>
+                    <p className="text-xs italic mt-1" style={{ color: colors.earth }}>For the Years Ended December 31,</p>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>In millions</p>
+
+                    <div className="mt-4 text-sm">
+                        {/* Year column headers — always visible */}
+                        <div style={{ ...gridStyle, paddingBottom: '0.25rem', borderBottom: `1px solid ${colors.earthLight}` }}>
+                            <div></div>
+                            {years.map(y => (
+                                <div key={y} className={`text-right font-semibold cfs-col ${isDim(y) ? 'dim' : ''}`} style={{ color: colors.primary }}>
+                                    {yearLabels[y]}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Sections */}
+                        {cvsCFS3Year.sections.map((section, si) => (
+                            <div key={si}>
+                                {/* Section header */}
+                                <div className={`cfs-doc-row ${hideSectionHeaders ? 'hidden' : ''}`} style={{ marginTop: '0.75rem' }}>
+                                    <div className="font-bold" style={{ color: colors.primary }}>{section.header}</div>
+                                </div>
+
+                                {/* Line items */}
+                                {section.items.map((item, ii) => (
+                                    <div key={ii} className={`cfs-doc-row ${hideLineItems ? 'hidden' : ''}`} style={{ ...gridStyle, padding: '0.1rem 0' }}>
+                                        <div style={{ color: colors.earthDark, fontSize: '0.82rem', lineHeight: '1.35' }}>{item.label}</div>
+                                        {years.map(y => (
+                                            <div key={y} className={`text-right cfs-col ${isDim(y) ? 'dim' : ''}`}>
+                                                {renderCell(item, y)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+
+                                {/* Section subtotal */}
+                                <div className={`cfs-doc-row ${hideSubtotals ? 'hidden' : ''}`} style={{
+                                    ...gridStyle,
+                                    marginTop: '0.25rem',
+                                    paddingTop: '0.25rem',
+                                    borderTop: `1px solid ${colors.earthDark}`,
+                                    fontWeight: 600,
+                                    color: colors.earthDark,
+                                }}>
+                                    <div style={{ fontSize: '0.85rem' }}>{section.subtotal.label}</div>
+                                    {years.map(y => (
+                                        <div key={y} className={`text-right cfs-col ${isDim(y) ? 'dim' : ''}`}>
+                                            {renderCell(section.subtotal, y)}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Reconciliation footer */}
+                        <div className="mt-4">
+                            {/* Net change row — always visible */}
+                            <div className="cfs-doc-row" style={{
+                                ...gridStyle,
+                                marginTop: '0.5rem',
+                                paddingTop: '0.5rem',
+                                borderTop: `2px solid ${colors.primary}`,
+                                fontWeight: 500,
+                                color: colors.earthDark,
+                            }}>
+                                <div style={{ fontSize: '0.82rem', lineHeight: '1.35' }}>{cvsCFS3Year.netChange.label}</div>
+                                {years.map(y => (
+                                    <div key={y} className={`text-right cfs-col ${isDim(y) ? 'dim' : ''}`}>
+                                        {renderCell(cvsCFS3Year.netChange, y)}
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Cash at beginning of period */}
+                            <div className={`cfs-doc-row ${hideReconBegEnd ? 'hidden' : ''}`} style={{
+                                ...gridStyle,
+                                marginTop: '0.15rem',
+                                fontWeight: 500,
+                                color: colors.earthDark,
+                            }}>
+                                <div style={{ fontSize: '0.82rem', lineHeight: '1.35' }}>{cvsCFS3Year.beginning.label}</div>
+                                {years.map(y => (
+                                    <div key={y} className={`text-right cfs-col ${isDim(y) ? 'dim' : ''}`}>
+                                        {renderCell(cvsCFS3Year.beginning, y)}
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Cash at end of period */}
+                            <div className={`cfs-doc-row ${hideReconBegEnd ? 'hidden' : ''}`} style={{
+                                ...gridStyle,
+                                marginTop: '0.15rem',
+                                fontWeight: 700,
+                                color: colors.primary,
+                            }}>
+                                <div style={{ fontSize: '0.82rem', lineHeight: '1.35' }}>{cvsCFS3Year.ending.label}</div>
+                                {years.map(y => (
+                                    <div key={y} className={`text-right cfs-col ${isDim(y) ? 'dim' : ''}`}>
+                                        {renderCell(cvsCFS3Year.ending, y)}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // CFSStrip — parallel to BSReferenceStrip but for the CFS's
+        // bottom-line cash story. Shown in phases 10–11 directly under
+        // the BS reference strip so the mismatch (and then its solution)
+        // is unmistakable.
+        // ============================================================
+        const CFSStrip = ({ withSolution }) => {
+            return (
+                <div className="bg-white rounded-lg p-3 mb-4 grid gap-2"
+                     style={{ border: `1px solid ${colors.earthLight}`, gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'center' }}>
+                    <div className="text-center">
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Beginning CFS</p>
+                        <p className="text-xs" style={{ color: colors.earthDark }}>Jan 1, 2025</p>
+                        <p className="text-sm font-bold mono mt-1" style={{ color: colors.primary }}>Cash {fmt(cvsCFS.beginning)}</p>
+                        {withSolution && (
+                            <p className="text-xs italic mt-1 mono" style={{ color: colors.success }}>
+                                = {fmt(cashRecon.beg.ccEquiv)} + restricted {fmt(cashRecon.beg.restrCurr + cashRecon.beg.restrOther)}
+                            </p>
+                        )}
+                    </div>
+                    <div className="text-center" style={{ borderLeft: `1px solid ${colors.earthLight}`, borderRight: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.error }}>CFS net change</p>
+                        <p className="text-lg font-bold mono" style={{ color: colors.error }}>{fmt(cvsCFS.netChange)}</p>
+                        <p className="text-xs italic" style={{ color: colors.earth }}>"Cash, cash equivalents and restricted cash"</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Ending CFS</p>
+                        <p className="text-xs" style={{ color: colors.earthDark }}>Dec 31, 2025</p>
+                        <p className="text-sm font-bold mono mt-1" style={{ color: colors.primary }}>Cash {fmt(cvsCFS.ending)}</p>
+                        {withSolution && (
+                            <p className="text-xs italic mt-1 mono" style={{ color: colors.success }}>
+                                = {fmt(cashRecon.end.ccEquiv)} + restricted {fmt(cashRecon.end.restrCurr + cashRecon.end.restrOther)}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SolutionBridge — phase 11 only. The "read the labels" lesson
+        // sits below the two strips and explains the gap explicitly.
+        // ============================================================
+        const SolutionBridge = () => {
+            return (
+                <div className="bg-white rounded-lg p-4 mb-4" style={{ border: `2px solid ${colors.success}`, backgroundColor: '#f0fdf4' }}>
+                    <p className="text-xs uppercase font-bold tracking-wider" style={{ color: colors.success }}>The solution — read the labels</p>
+                    <div className="mt-3 text-sm" style={{ color: colors.earthDark, lineHeight: '1.55' }}>
+                        <p>
+                            The Balance Sheet line reports <strong>"Cash and cash equivalents."</strong> The Cash Flow Statement's bottom-line reports <strong>"Cash, cash equivalents and restricted cash"</strong> — a broader category that picks up restricted cash classified inside <em>Other current assets</em> and <em>Other assets</em> on the BS face.
+                        </p>
+                        <div className="mt-3 mono text-xs" style={{ color: colors.earthDark }}>
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 5rem 5rem', columnGap: '0.5rem' }}>
+                                <div></div>
+                                <div className="text-right" style={{ color: colors.earth }}>Beg '24</div>
+                                <div className="text-right" style={{ color: colors.earth }}>End '25</div>
+                            </div>
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 5rem 5rem', columnGap: '0.5rem' }}>
+                                <div>Cash &amp; cash equivalents (BS face)</div>
+                                <div className="text-right">{fmt(cashRecon.beg.ccEquiv)}</div>
+                                <div className="text-right">{fmt(cashRecon.end.ccEquiv)}</div>
+                            </div>
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 5rem 5rem', columnGap: '0.5rem' }}>
+                                <div>+ Restricted cash in Other current assets</div>
+                                <div className="text-right">{fmt(cashRecon.beg.restrCurr)}</div>
+                                <div className="text-right">{fmt(cashRecon.end.restrCurr)}</div>
+                            </div>
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 5rem 5rem', columnGap: '0.5rem' }}>
+                                <div>+ Restricted cash in Other assets</div>
+                                <div className="text-right">{fmt(cashRecon.beg.restrOther)}</div>
+                                <div className="text-right">{fmt(cashRecon.end.restrOther)}</div>
+                            </div>
+                            <div className="grid mt-1 pt-1 font-bold" style={{ gridTemplateColumns: '1fr 5rem 5rem', columnGap: '0.5rem', borderTop: `1px solid ${colors.earthDark}`, color: colors.primary }}>
+                                <div>= Cash, cash equiv. &amp; restricted cash (per CFS)</div>
+                                <div className="text-right">{fmt(cashRecon.beg.total)}</div>
+                                <div className="text-right">{fmt(cashRecon.end.total)}</div>
+                            </div>
+                        </div>
+                        <p className="mt-3 italic">
+                            Each explanatory statement explains a <strong>specific change</strong> defined by its own scope. The BS Cash line and the CFS bottom-line are <strong>not</strong> tracking the same thing — their labels are different, and that label difference contains real information. Read the labels.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SoCEReferenceStrip — for phases 15–18 while the BSes step
+        // aside. Compact recap of what the SoCE has to explain: the
+        // bucketed equity changes between the two BS dates.
+        // ============================================================
+        const SoCEReferenceStrip = () => {
+            const beg = compactBS.y2024;
+            const end = compactBS.y2025;
+            const dC = end.contributed - beg.contributed;
+            const dE = end.earnedRetained - beg.earnedRetained;
+            const dN = end.nci - beg.nci;
+            const dT = end.totalEq - beg.totalEq;
+            const bucketCell = (label, begV, endV, delta) => (
+                <div className="text-xs" style={{ color: colors.earthDark }}>
+                    <div className="font-bold" style={{ color: colors.primary }}>{label}</div>
+                    <div className="mono">{fmt(begV)} → {fmt(endV)}</div>
+                    <div className="mono font-bold" style={{ color: delta < 0 ? colors.error : (delta > 0 ? colors.success : colors.earth) }}>
+                        Δ {fmt(delta)}
+                    </div>
+                </div>
+            );
+            return (
+                <div className="bg-white rounded-lg p-3 mb-4 grid gap-3"
+                     style={{ border: `1px solid ${colors.earthLight}`, gridTemplateColumns: '0.6fr 1fr 1fr 1fr 1fr', alignItems: 'center' }}>
+                    <div className="text-xs">
+                        <p className="uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>What the SoCE explains</p>
+                        <p className="italic" style={{ color: colors.earthDark }}>changes between Dec 31, 2024 and Dec 31, 2025</p>
+                    </div>
+                    {bucketCell('Contributed', beg.contributed, end.contributed, dC)}
+                    {bucketCell('Earned & retained', beg.earnedRetained, end.earnedRetained, dE)}
+                    {bucketCell('NCI', beg.nci, end.nci, dN)}
+                    {bucketCell('Total equities', beg.totalEq, end.totalEq, dT)}
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SoCEDocumentForm — full multi-year SoCE as it appears in the
+        // 10-K, with progressive transformations driven by props:
+        //   dimmedYears: array of years to dim (phase 16)
+        //   bucketed:    when true, collapse the 5 component columns +
+        //                share counts into 3 bucket columns + Total (phase 17+)
+        //   movementsVisible: 0–6, how many of the 2025 movement rows have
+        //                "lit up" so far in the sequential reveal (phase 18)
+        // ============================================================
+        const SoCEDocumentForm = ({ hideIrrelevant, bucketed, movementsVisible }) => {
+            // hideIrrelevant: true → collapse out every row that doesn't bear on
+            // the 2025 period. The Dec 31, 2024 balance row stays visible (it's
+            // the 2025 opening); everything else with year ≤ 2024 collapses.
+            const shouldHide = (row) => {
+                if (!hideIrrelevant) return false;
+                if (row.type === 'balance' && row.year === 2024) return false; // 2025 opening
+                if (row.year < 2025) return true;
+                return false;
+            };
+            const isNetIncome2025 = (row) =>
+                row.type === 'movement' && row.year === 2025 && row.label === 'Net income';
+
+            // Columns in the original 10-K view
+            const docColumns = cvsSoCE3Year.columns;
+            // Columns in the bucketed view (Contributed / E&R / NCI / Total)
+            const bucketColumns = [
+                { key: 'contributed', label: 'Contributed', isBucket: true },
+                { key: 'earnedRetained', label: 'Earned & retained', isBucket: true },
+                { key: 'nci', label: 'NCI', isBucket: true },
+                { key: 'total', label: 'Total', isTotal: true },
+            ];
+            const columnsToShow = bucketed ? bucketColumns : docColumns;
+
+            // For the running total animation in phase 18, only the 2025
+            // year-band is "active". Movement rows in 2025 that are within
+            // movementsVisible are highlighted and contribute to the running
+            // totals; rows beyond movementsVisible are not yet visible.
+            // When bucketed, swap in the 4 aggregated rows in place of the 6 raw rows.
+            const movement2025Rows = bucketed
+                ? cvsSoCE2025Aggregated
+                : cvsSoCE3Year.rows.filter(r => r.type === 'movement' && r.year === 2025);
+            // Row list to actually render: in bucketed mode, splice aggregated rows
+            // into the slot where the raw 2025 movements would have been.
+            const rowsToRender = (() => {
+                if (!bucketed) return cvsSoCE3Year.rows;
+                const out = [];
+                let inserted = false;
+                cvsSoCE3Year.rows.forEach(row => {
+                    if (row.type === 'movement' && row.year === 2025) {
+                        if (!inserted) {
+                            inserted = true;
+                            cvsSoCE2025Aggregated.forEach(a => out.push(a));
+                        }
+                        return; // skip raw 2025 movements
+                    }
+                    out.push(row);
+                });
+                return out;
+            })();
+
+            // Numeric value to show for a cell — bucketed or raw.
+            const cellValue = (row, col) => {
+                if (col.isBucket) {
+                    return soceBucketValue(row, col.key);
+                }
+                if (col.isTotal) {
+                    return row.total;
+                }
+                return row[col.key];
+            };
+            const cellIsShares = (col) => col.isShares;
+
+            const numCols = columnsToShow.length;
+            const labelColumnWidth = '17rem';
+            const dataColumnWidth = bucketed ? '6rem' : '4.5rem';
+            const gridTemplate = `${labelColumnWidth} repeat(${numCols}, ${dataColumnWidth})`;
+            const gridStyle = { display: 'grid', gridTemplateColumns: gridTemplate, columnGap: '0.5rem', alignItems: 'baseline' };
+
+            const renderRow = (row, ri) => {
+                const isBalance = row.type === 'balance';
+                const rowHidden = shouldHide(row);
+                const isActiveMovementYear = row.year === 2025 && row.type === 'movement';
+                // In phase 18 animation: hide unlit 2025 movement rows
+                let movementHidden = false;
+                if (typeof movementsVisible === 'number' && isActiveMovementYear) {
+                    const idx = movement2025Rows.indexOf(row);
+                    if (idx >= movementsVisible) movementHidden = true;
+                }
+                const baseColor = isBalance ? colors.primary : colors.earthDark;
+                const fontWeight = isBalance ? 700 : 500;
+                return (
+                    <div
+                        key={ri}
+                        className={`cfs-doc-row ${(rowHidden || movementHidden) ? 'hidden' : ''}`}
+                        style={{
+                            ...gridStyle,
+                            paddingTop: isBalance ? '0.35rem' : '0.15rem',
+                            marginTop: isBalance ? '0.35rem' : 0,
+                            borderTop: isBalance ? `1px solid ${colors.earthDark}` : 'none',
+                            fontWeight,
+                            color: baseColor,
+                        }}
+                    >
+                        <div style={{ fontSize: '0.78rem', lineHeight: '1.3' }}>{row.label}</div>
+                        {columnsToShow.map(col => {
+                            const v = cellValue(row, col);
+                            if (typeof v !== 'number' || v === 0 || v === undefined) {
+                                return <div key={col.key} className="text-right" style={{ color: colors.earth }}>—</div>;
+                            }
+                            const isCurrency = !cellIsShares(col);
+                            const colorOverride = isCurrency && v < 0 ? colors.error : (col.isTotal || col.isBucket ? colors.primary : 'inherit');
+                            return (
+                                <div key={col.key} className="text-right mono" style={{ fontSize: '0.78rem', color: colorOverride }}>
+                                    {fmt(v)}
+                                </div>
+                            );
+                        })}
+                    </div>
+                );
+            };
+
+            // Running totals row (phase 18 only): shows the cumulative sum of
+            // the visible 2025 movement rows applied to the 2024 opening balance.
+            const runningRow = (() => {
+                if (typeof movementsVisible !== 'number' || !bucketed) return null;
+                const opening2024 = cvsSoCE3Year.rows.find(r => r.type === 'balance' && r.year === 2024);
+                if (!opening2024) return null;
+                const acc = { contributed: soceBucketValue(opening2024, 'contributed'),
+                              earnedRetained: soceBucketValue(opening2024, 'earnedRetained'),
+                              nci: soceBucketValue(opening2024, 'nci'),
+                              total: opening2024.total };
+                for (let i = 0; i < movementsVisible; i++) {
+                    const m = movement2025Rows[i];
+                    if (!m) break;
+                    acc.contributed += soceBucketValue(m, 'contributed');
+                    acc.earnedRetained += soceBucketValue(m, 'earnedRetained');
+                    acc.nci += soceBucketValue(m, 'nci');
+                    acc.total += (m.total || 0);
+                }
+                return (
+                    <div style={{
+                        ...gridStyle,
+                        marginTop: '0.5rem',
+                        paddingTop: '0.4rem',
+                        borderTop: `2px dashed ${colors.accent}`,
+                        fontWeight: 700,
+                        color: colors.accent,
+                    }}>
+                        <div style={{ fontSize: '0.78rem', fontStyle: 'italic' }}>
+                            Running total ({movementsVisible} of {movement2025Rows.length})
+                        </div>
+                        {bucketColumns.map(col => (
+                            <div key={col.key} className="text-right mono" style={{ fontSize: '0.78rem' }}>
+                                {fmt(acc[col.key])}
+                            </div>
+                        ))}
+                    </div>
+                );
+            })();
+
+            return (
+                <div className="bg-white rounded-lg p-6 mx-auto" style={{ maxWidth: bucketed ? '780px' : '1040px', backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Index to Consolidated Financial Statements</p>
+                    <h2 className="text-lg font-bold mt-1" style={{ color: colors.primary }}>Consolidated Statements of Shareholders’ Equity</h2>
+                    <p className="text-xs italic mt-1" style={{ color: colors.earth }}>{bucketed ? 'Bucketed view · in $ millions' : 'In millions'}</p>
+
+                    <div className="mt-4">
+                        {/* Column headers */}
+                        <div style={{ ...gridStyle, paddingBottom: '0.25rem', borderBottom: `1px solid ${colors.earthLight}` }}>
+                            <div></div>
+                            {columnsToShow.map(col => (
+                                <div key={col.key} className="text-right" style={{ color: colors.primary, fontWeight: 600, fontSize: '0.7rem', lineHeight: '1.15' }}>
+                                    {col.label}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Rows */}
+                        {rowsToRender.map((row, ri) => renderRow(row, ri))}
+
+                        {/* Running total (phase 18 only) */}
+                        {runningRow}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SoCECenter — the bucketed SoCE in the 3-up architecture grid
+        // (phase 19+). Three bucket columns + Total. Movement rows for
+        // 2025 explain each bucket's change. Buckets become expandable
+        // at phase 20 to show the underlying 10-K columns.
+        // ============================================================
+        const SoCECenter = ({ phase, movementsVisible, expanded, toggleBucket }) => {
+            const opening = cvsSoCE3Year.rows.find(r => r.type === 'balance' && r.year === 2024);
+            const closing = cvsSoCE3Year.rows.find(r => r.type === 'balance' && r.year === 2025);
+            // Bucketed views always use the 4 aggregated rows for 2025.
+            const movements = cvsSoCE2025Aggregated;
+            const bucketColumns = [
+                { key: 'contributed', label: 'Contributed', subKeys: ['commonStock', 'treasuryStock'] },
+                { key: 'earnedRetained', label: 'Earned & retained', subKeys: ['retainedEarnings', 'aoci'] },
+                { key: 'nci', label: 'NCI', subKeys: ['nci'] },
+            ];
+            const labelMap = { commonStock: 'Common Stock & Cap Surplus', treasuryStock: 'Treasury Stock', retainedEarnings: 'Retained Earnings', aoci: 'AOCI', nci: 'NCI (raw)' };
+            const numCols = bucketColumns.length + 1; // + Total
+            const gridStyle = { display: 'grid', gridTemplateColumns: `1fr repeat(${numCols}, 4rem)`, columnGap: '0.35rem', alignItems: 'baseline' };
+
+            return (
+                <div className="rounded-lg p-4 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>From the 10-K · page 98</p>
+                    <h3 className="text-base font-bold" style={{ color: colors.primary }}>Statement of Shareholders’ Equity</h3>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>Year ended December 31, 2025 · bucketed · in $ millions</p>
+
+                    <div className="mt-3">
+                        {/* Column headers */}
+                        <div style={{ ...gridStyle, paddingBottom: '0.25rem', borderBottom: `1px solid ${colors.earthLight}` }}>
+                            <div></div>
+                            {bucketColumns.map(col => (
+                                <div key={col.key} className="text-right" style={{ color: colors.primary, fontWeight: 600, fontSize: '0.72rem' }}>
+                                    {col.label}
+                                </div>
+                            ))}
+                            <div className="text-right" style={{ color: colors.primary, fontWeight: 600, fontSize: '0.72rem' }}>Total</div>
+                        </div>
+
+                        {/* Opening balance */}
+                        <div style={{ ...gridStyle, paddingTop: '0.4rem', fontWeight: 700, color: colors.primary }}>
+                            <div style={{ fontSize: '0.78rem' }}>Balance at Dec 31, 2024</div>
+                            {bucketColumns.map(col => (
+                                <div key={col.key} className="text-right mono" style={{ fontSize: '0.78rem' }}>
+                                    {fmt(soceBucketValue(opening, col.key))}
+                                </div>
+                            ))}
+                            <div className="text-right mono" style={{ fontSize: '0.78rem' }}>{fmt(opening.total)}</div>
+                        </div>
+
+                        {/* Movement rows */}
+                        {movements.map((m, mi) => (
+                            <div
+                                key={mi}
+                                className={`cfs-section-row ${mi < movementsVisible ? 'visible' : ''}`}
+                                style={{ ...gridStyle, paddingTop: '0.2rem', color: colors.earthDark }}
+                            >
+                                <div style={{ fontSize: '0.72rem', lineHeight: '1.3' }}>{m.label}</div>
+                                {bucketColumns.map(col => {
+                                    const v = soceBucketValue(m, col.key);
+                                    if (v === 0) return <div key={col.key} className="text-right" style={{ color: colors.earth, fontSize: '0.75rem' }}>—</div>;
+                                    return (
+                                        <div key={col.key} className="text-right mono" style={{ fontSize: '0.75rem', color: v < 0 ? colors.error : colors.earthDark }}>
+                                            {fmt(v)}
+                                        </div>
+                                    );
+                                })}
+                                <div className="text-right mono" style={{ fontSize: '0.75rem', color: m.total < 0 ? colors.error : colors.earthDark }}>
+                                    {fmt(m.total)}
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Closing balance */}
+                        <div style={{ ...gridStyle, marginTop: '0.4rem', paddingTop: '0.3rem', borderTop: `2px solid ${colors.primary}`, fontWeight: 700, color: colors.primary }}>
+                            <div style={{ fontSize: '0.78rem' }}>Balance at Dec 31, 2025</div>
+                            {bucketColumns.map(col => (
+                                <div key={col.key} className="text-right mono" style={{ fontSize: '0.78rem' }}>
+                                    {fmt(soceBucketValue(closing, col.key))}
+                                </div>
+                            ))}
+                            <div className="text-right mono" style={{ fontSize: '0.78rem' }}>{fmt(closing.total)}</div>
+                        </div>
+
+                        {/* Expandable per-bucket detail (phase 20) */}
+                        {phase >= 20 && (
+                            <div className="mt-4">
+                                <p className="text-xs uppercase font-bold tracking-wider mb-2" style={{ color: colors.primary }}>Underlying 10-K columns</p>
+                                {bucketColumns.map(col => (
+                                    <div key={col.key} className="mt-1">
+                                        <div
+                                            className="cfs-section-toggle"
+                                            onClick={() => toggleBucket(col.key)}
+                                            style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: '1.25rem 1fr',
+                                                alignItems: 'center',
+                                                padding: '0.3rem 0.25rem',
+                                                borderBottom: `1px solid ${colors.earthLight}`,
+                                                cursor: 'pointer',
+                                            }}
+                                        >
+                                            <div style={{ color: colors.earth, fontSize: '0.75rem' }}>
+                                                {expanded[col.key] ? '▼' : '▶'}
+                                            </div>
+                                            <div className="text-sm" style={{ color: colors.earthDark, fontWeight: 600 }}>
+                                                {col.label}
+                                            </div>
+                                        </div>
+                                        <div className={`cfs-detail-panel ${expanded[col.key] ? 'open' : ''}`}
+                                             style={{ backgroundColor: '#fafaf7', padding: expanded[col.key] ? '0.5rem 0.5rem 0.5rem 1.25rem' : '0 0.5rem 0 1.25rem' }}>
+                                            {col.subKeys.map(sk => {
+                                                const begV = opening[sk] || 0;
+                                                const endV = closing[sk] || 0;
+                                                return (
+                                                    <div key={sk} className="grid" style={{ gridTemplateColumns: '1fr 4rem 4rem', padding: '0.2rem 0', columnGap: '0.5rem' }}>
+                                                        <div style={{ color: colors.earthDark, fontSize: '0.75rem' }}>{labelMap[sk]}</div>
+                                                        <div className="text-right mono" style={{ fontSize: '0.75rem', color: begV < 0 ? colors.error : colors.earthDark }}>{fmt(begV)}</div>
+                                                        <div className="text-right mono" style={{ fontSize: '0.75rem', color: endV < 0 ? colors.error : colors.earthDark }}>{fmt(endV)}</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // ISDocumentForm — full multi-year Income Statement as in the
+        // 10-K, with progressive collapse driven by props:
+        //   dimmedYears: years to dim (phase 22)
+        //   collapseLevel: 'none' | 'subtotals' | 'bottomline' (phases 23, 24)
+        //   showCI: when true, append the Comprehensive Income statement
+        //           below (phase 25)
+        // ============================================================
+        const ISDocumentForm = ({ dimmedYears, collapseLevel, showCI }) => {
+            const isDim = (y) => dimmedYears && dimmedYears.includes(y);
+            const hideLineItems = collapseLevel === 'subtotals' || collapseLevel === 'bottomline';
+            const hideSectionHeaders = collapseLevel === 'subtotals' || collapseLevel === 'bottomline';
+            const hideSectionSubtotals = collapseLevel === 'bottomline';
+            const hideOperatingIncome = collapseLevel === 'bottomline';
+            const hideNonOperating = collapseLevel === 'bottomline';
+            const hideIncomeBeforeTax = collapseLevel === 'bottomline';
+            const hideIncomeTax = collapseLevel === 'bottomline';
+
+            const years = ['y2025', 'y2024', 'y2023'];
+            const yearLabels = { y2025: '2025', y2024: '2024', y2023: '2023' };
+            const renderCell = (item, y) => {
+                if (item.dashFor && item.dashFor.includes(y)) {
+                    return <span style={{ color: colors.earth }}>—</span>;
+                }
+                const v = item[y];
+                if (typeof v !== 'number') return <span style={{ color: colors.earth }}>—</span>;
+                return <span className="mono" style={{ color: v < 0 ? colors.error : 'inherit' }}>{fmt(v)}</span>;
+            };
+            const gridStyle = { display: 'grid', gridTemplateColumns: '1fr 5rem 5rem 5rem', columnGap: '0.5rem', alignItems: 'baseline' };
+
+            const dataRow = (row, hidden, key, extraStyle = {}) => (
+                <div key={key} className={`cfs-doc-row ${hidden ? 'hidden' : ''}`} style={{ ...gridStyle, paddingTop: '0.15rem', color: colors.earthDark, ...extraStyle }}>
+                    <div style={{ fontSize: '0.82rem', lineHeight: '1.35' }}>{row.label}</div>
+                    {years.map(y => (
+                        <div key={y} className={`text-right cfs-col ${isDim(y) ? 'dim' : ''}`}>{renderCell(row, y)}</div>
+                    ))}
+                </div>
+            );
+            const subtotalRow = (row, hidden, key) => (
+                <div key={key} className={`cfs-doc-row ${hidden ? 'hidden' : ''}`} style={{
+                    ...gridStyle, marginTop: '0.3rem', paddingTop: '0.3rem',
+                    borderTop: `1px solid ${colors.earthDark}`, fontWeight: 600, color: colors.primary,
+                }}>
+                    <div style={{ fontSize: '0.85rem' }}>{row.label}</div>
+                    {years.map(y => (
+                        <div key={y} className={`text-right cfs-col ${isDim(y) ? 'dim' : ''}`}>{renderCell(row, y)}</div>
+                    ))}
+                </div>
+            );
+            const finalRow = (row, key) => (
+                <div key={key} className="cfs-doc-row" style={{
+                    ...gridStyle, marginTop: '0.3rem', paddingTop: '0.3rem',
+                    borderTop: `2px solid ${colors.primary}`, fontWeight: 700, color: colors.primary,
+                }}>
+                    <div style={{ fontSize: '0.85rem' }}>{row.label}</div>
+                    {years.map(y => (
+                        <div key={y} className={`text-right cfs-col ${isDim(y) ? 'dim' : ''}`}>{renderCell(row, y)}</div>
+                    ))}
+                </div>
+            );
+
+            return (
+                <div className="bg-white rounded-lg p-6 mx-auto" style={{ maxWidth: '880px', backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Index to Consolidated Financial Statements</p>
+                    <h2 className="text-lg font-bold mt-1" style={{ color: colors.primary }}>Consolidated Statements of Operations</h2>
+                    <p className="text-xs italic mt-1" style={{ color: colors.earth }}>For the Years Ended December 31,</p>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>In millions, except per share amounts</p>
+
+                    <div className="mt-4 text-sm">
+                        <div style={{ ...gridStyle, paddingBottom: '0.25rem', borderBottom: `1px solid ${colors.earthLight}` }}>
+                            <div></div>
+                            {years.map(y => (
+                                <div key={y} className={`text-right font-semibold cfs-col ${isDim(y) ? 'dim' : ''}`} style={{ color: colors.primary }}>{yearLabels[y]}</div>
+                            ))}
+                        </div>
+
+                        {cvsIS3Year.sections.map((section, si) => (
+                            <div key={si}>
+                                <div className={`cfs-doc-row ${hideSectionHeaders ? 'hidden' : ''}`} style={{ marginTop: '0.75rem' }}>
+                                    <div className="font-bold" style={{ color: colors.primary }}>{section.header}</div>
+                                </div>
+                                {section.items.map((item, ii) => dataRow(item, hideLineItems, `s${si}-i${ii}`))}
+                                {subtotalRow(section.subtotal, hideSectionSubtotals, `s${si}-sub`)}
+                            </div>
+                        ))}
+
+                        {subtotalRow(cvsIS3Year.operatingIncome, hideOperatingIncome, 'op-inc')}
+                        {cvsIS3Year.nonOperating.map((item, ii) => dataRow(item, hideNonOperating, `nop-${ii}`, { marginTop: ii === 0 ? '0.4rem' : 0 }))}
+                        {subtotalRow(cvsIS3Year.incomeBeforeTax, hideIncomeBeforeTax, 'ibt')}
+                        {dataRow(cvsIS3Year.incomeTax, hideIncomeTax, 'tax')}
+                        {subtotalRow(cvsIS3Year.netIncome, false, 'ni')}
+                        {dataRow(cvsIS3Year.nciLine, false, 'nci')}
+                        {finalRow(cvsIS3Year.netIncomeCVS, 'ni-cvs')}
+                    </div>
+
+                    {showCI && (
+                        <div className="mt-8 pt-5" style={{ borderTop: `2px dashed ${colors.accent}` }}>
+                            <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Index to Consolidated Financial Statements</p>
+                            <h2 className="text-lg font-bold mt-1" style={{ color: colors.primary }}>Consolidated Statements of Comprehensive Income</h2>
+                            <p className="text-xs italic mt-1" style={{ color: colors.earth }}>For the Years Ended December 31, · in millions</p>
+
+                            <div className="mt-3 text-sm">
+                                {dataRow(cvsCI3Year.netIncome, false, 'ci-ni')}
+                                <div style={{ marginTop: '0.5rem' }}>
+                                    <div className="font-bold" style={{ color: colors.primary, fontSize: '0.85rem' }}>Other comprehensive income (loss), net of tax:</div>
+                                </div>
+                                {cvsCI3Year.ociItems.map((item, ii) => dataRow(item, false, `oci-${ii}`))}
+                                {subtotalRow(cvsCI3Year.oci, false, 'oci-total')}
+                                {subtotalRow(cvsCI3Year.comprehensiveIncome, false, 'ci')}
+                                {dataRow(cvsCI3Year.nciLine, false, 'ci-nci')}
+                                {finalRow(cvsCI3Year.ciCVS, 'ci-cvs')}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================================
+        // ISReferenceStrip — for phases 21–25 while the BSes step aside
+        // (parallel to BSReferenceStrip and SoCEReferenceStrip). The
+        // "question" the IS will answer is what Net Income looks like
+        // and how it splits between CVS shareholders and NCI — tied to
+        // the SoCE's Earned & Retained drop of $(1,115) and the NCI
+        // bucket's loss of $(40).
+        // ============================================================
+        const ISReferenceStrip = () => {
+            const cell = (label, value, sub) => (
+                <div className="text-xs text-center" style={{ color: colors.earthDark }}>
+                    <div className="font-bold" style={{ color: colors.primary }}>{label}</div>
+                    <div className="mono" style={{ fontSize: '0.78rem' }}>{value}</div>
+                    {sub && <div className="italic" style={{ color: colors.earth, fontSize: '0.7rem' }}>{sub}</div>}
+                </div>
+            );
+            return (
+                <div className="bg-white rounded-lg p-3 mb-4 grid gap-3"
+                     style={{ border: `1px solid ${colors.earthLight}`, gridTemplateColumns: '0.7fr 1fr 1fr 1fr 1fr', alignItems: 'center' }}>
+                    <div className="text-xs">
+                        <p className="uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>What the IS explains</p>
+                        <p className="italic" style={{ color: colors.earthDark }}>where Net Income comes from + how it splits</p>
+                    </div>
+                    {cell('Earned & retained Δ', `${fmt(-1115)}`, 'from the SoCE')}
+                    {cell('NCI Δ', `${fmt(-2)}`, 'from the SoCE')}
+                    {cell('Net Income', '1,728', 'the bottom line')}
+                    {cell('NI to CVS / to NCI', '1,768 / (40)', 'the split')}
+                </div>
+            );
+        };
+
+        // ============================================================
+        // ISToBucketsStrip — phase 26 only. The IS narrows to a small
+        // strip showing where each piece of income lands in the SoCE
+        // buckets (Earned & Retained and NCI).
+        // ============================================================
+        const ISToBucketsStrip = () => {
+            return (
+                <div className="bg-white rounded-lg p-4 mb-4" style={{ border: `2px solid ${colors.success}`, backgroundColor: '#f0fdf4' }}>
+                    <p className="text-xs uppercase font-bold tracking-wider" style={{ color: colors.success }}>From the IS into the SoCE buckets</p>
+                    <div className="mt-3 grid gap-4" style={{ gridTemplateColumns: '1fr 1fr', alignItems: 'start' }}>
+                        <div>
+                            <p className="text-sm font-bold" style={{ color: colors.primary }}>Earned &amp; retained bucket</p>
+                            <div className="mt-2 mono text-xs" style={{ color: colors.earthDark }}>
+                                <div className="flex justify-between"><span>Net income attributable to CVS</span><span>{fmt(1768)}</span></div>
+                                <div className="flex justify-between" style={{ color: colors.earth }}><span className="italic">→ Retained Earnings</span><span></span></div>
+                                <div className="flex justify-between mt-1"><span>+ Other comprehensive income</span><span>{fmt(526)}</span></div>
+                                <div className="flex justify-between" style={{ color: colors.earth }}><span className="italic">→ AOCI</span><span></span></div>
+                                <div className="flex justify-between font-bold border-t mt-1 pt-1" style={{ borderColor: colors.earthDark, color: colors.primary }}>
+                                    <span>= Comprehensive income attributable to CVS</span><span>{fmt(2294)}</span>
+                                </div>
+                                <p className="italic text-xs mt-2" style={{ color: colors.earth, fontSize: '0.7rem' }}>
+                                    This $2,294 is what the SoCE's Earned &amp; Retained bucket picked up from earnings + OCI in 2025. (Dividends of $(3,409) then pulled it down to a net $(1,115) bucket change.)
+                                </p>
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold" style={{ color: colors.primary }}>NCI bucket</p>
+                            <div className="mt-2 mono text-xs" style={{ color: colors.earthDark }}>
+                                <div className="flex justify-between"><span>Net (income) loss to NCI</span><span style={{ color: colors.error }}>{fmt(-40)}</span></div>
+                                <div className="flex justify-between" style={{ color: colors.earth }}><span className="italic">→ NCI on the BS</span><span></span></div>
+                                <p className="italic text-xs mt-2" style={{ color: colors.earth, fontSize: '0.7rem' }}>
+                                    CVS's subsidiaries' minority owners absorbed a $40 net loss in 2025. That's the NCI piece of the IS landing in the SoCE's NCI bucket. (Plus $38 of "other increases in NCI" took the net bucket change to $(2).)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // ISCenter — compact IS for the 3-up architecture grid (phase 27+).
+        // Shows the architectural skeleton: revenues → operating costs →
+        // operating income → non-op → IBT → tax → NI → NCI split → NI to CVS,
+        // plus OCI and Comprehensive income from the related statement.
+        // ============================================================
+        const ISCenter = ({ phase }) => {
+            const rowGrid = { display: 'grid', gridTemplateColumns: '1fr 5rem', columnGap: '0.5rem' };
+            const rev = cvsIS3Year.sections[0].subtotal.y2025;
+            const opc = cvsIS3Year.sections[1].subtotal.y2025;
+            const opi = cvsIS3Year.operatingIncome.y2025;
+            const nonOpSum = cvsIS3Year.nonOperating.reduce((s, r) => s + (r.y2025 || 0), 0);
+            const ibt = cvsIS3Year.incomeBeforeTax.y2025;
+            const tax = cvsIS3Year.incomeTax.y2025;
+            const ni = cvsIS3Year.netIncome.y2025;
+            const nciL = cvsIS3Year.nciLine.y2025;
+            const niCVS = cvsIS3Year.netIncomeCVS.y2025;
+            const oci = cvsCI3Year.oci.y2025;
+            const ciCVS = cvsCI3Year.ciCVS.y2025;
+
+            const row = (label, value, key, bold = false, neg = false) => (
+                <div key={key} style={{ ...rowGrid, padding: '0.2rem 0', fontWeight: bold ? 700 : 500, color: bold ? colors.primary : colors.earthDark }}>
+                    <div style={{ fontSize: '0.78rem' }}>{label}</div>
+                    <div className="text-right mono" style={{ fontSize: '0.78rem', color: (value < 0 || neg) ? colors.error : (bold ? colors.primary : colors.earthDark) }}>
+                        {fmt(value)}
+                    </div>
+                </div>
+            );
+            const subRow = (label, value, key) => (
+                <div key={key} style={{ ...rowGrid, marginTop: '0.2rem', paddingTop: '0.2rem', borderTop: `1px solid ${colors.earthDark}`, fontWeight: 600, color: colors.primary }}>
+                    <div style={{ fontSize: '0.78rem' }}>{label}</div>
+                    <div className="text-right mono" style={{ fontSize: '0.78rem', color: value < 0 ? colors.error : colors.primary }}>{fmt(value)}</div>
+                </div>
+            );
+
+            return (
+                <div className="rounded-lg p-4 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>From the 10-K · page 93</p>
+                    <h3 className="text-base font-bold" style={{ color: colors.primary }}>Income Statement</h3>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>Year ended December 31, 2025 · in $ millions</p>
+
+                    <div className="mt-3 text-sm">
+                        {row('Total revenues', rev, 'rev')}
+                        {row('Total operating costs', opc, 'opc')}
+                        {subRow('Operating income', opi, 'opi')}
+                        {row('Net non-operating', nonOpSum, 'nop')}
+                        {subRow('Income before tax', ibt, 'ibt')}
+                        {row('Income tax provision', tax, 'tax')}
+                        {subRow('Net income', ni, 'ni')}
+                        {row('Net (income) loss attributable to NCI', nciL, 'nci')}
+                        {subRow('Net income attributable to CVS Health', niCVS, 'ni-cvs')}
+                    </div>
+
+                    <div className="mt-4 pt-3" style={{ borderTop: `1px dashed ${colors.accent}` }}>
+                        <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>From page 94 · Comprehensive Income</p>
+                        <div className="mt-2 text-sm">
+                            {row('Other comprehensive income', oci, 'oci')}
+                            {subRow('Comprehensive income attributable to CVS', ciCVS, 'ci-cvs')}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SynthesisCenter — phase 28. The full architecture, with all
+        // three explanatory statements stacked in the middle column
+        // between the two BSes. Compact versions of each.
+        // ============================================================
+        const SynthesisCenter = ({ phase }) => {
+            return (
+                <div className="space-y-3">
+                    {/* Mini CFS (top) */}
+                    <div className="rounded-lg p-3 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs uppercase tracking-wider font-bold" style={{ color: colors.primary }}>Cash Flow Statement (2025)</p>
+                        <div className="mt-2 text-xs" style={{ color: colors.earthDark, lineHeight: '1.5' }}>
+                            <div className="flex justify-between"><span>Net cash provided by operating activities</span><span className="mono">{fmt(10639)}</span></div>
+                            <div className="flex justify-between"><span>Net cash used in investing activities</span><span className="mono" style={{ color: colors.error }}>{fmt(-5871)}</span></div>
+                            <div className="flex justify-between"><span>Net cash used in financing activities</span><span className="mono" style={{ color: colors.error }}>{fmt(-4940)}</span></div>
+                            <div className="flex justify-between font-bold border-t mt-1 pt-1" style={{ borderColor: colors.earthDark, color: colors.primary }}>
+                                <span>Net change in cash, cash equiv. &amp; restricted cash</span>
+                                <span className="mono" style={{ color: colors.error }}>{fmt(-172)}</span>
+                            </div>
+                            <div className="flex justify-between text-xs italic mt-1" style={{ color: colors.earth }}>
+                                <span>− restricted cash change</span><span className="mono">39</span>
+                            </div>
+                            <div className="flex justify-between font-bold border-t mt-1 pt-1" style={{ borderColor: colors.earthDark, color: colors.primary }}>
+                                <span>BS Cash &amp; cash equivalents change</span>
+                                <span className="mono" style={{ color: colors.error }}>{fmt(-133)}</span>
+                            </div>
+                        </div>
+                        <p className="text-xs italic mt-2" style={{ color: colors.earth }}>
+                            Explains the change in BS Cash (after the restricted cash adjustment).
+                        </p>
+                    </div>
+
+                    {/* Mini SoCE (middle) */}
+                    <div className="rounded-lg p-3 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs uppercase tracking-wider font-bold" style={{ color: colors.primary }}>Statement of Shareholders' Equity (2025)</p>
+                        <div className="mt-2 text-xs grid" style={{ gridTemplateColumns: '1fr 4rem 4rem 3rem 4rem', columnGap: '0.3rem', color: colors.earthDark }}>
+                            <div></div>
+                            <div className="text-right text-xs" style={{ color: colors.earth, fontSize: '0.65rem' }}>Contrib</div>
+                            <div className="text-right text-xs" style={{ color: colors.earth, fontSize: '0.65rem' }}>E&amp;R</div>
+                            <div className="text-right text-xs" style={{ color: colors.earth, fontSize: '0.65rem' }}>NCI</div>
+                            <div className="text-right text-xs" style={{ color: colors.earth, fontSize: '0.65rem' }}>Total</div>
+
+                            <div className="font-bold" style={{ color: colors.primary }}>Opening (Dec 31, 2024)</div>
+                            <div className="text-right mono">{fmt(12843)}</div>
+                            <div className="text-right mono">{fmt(62717)}</div>
+                            <div className="text-right mono">{fmt(170)}</div>
+                            <div className="text-right mono">{fmt(75730)}</div>
+
+                            <div>Comprehensive income</div>
+                            <div className="text-right mono">—</div>
+                            <div className="text-right mono">{fmt(2294)}</div>
+                            <div className="text-right mono" style={{ color: colors.error }}>{fmt(-40)}</div>
+                            <div className="text-right mono">{fmt(2254)}</div>
+
+                            <div>Stock-based comp &amp; ESPP</div>
+                            <div className="text-right mono">{fmt(769)}</div>
+                            <div className="text-right mono">—</div>
+                            <div className="text-right mono">—</div>
+                            <div className="text-right mono">{fmt(769)}</div>
+
+                            <div>Dividends</div>
+                            <div className="text-right mono">—</div>
+                            <div className="text-right mono" style={{ color: colors.error }}>{fmt(-3409)}</div>
+                            <div className="text-right mono">—</div>
+                            <div className="text-right mono" style={{ color: colors.error }}>{fmt(-3409)}</div>
+
+                            <div>NCI activity</div>
+                            <div className="text-right mono">—</div>
+                            <div className="text-right mono">—</div>
+                            <div className="text-right mono">{fmt(38)}</div>
+                            <div className="text-right mono">{fmt(38)}</div>
+
+                            <div className="font-bold border-t pt-1" style={{ borderColor: colors.earthDark, color: colors.primary }}>Closing (Dec 31, 2025)</div>
+                            <div className="text-right mono font-bold border-t pt-1" style={{ borderColor: colors.earthDark }}>{fmt(13612)}</div>
+                            <div className="text-right mono font-bold border-t pt-1" style={{ borderColor: colors.earthDark }}>{fmt(61602)}</div>
+                            <div className="text-right mono font-bold border-t pt-1" style={{ borderColor: colors.earthDark }}>{fmt(168)}</div>
+                            <div className="text-right mono font-bold border-t pt-1" style={{ borderColor: colors.earthDark }}>{fmt(75382)}</div>
+                        </div>
+                        <p className="text-xs italic mt-2" style={{ color: colors.earth }}>
+                            Explains the change in each equity bucket. Closing balances match the bucketed equity on the Ending BS.
+                        </p>
+                    </div>
+
+                    {/* Mini IS (bottom) */}
+                    <div className="rounded-lg p-3 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs uppercase tracking-wider font-bold" style={{ color: colors.primary }}>Income Statement (2025)</p>
+                        <div className="mt-2 text-xs" style={{ color: colors.earthDark, lineHeight: '1.5' }}>
+                            <div className="flex justify-between"><span>Total revenues</span><span className="mono">{fmt(402067)}</span></div>
+                            <div className="flex justify-between"><span>Total operating costs</span><span className="mono" style={{ color: colors.error }}>{fmt(-397407)}</span></div>
+                            <div className="flex justify-between font-bold pt-1" style={{ color: colors.primary }}><span>Operating income</span><span className="mono">{fmt(4660)}</span></div>
+                            <div className="flex justify-between"><span>Net non-op + tax</span><span className="mono" style={{ color: colors.error }}>{fmt(-2932)}</span></div>
+                            <div className="flex justify-between font-bold pt-1" style={{ color: colors.primary }}><span>Net income</span><span className="mono">{fmt(1728)}</span></div>
+                            <div className="flex justify-between text-xs italic" style={{ color: colors.earth }}><span>+ NCI loss</span><span className="mono">40</span></div>
+                            <div className="flex justify-between font-bold border-t mt-1 pt-1" style={{ borderColor: colors.earthDark, color: colors.primary }}><span>NI attributable to CVS</span><span className="mono">{fmt(1768)}</span></div>
+                            <div className="flex justify-between mt-1"><span>+ Other comprehensive income</span><span className="mono">{fmt(526)}</span></div>
+                            <div className="flex justify-between font-bold border-t mt-1 pt-1" style={{ borderColor: colors.earthDark, color: colors.primary }}><span>Comprehensive income to CVS</span><span className="mono">{fmt(2294)}</span></div>
+                        </div>
+                        <p className="text-xs italic mt-2" style={{ color: colors.earth }}>
+                            Source of Net Income — feeds the Comprehensive income row (+$2,294) and the NCI piece ($(40)) of the SoCE above.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [phase, setPhase] = useState(1);
+            const [showGlossary, setShowGlossary] = useState(false);
+            const [devMode, setDevMode] = useState(false);
+            const [hdrClicks, setHdrClicks] = useState(0);
+
+            // Phase 12 sequential reveal: 0 = none, 1 = operating, 2 = +investing, 3 = +financing.
+            // Once phase reaches 13 we lock to 3 (all sections visible, now expandable).
+            const [sectionsVisible, setSectionsVisible] = useState(0);
+            const [expanded, setExpanded] = useState({ operating: false, investing: false, financing: false });
+
+            // Phase 18 sequential reveal of the 2025 SoCE movement rows (aggregated to 4).
+            // 0 = none visible, 4 = all four aggregated movements have appeared and
+            // contributed to the running totals. Locks to 4 from phase 19 on.
+            const [soceMovementsVisible, setSoceMovementsVisible] = useState(0);
+            const [soceExpanded, setSoceExpanded] = useState({ contributed: false, earnedRetained: false, nci: false });
+
+            useEffect(() => {
+                if (phase === 12) {
+                    setSectionsVisible(0);
+                    const t1 = setTimeout(() => setSectionsVisible(1), 400);
+                    const t2 = setTimeout(() => setSectionsVisible(2), 1200);
+                    const t3 = setTimeout(() => setSectionsVisible(3), 2000);
+                    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+                }
+                if (phase >= 13) {
+                    setSectionsVisible(3);
+                } else if (phase < 12) {
+                    setSectionsVisible(0);
+                    setExpanded({ operating: false, investing: false, financing: false });
+                }
+            }, [phase]);
+
+            useEffect(() => {
+                if (phase === 18) {
+                    setSoceMovementsVisible(0);
+                    const timeouts = [];
+                    for (let i = 1; i <= 4; i++) {
+                        timeouts.push(setTimeout(() => setSoceMovementsVisible(i), 500 + (i - 1) * 700));
+                    }
+                    return () => timeouts.forEach(clearTimeout);
+                }
+                if (phase >= 19) {
+                    setSoceMovementsVisible(4);
+                } else if (phase < 18) {
+                    setSoceMovementsVisible(0);
+                    setSoceExpanded({ contributed: false, earnedRetained: false, nci: false });
+                }
+            }, [phase]);
+
+            const toggleSection = (s) => setExpanded(e => ({ ...e, [s]: !e[s] }));
+            const toggleSoceBucket = (b) => setSoceExpanded(e => ({ ...e, [b]: !e[b] }));
+
+            const handleHdrClick = () => {
+                const n = hdrClicks + 1; setHdrClicks(n);
+                if (n >= 3) { setDevMode(!devMode); setHdrClicks(0); }
+            };
+            const reset = () => setPhase(1);
+            const setPhaseSmart = (next) => {
+                // Phase 2 → 3 (or 3 → 2): swap via View Transitions API for FLIP
+                const isSwapTransition = (phase === 2 && next === 3) || (phase === 3 && next === 2);
+                if (isSwapTransition && document.startViewTransition) {
+                    document.startViewTransition(() => {
+                        ReactDOM.flushSync(() => setPhase(next));
+                    });
+                } else {
+                    setPhase(next);
+                }
+            };
+            const advance = () => setPhaseSmart(Math.min(phase + 1, 28));
+            const back = () => setPhaseSmart(Math.max(phase - 1, 1));
+
+            const progress = Math.round(((phase - 1) / 27) * 100);
+
+            // ============================================================
+            // HEADER
+            // ============================================================
+            const Header = () => (
+                <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary }}>
+                    <div className="flex justify-between items-start">
+                        <div onClick={handleHdrClick} style={{ cursor: 'pointer' }}>
+                            <h1 className="text-lg font-bold text-white">Mockup: CVS Balance Sheet + Cash Flow Statement</h1>
+                            <p className="text-sm mt-1" style={{ color: colors.earthLight }}>
+                                Phase {phase} of 28 &middot; {PHASES[phase-1].label}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <a href="../index-mockup.html"
+                               className="p-2 rounded-lg hover:bg-white/10 text-white text-xl no-underline inline-flex items-center justify-center"
+                               title="Return to Main">🏠</a>
+                            <button onClick={reset}
+                                    className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                    title="Restart">↺</button>
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <div className="flex justify-between text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                            <span>Progress</span><span>{progress}%</span>
+                        </div>
+                        <div className="h-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+                            <div className="h-full rounded-full transition-all duration-500"
+                                 style={{ width: `${progress}%`, backgroundColor: colors.accent }} />
+                        </div>
+                    </div>
+                    {devMode && (
+                        <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                            <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>Dev: jump to phase</p>
+                            <div className="flex gap-1 flex-wrap">
+                                {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28].map(p => (
+                                    <button key={p} onClick={() => setPhaseSmart(p)}
+                                            className="px-2 py-1 rounded text-xs border-0 cursor-pointer"
+                                            style={{
+                                                backgroundColor: phase === p ? 'white' : 'rgba(255,255,255,0.2)',
+                                                color: phase === p ? colors.primary : 'white'
+                                            }}>{p}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            // Note: BSDocumentForm, Snapshot, and BSSplit are defined at
+            // module scope (above) so React doesn't remount their DOM on
+            // every parent re-render — needed for CSS transitions to fire.
+            const _unused_DocForm_removed = () => {
+                const collapsed = phase === 2;
+                const rowGrid = { display: 'grid', gridTemplateColumns: '1fr 7rem 7rem', columnGap: '0.5rem' };
+                return (
+                    <div className="bg-white rounded-lg p-6 mx-auto" style={{ maxWidth: '760px', backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Index to Consolidated Financial Statements</p>
+                        <h2 className="text-lg font-bold mt-1" style={{ color: colors.primary }}>Consolidated Balance Sheets</h2>
+                        <p className="text-xs italic mt-1" style={{ color: colors.earth }}>At December 31,</p>
+                        <p className="text-xs italic" style={{ color: colors.earth }}>In millions, except per share amounts</p>
+
+                        <div className="mt-4 text-sm">
+                            <div style={{ ...rowGrid, paddingBottom: '0.25rem', borderBottom: `1px solid ${colors.earthLight}` }}>
+                                <div></div>
+                                <div className="text-right font-semibold" style={{ color: colors.primary }}>2025</div>
+                                <div className="text-right font-semibold" style={{ color: colors.primary }}>2024</div>
+                            </div>
+
+                            {cvsBS.map((r, i) => {
+                                if (r.type === 'section') {
+                                    return (
+                                        <div key={i} className="font-bold mt-3" style={{ color: colors.primary }}>{r.label}</div>
+                                    );
+                                }
+                                const collapsedHidden = collapsed && !isTotal(r);
+                                const wrapStyle = {
+                                    opacity: collapsedHidden ? 0 : 1,
+                                    maxHeight: collapsedHidden ? '0' : '2.5rem',
+                                    overflow: 'hidden',
+                                    transition: 'opacity 500ms ease-out, max-height 500ms ease-out, margin 500ms ease-out, padding 500ms ease-out',
+                                    marginTop: collapsedHidden ? 0 : (isTotal(r) ? '0.25rem' : 0),
+                                    paddingTop: collapsedHidden ? 0 : (isTotal(r) ? '0.25rem' : 0),
+                                    borderTop: isTotal(r) && !collapsedHidden ? `1px solid ${colors.earthDark}` : 'none',
+                                };
+                                const textStyle = isTotal(r)
+                                    ? { fontWeight: 700, color: colors.primary }
+                                    : r.type === 'subtotal'
+                                        ? { fontWeight: 600, color: colors.earthDark }
+                                        : { color: colors.earthDark };
+                                return (
+                                    <div key={i} style={wrapStyle}>
+                                        <div style={{ ...rowGrid, ...textStyle }}>
+                                            <div>{r.label}</div>
+                                            <div className="text-right">{renderValue(r, 'y2025')}</div>
+                                            <div className="text-right">{renderValue(r, 'y2024')}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div style={{
+                            opacity: collapsed ? 1 : 0,
+                            maxHeight: collapsed ? '8rem' : 0,
+                            overflow: 'hidden',
+                            transition: 'opacity 500ms ease-out 200ms, max-height 500ms ease-out',
+                        }}>
+                            <div className="mt-4 p-3 rounded text-xs" style={{ backgroundColor: '#fef9e7', border: `1px solid ${colors.accent}`, color: colors.earthDark }}>
+                                <p className="font-semibold mb-1">Identity check at both dates</p>
+                                <p className="mono">2025: $253,538 − $178,156 = $75,382 ✓</p>
+                                <p className="mono">2024: $253,215 − $177,485 = $75,730 ✓</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // ============================================================
+            // (Dead: hoisted versions above are what's used)
+            // ============================================================
+            const _unused_Snapshot = ({ year, label, showAll }) => {
+                const rowGrid = { display: 'grid', gridTemplateColumns: '1fr 6rem', columnGap: '0.5rem' };
+                return (
+                    <div className="bg-white rounded-lg p-4" style={{ backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>{label}</p>
+                        <h3 className="text-base font-bold" style={{ color: colors.primary }}>Balance Sheet</h3>
+                        <p className="text-xs italic" style={{ color: colors.earth }}>December 31, {year === 'y2025' ? '2025' : '2024'} · in $ millions</p>
+                        <div className="mt-3 text-sm">
+                            {cvsBS.map((r, i) => {
+                                if (r.type === 'section') {
+                                    return (
+                                        <div key={i} className="font-bold mt-3" style={{ color: colors.primary }}>{r.label}</div>
+                                    );
+                                }
+                                const hidden = !showAll && !isTotal(r);
+                                const wrapStyle = {
+                                    opacity: hidden ? 0 : 1,
+                                    maxHeight: hidden ? 0 : '2.5rem',
+                                    overflow: 'hidden',
+                                    transition: 'opacity 500ms ease-out, max-height 500ms ease-out, margin 500ms ease-out, padding 500ms ease-out',
+                                    marginTop: hidden ? 0 : (isTotal(r) ? '0.25rem' : 0),
+                                    paddingTop: hidden ? 0 : (isTotal(r) ? '0.25rem' : 0),
+                                    borderTop: isTotal(r) && !hidden ? `1px solid ${colors.earthDark}` : 'none',
+                                };
+                                const textStyle = isTotal(r)
+                                    ? { fontWeight: 700, color: colors.primary }
+                                    : r.type === 'subtotal'
+                                        ? { fontWeight: 600, color: colors.earthDark }
+                                        : { color: colors.earthDark };
+                                return (
+                                    <div key={i} style={wrapStyle}>
+                                        <div style={{ ...rowGrid, ...textStyle }}>
+                                            <div>{r.label}</div>
+                                            <div className="text-right">{renderValue(r, year)}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            };
+
+            const _unused_BSSplit = () => null;
+
+            // ============================================================
+            // NARRATIVE + NAV
+            // ============================================================
+            const Narrative = () => (
+                <div className="bg-white rounded-lg p-5 mb-4" style={{ border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider font-bold mb-2" style={{ color: colors.accent }}>
+                        Phase {phase}: {PHASES[phase-1].label}
+                    </p>
+                    <p className="text-sm leading-relaxed" style={{ color: colors.earthDark }}>
+                        {PHASES[phase-1].narrative}
+                    </p>
+                </div>
+            );
+
+            const Nav = () => (
+                <div className="flex justify-between mb-4">
+                    <button onClick={back} disabled={phase === 1}
+                            className="px-4 py-2 rounded-lg border bg-white text-sm cursor-pointer disabled:cursor-not-allowed"
+                            style={{ borderColor: colors.earthLight, color: phase === 1 ? colors.earth : colors.primary, opacity: phase === 1 ? 0.5 : 1 }}>
+                        ← Back
+                    </button>
+                    <button onClick={advance} disabled={phase === 28}
+                            className="px-4 py-2 rounded-lg font-bold text-white text-sm border-0 cursor-pointer disabled:cursor-not-allowed"
+                            style={{ backgroundColor: colors.primary, opacity: phase === 28 ? 0.5 : 1 }}>
+                        {phase < 28 ? 'Next →' : 'End of mockup'}
+                    </button>
+                </div>
+            );
+
+            return (
+                <div className="max-w-6xl mx-auto p-4">
+                    <Header />
+
+                    <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#fef9e7', border: `2px solid ${colors.accent}` }}>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            <strong>Mockup:</strong> Visual choreography for Tutorial 4.1 — walking CVS Health's
+                            Balance Sheets, Cash Flow Statement, Statement of Shareholders' Equity, and Income
+                            Statement (FY2025 10-K) through the Module 3 architecture. Phases 1–5: BS choreography
+                            and compaction. Phases 6–13: CFS deep dive (restricted-cash mismatch, solution, sections).
+                            Phases 14–20: equity bucketing on the BS, then SoCE choreography (column bucketing,
+                            animated running totals, expandable buckets). Phases 21–27: IS choreography (3-year
+                            document, dim irrelevant years, collapse to NI/NCI split, add OCI, connect to SoCE
+                            buckets, architecture restored). Phase 28: synthesis — all three explanatory statements
+                            stacked in the middle column between the two BSes.
+                        </p>
+                    </div>
+
+                    <Narrative />
+                    <Nav />
+
+                    {phase <= 2 && <BSDocumentForm phase={phase} />}
+                    {(phase === 3 || phase === 4) && <BSSplit phase={phase} />}
+                    {phase === 5 && (
+                        <CompactSplit
+                            phase={phase}
+                            sectionsVisible={sectionsVisible}
+                            expanded={expanded}
+                            toggleSection={toggleSection}
+                        />
+                    )}
+                    {phase === 6 && (
+                        <>
+                            <BSReferenceStrip />
+                            <CFSDocumentForm dimmedColumns={[]} collapse="none" />
+                        </>
+                    )}
+                    {phase === 7 && (
+                        <>
+                            <BSReferenceStrip />
+                            <CFSDocumentForm dimmedColumns={['y2024','y2023']} collapse="none" />
+                        </>
+                    )}
+                    {phase === 8 && (
+                        <>
+                            <BSReferenceStrip />
+                            <CFSDocumentForm dimmedColumns={['y2024','y2023']} collapse="subtotals" />
+                        </>
+                    )}
+                    {phase === 9 && (
+                        <>
+                            <BSReferenceStrip />
+                            <CFSDocumentForm dimmedColumns={['y2024','y2023']} collapse="netchange" />
+                        </>
+                    )}
+                    {phase === 10 && (
+                        <>
+                            <BSReferenceStrip />
+                            <CFSStrip withSolution={false} />
+                        </>
+                    )}
+                    {phase === 11 && (
+                        <>
+                            <BSReferenceStrip />
+                            <CFSStrip withSolution={true} />
+                            <SolutionBridge />
+                        </>
+                    )}
+                    {phase >= 12 && phase <= 14 && (
+                        <CompactSplit
+                            phase={phase}
+                            sectionsVisible={sectionsVisible}
+                            expanded={expanded}
+                            toggleSection={toggleSection}
+                            middle="cfs"
+                        />
+                    )}
+                    {phase === 15 && (
+                        <>
+                            <SoCEReferenceStrip />
+                            <SoCEDocumentForm hideIrrelevant={false} bucketed={false} />
+                        </>
+                    )}
+                    {phase === 16 && (
+                        <>
+                            <SoCEReferenceStrip />
+                            <SoCEDocumentForm hideIrrelevant={true} bucketed={false} />
+                        </>
+                    )}
+                    {phase === 17 && (
+                        <>
+                            <SoCEReferenceStrip />
+                            <SoCEDocumentForm hideIrrelevant={true} bucketed={true} />
+                        </>
+                    )}
+                    {phase === 18 && (
+                        <>
+                            <SoCEReferenceStrip />
+                            <SoCEDocumentForm hideIrrelevant={true} bucketed={true} movementsVisible={soceMovementsVisible} />
+                        </>
+                    )}
+                    {phase >= 19 && phase <= 20 && (
+                        <CompactSplit
+                            phase={phase}
+                            sectionsVisible={sectionsVisible}
+                            expanded={expanded}
+                            toggleSection={toggleSection}
+                            middle="soce"
+                            soceMovementsVisible={soceMovementsVisible}
+                            soceExpanded={soceExpanded}
+                            toggleSoceBucket={toggleSoceBucket}
+                        />
+                    )}
+                    {phase === 21 && (
+                        <>
+                            <ISReferenceStrip />
+                            <ISDocumentForm dimmedYears={[]} collapseLevel="none" showCI={false} />
+                        </>
+                    )}
+                    {phase === 22 && (
+                        <>
+                            <ISReferenceStrip />
+                            <ISDocumentForm dimmedYears={['y2024','y2023']} collapseLevel="none" showCI={false} />
+                        </>
+                    )}
+                    {phase === 23 && (
+                        <>
+                            <ISReferenceStrip />
+                            <ISDocumentForm dimmedYears={['y2024','y2023']} collapseLevel="subtotals" showCI={false} />
+                        </>
+                    )}
+                    {phase === 24 && (
+                        <>
+                            <ISReferenceStrip />
+                            <ISDocumentForm dimmedYears={['y2024','y2023']} collapseLevel="bottomline" showCI={false} />
+                        </>
+                    )}
+                    {phase === 25 && (
+                        <>
+                            <ISReferenceStrip />
+                            <ISDocumentForm dimmedYears={['y2024','y2023']} collapseLevel="bottomline" showCI={true} />
+                        </>
+                    )}
+                    {phase === 26 && (
+                        <>
+                            <ISReferenceStrip />
+                            <ISToBucketsStrip />
+                        </>
+                    )}
+                    {phase === 27 && (
+                        <CompactSplit
+                            phase={phase}
+                            middle="is"
+                        />
+                    )}
+                    {phase === 28 && (
+                        <CompactSplit
+                            phase={phase}
+                            middle="synthesis"
+                        />
+                    )}
+
+                    <div className="mt-6 p-4 rounded-lg bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <div className="flex justify-between items-start mb-2">
+                            <p className="text-sm font-bold" style={{ color: colors.primary }}>For refinement</p>
+                            <button onClick={reset} className="text-xs underline border-0 bg-transparent cursor-pointer" style={{ color: colors.earth }}>Reset</button>
+                        </div>
+                        <ul className="text-sm space-y-1 list-disc list-inside" style={{ color: colors.earthDark }}>
+                            <li><strong>Phases 1 → 4 (BS choreography)</strong>: document form → strip to totals (identity check appears) → split into snapshots via View Transitions FLIP (2024 left, 2025 right, gap middle) → re-expand to full line-item detail on both sides.</li>
+                            <li><strong>Phase 5 (compact to ask about cash)</strong>: BSes morph to a compact form with Cash highlighted, the two restricted-cash-bearing line items kept visible by name (<em>Other current assets</em> and <em>Other assets</em>), and everything else rolled into "All other noncash assets." A − L = E still holds. Middle card teases the question: cash went down $133 million — why?</li>
+                            <li><strong>Phase 6 (meet the CFS)</strong>: BSes step aside (reduced to a small horizontal reference strip recapping the cash question). The full 3-column CFS document form takes center stage — three years (2025, 2024, 2023) × all line items, exactly as it appears on page 96 of the 10-K. The student sees the statement as its own document.</li>
+                            <li><strong>Phase 7 (dim 2024 and 2023)</strong>: period-vs-date lesson. The 2025 column covers Jan 1 → Dec 31, 2025 — exactly the period between our two BS dates. The other two columns cover earlier periods that don't connect anything we're holding. They dim to ~15% opacity (700ms ease-out).</li>
+                            <li><strong>Phase 8 (collapse to section totals)</strong>: inside the 2025 column, the line items + section headers collapse via CSS max-height + opacity transitions (500ms ease-out). Only Operating, Investing, Financing subtotals + the full reconciliation footer remain visible.</li>
+                            <li><strong>Phase 9 (collapse to just the change in cash)</strong>: section subtotals and the beginning/ending cash rows of the reconciliation footer also collapse away. What's left of the entire CFS document is the single line "Net increase (decrease) in cash..." with $(172) for 2025.</li>
+                            <li><strong>Phase 10 (two strips, one mismatch)</strong>: the CFS document form is replaced by a horizontal CFS strip placed directly under the BS reference strip. BS says cash decreased $133; CFS says $172. Two strips, same format, different numbers. The labels differ — "Cash and cash equivalents" vs. "Cash, cash equivalents and restricted cash" — but the student is invited to notice the mismatch first.</li>
+                            <li><strong>Phase 11 (present the solution)</strong>: a green SolutionBridge panel appears below the two strips with the 10-K Note 1 reconciliation: BS-face Cash + restricted cash in Other current assets + restricted cash in Other assets = Cash per CFS, at both dates. The CFS strip also picks up small green annotations showing the decomposition. Lesson: each explanatory statement explains a specific change defined by its own scope. Read the labels.</li>
+                            <li><strong>Phase 12 (architecture restored — three sections)</strong>: the strip layout is replaced by the 3-up grid: compact BSes flanking (with the green restricted-cash row highlights now visible on both — the spatial link to the reconciliation), 2025 CFS column in the middle. Operating, Investing, Financing subtotals appear in staggered sequence (400ms / 1200ms / 2000ms) and sum to the net change of $(172).</li>
+                            <li><strong>Phase 13 (expandable details)</strong>: each CFS section becomes a click-to-expand accordion. Operating shows CVS's direct-method line items (cash receipts from customers, cash paid for inventory, etc.) — CVS was deliberately chosen because it's one of the few US public companies that uses the direct method.</li>
+                            <li><strong>Data fidelity</strong>: BS from 10-K p. 95 (PDF 97); CFS from p. 96 (PDF 98) — full 3-year data for the document form; restricted cash recon from Note 1 (p. 100 / PDF 102). All in $ millions.</li>
+                            <li><strong>Open / to do later</strong>: find-then-display gates ("What page is the CFS on?") deferred for now; "see original PDF page" overlay; smoother phase 4 → 5 transition; smoother phase 9 → 10 transition (the $(172) figure could literally lift out of the document form into the CFS strip via View Transitions API); smoother phase 11 → 12 transition (strips dissolving into the 3-up grid); IS and SoCE choreography (later beats of 4.1); integration into the actual tutorial.</li>
+                        </ul>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
