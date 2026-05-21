@@ -323,8 +323,10 @@
             const contributions = applied.filter(e => e.soceLine && e.soceLine.type === 'contribution').map(e => ({ value: e.soceLine.value, entryN: e.n }));
             const distributions = applied.filter(e => e.soceLine && e.soceLine.type === 'distribution').map(e => ({ value: e.soceLine.value, entryN: e.n }));
             const niAccum = isLines.reduce((s, l) => s + (l.type === 'revenue' ? l.value : -l.value), 0);
+            const remainingIsEntries = entries.slice(count).filter(e => e.isLine);
+            const niIsFinal = isLines.length > 0 && remainingIsEntries.length === 0;
             const lastEntry = (stage >= 2 && stage <= 16) ? entries[stage - 2] : null;
-            return { currBS, prevBS, isLines, cfsLines, contributions, distributions, niAccum, lastEntry, count };
+            return { currBS, prevBS, isLines, cfsLines, contributions, distributions, niAccum, niIsFinal, lastEntry, count };
         };
 
         const fmt = v => Math.abs(v).toLocaleString('en-US');
@@ -554,7 +556,8 @@
             );
 
             const FlowStatementsPanel = ({ state }) => {
-                const { isLines, cfsLines, contributions, distributions, niAccum, currBS, lastEntry } = state;
+                const { isLines, cfsLines, contributions, distributions, niAccum, niIsFinal, currBS, lastEntry } = state;
+                const niLabel = niIsFinal ? 'Net income' : 'Net income (so far)';
                 const openingEquities = totalE(opening);
                 const currentEquities = totalE(currBS);
                 const openingCash = opening.cash;
@@ -597,7 +600,7 @@
                                         </div>
                                         {isLines.length > 0 && (
                                             <div className="flex justify-between" style={hi(lastEntryAffectsSoCE && lastEntry && lastEntry.affects.is)}>
-                                                <span>Net income (so far)</span>
+                                                <span>{niLabel}</span>
                                                 <span style={{ color: niAccum < 0 ? colors.error : colors.earthDark }}>
                                                     {fmtSigned(niAccum)}
                                                 </span>
@@ -684,7 +687,7 @@
                                         </div>
                                     ))}
                                     <div className="flex justify-between font-bold pt-1 border-t mt-1" style={{ borderColor: colors.earthLight, color: colors.primary }}>
-                                        <span>Net income (so far)</span>
+                                        <span>{niLabel}</span>
                                         <span style={{ color: niAccum < 0 ? colors.error : colors.earthDark }}>
                                             {fmtSigned(niAccum)}
                                         </span>
