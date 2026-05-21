@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tutorial 3.1: The Architecture in Action</title>
+    <title>Tutorial 3.1: Meet the Statements</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -45,7 +45,7 @@
             { term: 'Operating activities', definition: 'By convention, the CFS section for cash flows from running the business — collections from customers, payments to suppliers, payroll, interest, taxes.' },
             { term: 'Investing activities', definition: 'By convention, the CFS section for cash flows from buying or selling long-lived assets like property, equipment, or investments.' },
             { term: 'Financing activities', definition: 'By convention, the CFS section for cash flows from borrowing, repaying debt, or transactions with owners — issuing stock, paying dividends.' },
-            { term: 'NI→CFO reconciliation', definition: 'The schedule that explains why Net Income and Cash from Operating Activities differ. Starts with Net Income and adjusts for non-cash items (like depreciation) and changes in operating working capital (receivables, inventory, payables, accruals).' },
+            { term: 'NI→CFO reconciliation', definition: 'The schedule that explains why Net Income and Cash from Operating Activities differ. It works by adjusting Net Income for the changes in noncash assets and liabilities that arose from operations during the period — depreciation (a noncash asset shrank), receivables (revenue without collecting cash), inventory (cash without recording an expense), payables and accruals (expense without paying cash).' },
             { term: 'Indirect method', definition: 'The convention of presenting Operating cash flows by starting from Net Income and reconciling. The alternative — the direct method — lists actual cash receipts and payments. Most US filers use the indirect method.' },
             { term: 'Depreciation', definition: 'The convention of allocating the cost of a long-lived asset across the periods of its use. Reduces the asset\'s carrying amount on the balance sheet but involves no cash flow in the period it is recorded.' },
             { term: 'Convention', definition: 'A chosen rule that solves an information-design problem — not a fact about the world. Conventions are loose at the edges; reasonable people disagree on the borderline cases.' },
@@ -241,7 +241,7 @@
                 <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary }}>
                     <div className="flex justify-between items-start">
                         <div onClick={handleHdrClick} style={{ cursor: 'pointer' }}>
-                            <h1 className="text-lg font-bold text-white">Tutorial 3.1: The Architecture in Action</h1>
+                            <h1 className="text-lg font-bold text-white">Tutorial 3.1: Meet the Statements</h1>
                             <p className="text-sm mt-1" style={{ color: colors.earthLight }}>
                                 Bicycle retail chain &middot; pre-IPO &middot; ~25 min
                             </p>
@@ -835,7 +835,7 @@
                             options={[
                                 "They're supposed to be the same — there's a typo somewhere.",
                                 "Cash from Operations only counts cash sales; Net Income counts credit sales too. The gap is the credit-sales portion.",
-                                "Some income statement items don't move cash this period (depreciation), and some cash moves don't show up on the income statement (working capital changes). The gap reconciles the two."
+                                "Some income statement items don't move cash this period (depreciation), and some operating cash moves don't show up on the income statement (like inventory purchases). The gap reflects the changes in noncash assets and liabilities that arose from operations."
                             ]}
                             correctIdx={2}
                             selected={niCfoAns}
@@ -855,15 +855,19 @@
                         <NarrativeCard label="The Net Income — Cash Flow Gap">
                             <p className="mb-3">
                                 The <strong style={{ color: colors.primary }}>NI → CFO reconciliation</strong> walks
-                                from Net Income to Cash from Operations one adjustment at a time. Two kinds of
-                                adjustments do the work:
+                                from Net Income to Cash from Operations one adjustment at a time. All the adjustments
+                                work under one rule: changes in noncash assets and liabilities that arose from
+                                operations during the period.
                             </p>
                             <FormulaBox title="What's in the reconciliation?">
-                                <p><strong>Non-cash expenses</strong> (like depreciation): added back. They reduced
-                                Net Income but didn't actually take cash out.</p>
-                                <p><strong>Working capital changes</strong> (AR, inventory, AP, accrued): subtract
-                                or add based on direction. Growing receivables and inventory absorb cash even though
-                                they don't hit Net Income directly.</p>
+                                <p><strong>Depreciation:</strong> PP&E (a noncash asset) shrank without cash moving. Add
+                                back to Net Income.</p>
+                                <p><strong>Receivables growth:</strong> revenue was recognized in Net Income without
+                                yet collecting cash. Subtract.</p>
+                                <p><strong>Inventory growth:</strong> cash was spent without yet recording an expense.
+                                Subtract.</p>
+                                <p><strong>Payables and accruals growth:</strong> expense was recognized in Net Income
+                                without yet paying cash. Add back.</p>
                             </FormulaBox>
                             <p className="text-sm">
                                 Click the <span style={{ color: colors.accent }}>▲</span> next to <em>Cash from
@@ -873,8 +877,9 @@
                             <ClarifBox title="About the method">
                                 <p>
                                     This is the <strong>indirect method</strong> of presenting Cash from Operations
-                                    — starts from Net Income, adjusts for non-cash items and working capital changes.
-                                    The <strong>direct method</strong> would list operating cash receipts and payments
+                                    — starts from Net Income, adjusts for changes in noncash assets and liabilities
+                                    arising from operations. The <strong>direct method</strong> would list operating
+                                    cash receipts and payments
                                     directly. Both arrive at the same Cash from Operations number. US filers mostly
                                     use the indirect method by convention; it's permitted, not required.
                                 </p>
@@ -882,7 +887,7 @@
                         </NarrativeCard>
                         <ThreeColBridge focus={['cash']} middle={<CashFlowStatement withScenarios withReconDrill />} />
                         <div className="text-center mb-4 text-sm mono" style={{ color: colors.primary }}>
-                            $940 NI → +$200 depreciation − $280 net working capital uses = $860 CFO
+                            $940 NI + $200 dep − $25 AR − $350 inv + $80 AP + $15 accrued = $860 CFO
                         </div>
                         <ContinueButton onClick={advance} label="Synthesize the architecture" />
                     </>
@@ -918,7 +923,8 @@
                             </li>
                             <li>
                                 <strong style={{ color: colors.primary }}>NI → CFO reconciliation</strong> — bridges
-                                Net Income to Cash from Operations. Non-cash expenses + working capital changes.
+                                Net Income to Cash from Operations. Adjusts for changes in noncash assets and
+                                liabilities arising from operations.
                             </li>
                         </ul>
                         <p>
@@ -926,8 +932,8 @@
                             explains a different part of the change between the two Balance Sheets. The 12 aggregate
                             lines you started with all land somewhere — in the Income Statement (the seven expenses
                             and three revenues), in the Cash Flow Statement (CapEx as investing, financing activity),
-                            and the working capital changes (implicit in the Balance Sheet movements) show up in the
-                            reconciliation.
+                            and the changes in noncash assets and liabilities arising from operations show up in
+                            the reconciliation.
                         </p>
                     </NarrativeCard>
                     <ClarifBox title="What this activity simplified">
@@ -982,7 +988,7 @@
 
                     <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#fef9e7', border: `2px solid ${colors.accent}` }}>
                         <p className="text-sm" style={{ color: colors.earthDark }}>
-                            <strong>Mockup:</strong> Tutorial 3.1 ("The Architecture in Action"). The bike-shop has grown
+                            <strong>Mockup:</strong> Tutorial 3.1 ("Meet the Statements"). The bike-shop has grown
                             into a six-store retail chain and is preparing for an IPO. Twelve aggregate items from Year T
                             drive a walk through the four financial statements via the OLI-style "which statement explains
                             this change?" pattern. Extends the OLI exercise with the NI→CFO reconciliation as its own beat.
