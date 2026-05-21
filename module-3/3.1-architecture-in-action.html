@@ -32,6 +32,37 @@
         };
 
         // ==================================================================
+        // GLOSSARY
+        // ==================================================================
+        const glossaryTerms = [
+            { term: 'Accounting identity', definition: 'Assets − Liabilities = Equities, by definition. The identity holds on every balance sheet by construction. It is a framework for organizing the records, not a formula derived from the world.' },
+            { term: 'Revenue', definition: 'What the entity brought in from providing goods or services during the reporting period — the inflows from doing the work.' },
+            { term: 'Expense', definition: 'What the entity used up doing the work during the reporting period — the costs incurred to generate the revenues.' },
+            { term: 'Net Income', definition: 'Revenues minus Expenses for the reporting period. The bottom line on the Income Statement.' },
+            { term: 'Income Statement (IS)', definition: 'The statement that reports the period\'s Revenues, Expenses, and Net Income. Explains the operating change in Equities from one balance sheet to the next.' },
+            { term: 'Statement of Changes in Equities (SoCE)', definition: 'The statement that traces Equities from the opening balance to the closing balance, showing Net Income, owner distributions, and any other movements.' },
+            { term: 'Statement of Cash Flows (CFS)', definition: 'The statement that traces cash from the opening balance to the closing balance, grouped by Operating, Investing, and Financing activities.' },
+            { term: 'Operating activities', definition: 'By convention, the CFS section for cash flows from running the business — collections from customers, payments to suppliers, payroll, interest, taxes.' },
+            { term: 'Investing activities', definition: 'By convention, the CFS section for cash flows from buying or selling long-lived assets like property, equipment, or investments.' },
+            { term: 'Financing activities', definition: 'By convention, the CFS section for cash flows from borrowing, repaying debt, or transactions with owners — issuing stock, paying dividends.' },
+            { term: 'NI→CFO reconciliation', definition: 'The schedule that explains why Net Income and Cash from Operating Activities differ. Starts with Net Income and adjusts for non-cash items (like depreciation) and changes in operating working capital (receivables, inventory, payables, accruals).' },
+            { term: 'Indirect method', definition: 'The convention of presenting Operating cash flows by starting from Net Income and reconciling. The alternative — the direct method — lists actual cash receipts and payments. Most US filers use the indirect method.' },
+            { term: 'Depreciation', definition: 'The convention of allocating the cost of a long-lived asset across the periods of its use. Reduces the asset\'s carrying amount on the balance sheet but involves no cash flow in the period it is recorded.' },
+            { term: 'Convention', definition: 'A chosen rule that solves an information-design problem — not a fact about the world. Conventions are loose at the edges; reasonable people disagree on the borderline cases.' },
+            { term: 'Comparative balance sheets', definition: 'Two (or more) balance sheets shown side by side, one for each reporting date, so the changes between them are visible.' },
+            { term: 'Contributed capital', definition: 'The part of Equities that came from outside the entity — resources owners put in. Recorded when the contribution occurs.' },
+            { term: 'Retained earnings', definition: 'The part of Equities accumulated from operating the business and not distributed to owners. Grows by Net Income, shrinks by distributions.' },
+            { term: 'Accounts receivable', definition: 'A customer\'s promise to pay for goods or services already delivered. An Asset on the balance sheet.' },
+            { term: 'Accounts payable', definition: 'The entity\'s promise to pay a supplier for goods or services already received. A Liability on the balance sheet.' },
+            { term: 'Inventory', definition: 'Goods the entity holds for sale, or materials it holds to make those goods. An Asset on the balance sheet.' },
+            { term: 'Accrued expenses', definition: 'Expenses the entity has incurred but not yet paid in cash — wages owed at period-end, interest accrued but not yet due, taxes owed. A Liability on the balance sheet.' },
+            { term: 'GAAP', definition: 'Generally Accepted Accounting Principles — the body of conventions used to prepare US financial statements. Set by the FASB and recognized by the SEC.' },
+            { term: 'SEC', definition: 'The US Securities and Exchange Commission — the federal regulator that supervises public securities markets and requires public companies to file audited financial statements.' },
+            { term: 'IPO (Initial Public Offering)', definition: 'When a private company first offers shares to outside investors through a regulated public market. Triggers SEC filing requirements, including three years of audited GAAP financial statements.' },
+            { term: 'Underwriter', definition: 'An investment bank that helps a company go public — pricing the IPO shares, placing them with investors, and staking its reputation on the offering.' },
+        ];
+
+        // ==================================================================
         // DATA — all figures in thousands
         // ==================================================================
         const opening = {
@@ -184,6 +215,7 @@
             const [reconOpen, setReconOpen] = useState(false);
             const [devMode, setDevMode] = useState(false);
             const [hdrClicks, setHdrClicks] = useState(0);
+            const [showGlossary, setShowGlossary] = useState(false);
 
             const handleHdrClick = () => {
                 const n = hdrClicks + 1; setHdrClicks(n);
@@ -193,6 +225,7 @@
                 setStage(0); setCashAns(null); setEquityAns(null); setNiAns(null); setNiCfoAns(null);
                 setCfsOpen({ operating: false, investing: false, financing: false });
                 setIsOpen(false); setReconOpen(false);
+                setShowGlossary(false);
             };
             const advance = () => setStage(stage + 1);
             const goTo = (s) => setStage(s);
@@ -213,6 +246,9 @@
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
+                            <button onClick={() => setShowGlossary(true)}
+                                    className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                    title="Glossary" aria-label="Open glossary">📖</button>
                             <a href="../index.html"
                                className="p-2 rounded-lg hover:bg-white/10 text-white text-xl no-underline inline-flex items-center justify-center"
                                title="Return to Main">🏠</a>
@@ -245,6 +281,29 @@
                             </div>
                         </div>
                     )}
+                </div>
+            );
+
+            const GlossaryModal = () => (
+                <div className="fixed inset-0 flex items-center justify-center p-4 z-50"
+                     style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="bg-white rounded-xl max-w-md w-full" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+                        <div className="p-4 border-b flex justify-between items-center sticky top-0 bg-white"
+                             style={{ borderColor: colors.earthLight }}>
+                            <h3 className="font-bold" style={{ color: colors.primary }}>📖 Glossary</h3>
+                            <button onClick={() => setShowGlossary(false)}
+                                    className="text-gray-500 hover:text-gray-700 text-2xl font-light border-0 bg-transparent cursor-pointer"
+                                    aria-label="Close glossary">✕</button>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            {glossaryTerms.map((item, i) => (
+                                <div key={i}>
+                                    <p className="font-semibold text-sm" style={{ color: colors.primary }}>{item.term}</p>
+                                    <p className="text-xs mt-0.5" style={{ color: colors.earthDark }}>{item.definition}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             );
 
@@ -944,6 +1003,8 @@
                             <li><strong>What's deferred to other activities</strong>: Non-cash asset / liability tracing (3.3 in the planned Module 3 list), end-to-end practice (3.4), NFP version (Module 4). IS doesn't get its own three-column reveal because it's introduced via the inline-nest inside SoCE's Net income drilldown.</li>
                         </ul>
                     </div>
+
+                    {showGlossary && <GlossaryModal />}
                 </div>
             );
         };
