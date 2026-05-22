@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yale SFP — Split Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        /* SFP row collapse (parallel to CVS bs-row) */
+        .sfp-row {
+            height: 1.5rem;
+            opacity: 1;
+            overflow: hidden;
+            transition: height 500ms ease-out, opacity 500ms ease-out, margin-top 500ms ease-out, padding-top 500ms ease-out, border-top-color 500ms ease-out;
+        }
+        .sfp-row.sfp-row-total { height: 1.75rem; }
+        .sfp-row-doc.collapsed .sfp-row:not(.sfp-row-total),
+        .sfp-snapshot.collapsed .sfp-row:not(.sfp-row-total) {
+            height: 0;
+            opacity: 0;
+            margin-top: 0;
+            padding-top: 0;
+            border-top-color: transparent;
+        }
+        .id-check-box {
+            height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: height 500ms ease-out 200ms, opacity 500ms ease-out 200ms;
+        }
+        .sfp-row-doc.collapsed .id-check-box {
+            height: 5.5rem;
+            opacity: 1;
+        }
+
+        /* View Transitions API — animates year-labeled elements between
+           the document layout (phases 1-3) and the snapshot layout
+           (phases 4-5). The 2024 column moves from right→left (becomes
+           "Beginning"); 2025 moves from left→right (becomes "Ending").
+           Slow (3000ms) by design — this is the pedagogical moment. */
+        ::view-transition-old(yale-year-2025),
+        ::view-transition-new(yale-year-2025),
+        ::view-transition-old(yale-year-2024),
+        ::view-transition-new(yale-year-2024) {
+            animation-duration: 3000ms;
+            animation-timing-function: ease-in-out;
+        }
+        .yale-year-2025 { view-transition-name: yale-year-2025; }
+        .yale-year-2024 { view-transition-name: yale-year-2024; }
+
+        /* SoCF document-form: column dim (phase 8) and row collapse (phases 9–10) */
+        .socf-col {
+            opacity: 1;
+            transition: opacity 700ms ease-out;
+        }
+        .socf-col.dim { opacity: 0.15; }
+        .socf-doc-row {
+            max-height: 5rem;
+            opacity: 1;
+            overflow: hidden;
+            transition:
+                max-height 500ms ease-out,
+                opacity 500ms ease-out,
+                margin-top 500ms ease-out,
+                padding-top 500ms ease-out,
+                border-top-color 500ms ease-out;
+        }
+        .socf-doc-row.hidden {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+            border-top-color: transparent !important;
+        }
+
+        /* CFS section subtotal sequential reveal (phase 13) */
+        .socf-section-row {
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity 500ms ease-out, transform 500ms ease-out;
+        }
+        .socf-section-row.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Expandable section details (phase 14) */
+        .socf-detail-panel {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 350ms ease-out, opacity 350ms ease-out, padding 350ms ease-out;
+        }
+        .socf-detail-panel.open {
+            max-height: 1200px;
+            opacity: 1;
+        }
+        .socf-section-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+        .socf-section-toggle:hover { background-color: #f5f1e8; }
+
+        /* Reveal box for the "solution" callout */
+        .reveal-box {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 500ms ease-out, opacity 500ms ease-out, margin 500ms ease-out;
+            margin-top: 0;
+        }
+        .reveal-box.shown {
+            max-height: 600px;
+            opacity: 1;
+            margin-top: 0.75rem;
+        }
+    </style>
+</head>
+<body style="background-color: #f5f1e8;">
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const colors = {
+            primary: '#00356b', sand: '#f5f1e8', earth: '#8b7355', earthLight: '#d4c4a8',
+            earthDark: '#5c4d3d', accent: '#c9a227', clayLight: '#e8dcc8', clayDark: '#a08050',
+            success: '#22c55e', warning: '#f59e0b', error: '#dc2626',
+            paper: '#fafaf7',
+        };
+
+        // ============================================================
+        // YALE DATA — all values stored in $ MILLIONS (rounded from the
+        // 10-K's thousands), per Module 4.2 design call.
+        // Sources:
+        //   SFP:  Yale FY2025 financial report, PDF page 23 / printed 21
+        //   SoCF: PDF page 25 / printed 23
+        //   Note c (cash recon): PDF page 28-29 / printed 26-27
+        //   SoA:  PDF page 24 / printed 22
+        // ============================================================
+
+        // Yale Statement of Financial Position — single-column 2025 form
+        // plus the 2024 comparison for the snapshot pair. All in $ millions.
+        const yaleSFP = [
+            { type: 'section', label: 'Assets:' },
+            { type: 'line', label: 'Cash and cash equivalents', y2025: 765, y2024: 1058 },
+            { type: 'line', label: 'Accounts receivable, net', y2025: 477, y2024: 463 },
+            { type: 'line', label: 'Contributions receivable, net', y2025: 796, y2024: 850 },
+            { type: 'line', label: 'Notes receivable', y2025: 75, y2024: 78 },
+            { type: 'line', label: 'Investments, at fair value', y2025: 49708, y2024: 46117 },
+            { type: 'line', label: 'Right of use assets', y2025: 291, y2024: 140 },
+            { type: 'line', label: 'Other assets', y2025: 591, y2024: 598 },
+            { type: 'line', label: 'Land, buildings and equipment, net of accumulated depreciation', y2025: 6340, y2024: 6011 },
+            { type: 'total', label: 'Total assets', y2025: 59043, y2024: 55315 },
+
+            { type: 'section', label: 'Liabilities:' },
+            { type: 'line', label: 'Accounts payable and accrued liabilities', y2025: 716, y2024: 746 },
+            { type: 'line', label: 'Advanced payments and other deposits', y2025: 211, y2024: 199 },
+            { type: 'line', label: 'Lease liabilities', y2025: 360, y2024: 201 },
+            { type: 'line', label: 'Other liabilities', y2025: 1014, y2024: 1120 },
+            { type: 'line', label: 'Liabilities under split-interest agreements', y2025: 145, y2024: 137 },
+            { type: 'line', label: 'Bonds and notes payable', y2025: 5205, y2024: 4847 },
+            { type: 'line', label: 'Liabilities associated with investments', y2025: 2021, y2024: 2028 },
+            { type: 'total', label: 'Total liabilities', y2025: 9672, y2024: 9278 },
+
+            { type: 'section', label: 'Net Assets:' },
+            { type: 'line', label: 'Net assets without donor restrictions: Yale University', y2025: 10757, y2024: 9832 },
+            { type: 'line', label: 'Net assets without donor restrictions: noncontrolling interests', y2025: 5, y2024: 3, indent: true },
+            { type: 'subtotal', label: 'Total net assets without donor restrictions', y2025: 10762, y2024: 9835 },
+            { type: 'line', label: 'Net assets with donor restrictions', y2025: 38609, y2024: 36202 },
+            { type: 'total', label: 'Total net assets', y2025: 49371, y2024: 46037 },
+        ];
+
+        // Compact bucket data for SFP — used from phase 5 onward.
+        const compactSFP = {
+            y2025: {
+                cash: 765, totalAssets: 59043, totalLiab: 9672, totalNA: 49371,
+                naWithout: 10762, naWithoutYale: 10757, naWithoutNCI: 5, naWith: 38609,
+                investments: 49708,
+            },
+            y2024: {
+                cash: 1058, totalAssets: 55315, totalLiab: 9278, totalNA: 46037,
+                naWithout: 9835, naWithoutYale: 9832, naWithoutNCI: 3, naWith: 36202,
+                investments: 46117,
+            },
+        };
+
+        // Yale Statement of Cash Flows — 2-year comparative, indirect method.
+        // All in $ millions.
+        const yaleSoCF2Year = {
+            operating: {
+                label: 'Net cash used in operating activities',
+                subtotal: { y2025: -500, y2024: -599 },
+                // Items follow Yale's exact 10-K order. Note that Yale's CFS starts
+                // with Change in Net Assets (indirect method), not Net Income.
+                items: [
+                    { label: 'Change in net assets', y2025: 3334, y2024: 1309 },
+                    { label: 'Depreciation and amortization', y2025: 387, y2024: 358 },
+                    { label: 'Realized and unrealized gain on other investments', y2025: -34, y2024: -187 },
+                    { label: 'Net endowment investment gain', y2025: -3859, y2024: -1624 },
+                    { label: 'Change in non-controlling interests', y2025: -1, y2024: 0, dashFor: ['y2024'] },
+                    { label: 'Change in funding status of defined benefit plans', y2025: -156, y2024: -128 },
+                    { label: 'Non-operating contributions', y2025: -308, y2024: -255 },
+                    { label: 'Contributed securities', y2025: -76, y2024: -163 },
+                    { label: 'Proceeds from sale of donated securities', y2025: 17, y2024: 33 },
+                    { label: 'Other adjustments', y2025: 175, y2024: 95 },
+                    { label: 'Accounts receivable', y2025: -13, y2024: -53 },
+                    { label: 'Contributions receivable', y2025: -22, y2024: 14 },
+                    { label: 'Other operating assets', y2025: -9, y2024: 9 },
+                    { label: 'Accounts payable and accrued expenses', y2025: 43, y2024: 58 },
+                    { label: 'Advances under grants and contracts and other deposits', y2025: 12, y2024: -21 },
+                    { label: 'Other liabilities', y2025: 11, y2024: -43 },
+                ],
+            },
+            investing: {
+                label: 'Net cash (used in) provided by investing activities',
+                subtotal: { y2025: -602, y2024: 713 },
+                items: [
+                    { label: 'Student loans repaid', y2025: 11, y2024: 10 },
+                    { label: 'Student loans granted', y2025: -8, y2024: -10 },
+                    { label: 'Purchases related to capitalized software costs and other assets', y2025: -116, y2024: -46 },
+                    { label: 'Proceeds from sales and maturities of investments', y2025: 17840, y2024: 9827 },
+                    { label: 'Purchases of investments', y2025: -17629, y2024: -8399 },
+                    { label: 'Purchases of land, buildings and equipment', y2025: -700, y2024: -670 },
+                ],
+            },
+            financing: {
+                label: 'Net cash provided by financing activities',
+                subtotal: { y2025: 722, y2024: 152 },
+                items: [
+                    { label: 'Proceeds from restricted contributions', y2025: 384, y2024: 352 },
+                    { label: 'Proceeds from sale of contributed securities restricted for endowment', y2025: 59, y2024: 130 },
+                    { label: 'Contributions received for split-interest agreements', y2025: 6, y2024: 7 },
+                    { label: 'Payments made under split-interest agreements', y2025: -14, y2024: -16 },
+                    { label: 'Proceeds from long-term debt', y2025: 947, y2024: 0, dashFor: ['y2024'] },
+                    { label: 'Repayments of long-term debt', y2025: -660, y2024: -320 },
+                    { label: 'Repayments to the Federal government for student loans', y2025: -1, y2024: -2 },
+                ],
+            },
+            netChange: { y2025: -380, y2024: 266 },
+            beginning: { y2025: 1205, y2024: 938 },
+            ending: { y2025: 825, y2024: 1205 },
+        };
+
+        // Cash reconciliation from Note c (PDF page 28-29). Bridges the BS Cash
+        // line to the broader figure the CFS reconciles. Yale's analog to CVS's
+        // restricted-cash reconciliation. All in $ millions.
+        const yaleCashRecon = {
+            beg: { ccEquiv: 1058, cashInInvestments: 147, total: 1205 },
+            end: { ccEquiv: 765,  cashInInvestments: 61,  total: 825 },
+        };
+
+        // Yale Statement of Activities — by net asset class, with operating and
+        // non-operating sections plus the "Net assets released from restrictions"
+        // reclass. All in $ millions, 2025 column only (we'll add 2024 totals
+        // for the document-form view in a later phase batch).
+        const yaleSoA = {
+            operating: {
+                revenuesAndReleases: {
+                    items: [
+                        { label: 'Net tuition, room and board',                                     wo: 499,   wi: 0 },
+                        { label: 'Grant and contract income, primarily for research and training', wo: 1274,  wi: 0 },
+                        { label: 'Medical services income, net',                                   wo: 1681,  wi: 0 },
+                        { label: 'Contributions',                                                  wo: 16,    wi: 203 },
+                        { label: 'Allocation of endowment spending from non-operating',            wo: 588,   wi: 1492 },
+                        { label: 'Other investment income',                                        wo: 163,   wi: 9 },
+                        { label: 'Other income',                                                   wo: 228,   wi: 0 },
+                    ],
+                    revenuesSubtotal: { label: 'Total revenues', wo: 4450, wi: 1705 },
+                    releases:         { label: 'Net assets released from restrictions', wo: 1545, wi: -1545 },
+                    grandSubtotal:    { label: 'Total revenues and releases', wo: 5995, wi: 159 },
+                },
+                expenses: {
+                    items: [
+                        { label: 'Salaries and wages',                       wo: 2737, wi: 0 },
+                        { label: 'Employee benefits',                        wo: 862,  wi: 0 },
+                        { label: 'Depreciation, amortization and interest', wo: 505,  wi: 0 },
+                        { label: 'Other operating expenditures',             wo: 1704, wi: 0 },
+                    ],
+                    subtotal: { label: 'Total expenses', wo: 5808, wi: 0 },
+                },
+                netChange: { label: 'Increase in net assets from operating activities', wo: 187, wi: 159 },
+            },
+            nonOperating: {
+                items: [
+                    { label: 'Contributions',                                          wo: 1,    wi: 307 },
+                    { label: 'Total endowment return',                                 wo: 790,  wi: 3718 },
+                    { label: 'Allocation of endowment spending to operations',         wo: -372, wi: -1708 },
+                    { label: 'Other investment income',                                wo: 44,   wi: 0 },
+                    { label: 'Change in funding status of defined benefit plans',      wo: 156,  wi: 0 },
+                    { label: 'Other increases',                                        wo: 48,   wi: 2 },
+                ],
+                releases: { label: 'Net assets released from restrictions', wo: 70, wi: -70 },
+                netChange: { label: 'Increase in net assets from non-operating activities', wo: 738, wi: 2248 },
+            },
+            totalIncreaseYU:   { label: 'Total increase in net assets — Yale University', wo: 925,  wi: 2407, nci: 0,    total: 3332 },
+            nciChange:         { label: 'Change in noncontrolling interests',             wo: 0,    wi: 0,    nci: 1,    total: 1 },
+            totalIncrease:     { label: 'Total increase in net assets',                   wo: 925,  wi: 2407, nci: 1,    total: 3334 },
+            beginningOfYear:   { label: 'Net assets, beginning of year',                  wo: 9835, wi: 36202, nci: 3,   total: 46037 },
+            endOfYear:         { label: 'Net assets, end of year',                        wo: 10762, wi: 38609, nci: 5,  total: 49371 },
+        };
+
+        // ============================================================
+        // PHASE DEFINITIONS — 23 phases organized into four parts.
+        // ============================================================
+        const PHASES = [
+            // Part I — Statement of Financial Position
+            { n: 1,  label: 'Document form', narrative: "Here is Yale's Consolidated Statements of Financial Position as it appears on page 21 of the financial report. One table, two date columns — June 30, 2025 on the left, June 30, 2024 on the right — exactly as Yale presents it. Same name on the architecture: a snapshot of recorded assets, recorded liabilities, and a residual. Yale calls the residual Net Assets because it's a not-for-profit; the identity is still A − L = NA. (We round to $ millions; the 10-K uses thousands.)" },
+            { n: 2,  label: "What's NOT on this Statement", narrative: "Before we narrow to the architecture, pause on what the SFP does not show. Yale's collections — the Beinecke rare books and manuscripts, the Art Gallery, the Center for British Art, the Peabody Museum specimens, the library holdings — are deliberately excluded under FASB ASC 958-360, which lets NFPs decline to capitalize collections held for public exhibition, education, or research if they're protected, preserved, and policy-bound to reinvest sale proceeds into more collections. Yale takes that option; the footnotes disclose it; the BS itself is silent. Multi-billion-dollar fair value, zero on the books by convention. Same architectural logic excludes Yale's brand and reputation, the human capital of its faculty and students, and effectively most of the historical-cost basis of its centuries-old buildings. The recorded amounts are what the recognition convention happens to capture — what's missing is a deliberate choice, not a measurement failure." },
+            { n: 3,  label: 'Strip to totals', narrative: "The architecture works on three numbers per date — Total assets, Total liabilities, Total net assets — because that is what the identity uses. The non-total rows fade away to expose just those three. The identity check confirms it holds at both dates: 2025: 59,043 − 9,672 = 49,371 ✓; 2024: 55,315 − 9,278 = 46,037 ✓." },
+            { n: 4,  label: 'Split into snapshots', narrative: "Now rearrange. The 2024 column moves to the LEFT to become the Beginning SFP. The 2025 column moves to the RIGHT to become the Ending SFP. They physically cross paths in the middle. A fiscal year sits between them — the Cash Flow Statement and the Statement of Activities will explain what happened in it." },
+            { n: 5,  label: 'Re-expand each snapshot', narrative: "All the line-item detail returns, this time in two independent snapshot SFPs — Beginning on the left, Ending on the right, gap in the middle ready for the explanatory statements." },
+            { n: 6,  label: 'Compact + bucket net assets + ask about cash', narrative: "Both SFPs collapse to a compact form. Net Assets expands into its two donor-restriction buckets — Without donor restrictions (with a small noncontrolling-interests sub-line, $5M on $10,762M total) and With donor restrictions ($38,609M, dominating the residual at 78% — most of Yale's net assets are restricted by donor intent). Cash is highlighted on both dates. Question: cash decreased by $293M. What happened?" },
+            // Part II — Statement of Cash Flows
+            { n: 7,  label: 'Meet the Statement of Cash Flows', narrative: "Here is Yale's Cash Flow Statement, as it appears on page 23 of the financial report. The SFPs step aside (their cash question recapped in the strip above). Two columns — 2025 and 2024 — three sections (Operating, Investing, Financing), plus a reconciliation footer at the bottom. Note: Yale uses the indirect method. Operating opens with Change in net assets ($3,334M) and reverses out non-cash items to arrive at Net Cash Used in Operating of ($500M). NFP twist: the year's contributions for the endowment are treated as Financing, not Operating — they're permanent capital, conceptually equity-like." },
+            { n: 8,  label: 'Dim the 2024 column', narrative: "Same move as CVS: the 2025 column covers the period between our two SFPs (July 1, 2024 → June 30, 2025) — exactly the year we're explaining. The 2024 column covers an earlier period that doesn't connect anything we're holding. Drop it out of the picture." },
+            { n: 9,  label: 'Collapse to section subtotals', narrative: "Inside the 2025 column, the line items collapse. What remains is the architectural skeleton: Net cash used in Operating, Net cash used in Investing, Net cash provided by Financing, plus the reconciliation footer (net change, beginning, ending). The three sections sum to a single change in cash." },
+            { n: 10, label: 'Collapse to just the net change in cash', narrative: "Even the section subtotals fall away. What's left is the CFS's bottom-line answer to the cash question: cash decreased by $380M for the year." },
+            { n: 11, label: 'Two strips, one mismatch', narrative: "Pull the CFS bottom-line out into its own strip — beginning, change, ending — and place it directly under the SFP's cash question. The SFP says cash decreased by $293M. The CFS says $380M. Two strips, same format, different numbers. The labels differ — \"Cash and cash equivalents\" on the SFP vs. the broader figure the CFS reconciles — and the student is invited to notice the mismatch." },
+            { n: 12, label: 'Present the solution — Note c reconciliation', narrative: "Note c on page 27 of the financial report reconciles the two. The SFP reports \"Cash and cash equivalents\" of $765 (end) and $1,058 (beginning). The CFS adds \"Cash included in investments, at fair value\" — $61 (end) and $147 (beginning) — to arrive at $825 and $1,205. That's cash temporarily held within Yale's long-term investment pool awaiting deployment. Add it back at both dates and the two strips reconcile exactly. Each explanatory statement explains a specific change defined by its own scope. Read the labels." },
+            { n: 13, label: 'Architecture restored — CFS in the middle', narrative: "Strips give way to the architecture. The 2025 CFS column slots between the two SFPs. The three sections appear — Operating $(500)M, Investing $(602)M, Financing $722M — summing to net change of $(380)M. The architecture from Module 3 holds on the $59-billion-asset university." },
+            { n: 14, label: 'Explore the CFS details', narrative: "Each section is now expandable. Click any section to see the line items behind its subtotal. The Operating section reveals Yale's indirect-method reconciliation: Change in net assets $3,334M, minus Net endowment investment gain $(3,859)M (huge non-cash item — most of the endowment's gain was unrealized appreciation), minus Non-operating contributions $(308)M (those went to Financing instead), plus Depreciation $387M, plus working-capital changes — landing at Net Cash Used in Operating of $(500)M. This is Module 3.1's NI→CFO rule (\"changes in noncash assets and liabilities arising from operations\") rendered on real numbers." },
+            // Part III — Statement of Activities (stub)
+            { n: 15, label: 'Meet the Statement of Activities', narrative: "[to be built]" },
+            { n: 16, label: 'Dim 2024', narrative: "[to be built]" },
+            { n: 17, label: 'Bucket the columns by net asset class', narrative: "[to be built]" },
+            { n: 18, label: 'Operating section', narrative: "[to be built]" },
+            { n: 19, label: 'Non-operating section', narrative: "[to be built]" },
+            { n: 20, label: 'Net assets released from restrictions', narrative: "[to be built]" },
+            { n: 21, label: "Trace each bucket's change", narrative: "[to be built]" },
+            { n: 22, label: 'Architecture restored — SoA in the middle', narrative: "[to be built]" },
+            { n: 23, label: 'Explore the SoA details', narrative: "[to be built]" },
+            // Part IV — Synthesis (stub)
+            { n: 24, label: 'Synthesis — both explanatory statements at once', narrative: "[to be built]" },
+        ];
+
+        // ============================================================
+        // UTILITIES
+        // ============================================================
+        const fmt = (v) => {
+            if (v === 0) return '—';
+            const abs = Math.abs(v).toLocaleString('en-US');
+            return v < 0 ? `(${abs})` : abs;
+        };
+
+        const isTotal = (r) => r.type === 'total';
+
+        const renderValue = (r, year) => {
+            if (r.dashIf === year && r[year] === 0) return <span style={{ color: colors.earth }}>—</span>;
+            return <span className="mono" style={{ color: r[year] < 0 ? colors.error : 'inherit' }}>{fmt(r[year])}</span>;
+        };
+
+        // ============================================================
+        // SFPDocumentForm — 2-column comparative SFP (2025 on the left,
+        // 2024 on the right) matching Yale's actual PDF presentation.
+        // Used in phases 1–3. Collapses to totals only when phase === 3.
+        // ============================================================
+        const SFPDocumentForm = ({ phase }) => {
+            const collapsed = phase === 3;
+            const rowGrid = { display: 'grid', gridTemplateColumns: '1fr 7rem 7rem', columnGap: '0.5rem' };
+            return (
+                <div className={`sfp-row-doc bg-white rounded-lg p-6 mx-auto ${collapsed ? 'collapsed' : ''}`}
+                     style={{ maxWidth: '760px', backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Yale University · Consolidated Statements of Financial Position</p>
+                    <h2 className="text-lg font-bold mt-1" style={{ color: colors.primary }}>Consolidated Statements of Financial Position</h2>
+                    <p className="text-xs italic mt-1" style={{ color: colors.earth }}>as of June 30, 2025 and 2024</p>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>In $ millions</p>
+
+                    <div className="mt-4 text-sm">
+                        <div style={{ ...rowGrid, paddingBottom: '0.25rem', borderBottom: `1px solid ${colors.earthLight}` }}>
+                            <div></div>
+                            <div className="text-right font-semibold yale-year-2025" style={{ color: colors.primary }}>2025</div>
+                            <div className="text-right font-semibold yale-year-2024" style={{ color: colors.primary }}>2024</div>
+                        </div>
+
+                        {yaleSFP.map((r, i) => {
+                            if (r.type === 'section') {
+                                return <div key={i} className="font-bold mt-3" style={{ color: colors.primary }}>{r.label}</div>;
+                            }
+                            const baseStyle = {
+                                marginTop: isTotal(r) ? '0.25rem' : 0,
+                                paddingTop: isTotal(r) ? '0.25rem' : 0,
+                                borderTop: isTotal(r) ? `1px solid ${colors.earthDark}` : 'none',
+                            };
+                            const textStyle = isTotal(r)
+                                ? { fontWeight: 700, color: colors.primary }
+                                : r.type === 'subtotal'
+                                    ? { fontWeight: 600, color: colors.earthDark }
+                                    : { color: colors.earthDark };
+                            return (
+                                <div key={i} className={`sfp-row${isTotal(r) ? ' sfp-row-total' : ''}`} style={baseStyle}>
+                                    <div style={{ ...rowGrid, ...textStyle }}>
+                                        <div style={{ paddingLeft: r.indent ? '0.75rem' : 0 }}>{r.label}</div>
+                                        <div className="text-right">{renderValue(r, 'y2025')}</div>
+                                        <div className="text-right">{renderValue(r, 'y2024')}</div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div className="id-check-box">
+                        <div className="mt-4 p-3 rounded text-xs" style={{ backgroundColor: '#fef9e7', border: `1px solid ${colors.accent}`, color: colors.earthDark }}>
+                            <p className="font-semibold mb-1">Identity check at both dates</p>
+                            <p className="mono">2025: $59,043 − $9,672 = $49,371 ✓</p>
+                            <p className="mono">2024: $55,315 − $9,278 = $46,037 ✓</p>
+                            <p className="mono mt-1 italic" style={{ fontSize: '0.7rem' }}>A − L = Net Assets · the residual still follows the identity</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // Snapshot — single-column SFP used in the snapshot pair for
+        // phases 4 (split, year-swap) and 5 (re-expand). Shares year
+        // labels with SFPDocumentForm via the View Transitions API so
+        // the year columns appear to physically move between layouts.
+        // ============================================================
+        const Snapshot = ({ year, label, asOf, showAll }) => {
+            const rowGrid = { display: 'grid', gridTemplateColumns: '1fr 6rem', columnGap: '0.5rem' };
+            const tagClass = year === 'y2025' ? 'yale-year-2025' : 'yale-year-2024';
+            return (
+                <div className={`sfp-snapshot bg-white rounded-lg p-4 ${showAll ? '' : 'collapsed'}`}
+                     style={{ backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>{label}</p>
+                    <h3 className="text-base font-bold" style={{ color: colors.primary }}>Statement of Financial Position</h3>
+                    <p className={`text-xs italic ${tagClass}`} style={{ color: colors.earth }}>{asOf} · in $ millions</p>
+                    <div className="mt-3 text-sm">
+                        {yaleSFP.map((r, i) => {
+                            if (r.type === 'section') {
+                                return <div key={i} className="font-bold mt-3" style={{ color: colors.primary }}>{r.label}</div>;
+                            }
+                            const baseStyle = {
+                                marginTop: isTotal(r) ? '0.25rem' : 0,
+                                paddingTop: isTotal(r) ? '0.25rem' : 0,
+                                borderTop: isTotal(r) ? `1px solid ${colors.earthDark}` : 'none',
+                            };
+                            const textStyle = isTotal(r)
+                                ? { fontWeight: 700, color: colors.primary }
+                                : r.type === 'subtotal'
+                                    ? { fontWeight: 600, color: colors.earthDark }
+                                    : { color: colors.earthDark };
+                            return (
+                                <div key={i} className={`sfp-row${isTotal(r) ? ' sfp-row-total' : ''}`} style={baseStyle}>
+                                    <div style={{ ...rowGrid, ...textStyle }}>
+                                        <div style={{ paddingLeft: r.indent ? '0.75rem' : 0 }}>{r.label}</div>
+                                        <div className="text-right">{renderValue(r, year)}</div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // WhatsNotOnSFP — phase 2. The pedagogical NFP teaching moment.
+        // ============================================================
+        const WhatsNotOnSFP = () => {
+            const item = (title, body) => (
+                <div className="mb-3">
+                    <p className="text-sm font-bold" style={{ color: colors.primary }}>{title}</p>
+                    <p className="text-sm leading-relaxed" style={{ color: colors.earthDark }}>{body}</p>
+                </div>
+            );
+            return (
+                <div className="bg-white rounded-lg p-6 mx-auto" style={{ maxWidth: '760px', border: `2px solid ${colors.accent}`, backgroundColor: '#fef9e7' }}>
+                    <p className="text-xs uppercase tracking-wider font-bold" style={{ color: colors.accent }}>What's NOT on this Statement</p>
+                    <h2 className="text-lg font-bold mt-1 mb-3" style={{ color: colors.primary }}>
+                        Recorded ≠ the entity's full economic substance
+                    </h2>
+                    <p className="text-sm leading-relaxed mb-4" style={{ color: colors.earthDark }}>
+                        The SFP shows $59,043M of recorded assets. But the recording convention deliberately leaves out
+                        some of what most people would call Yale's most defining holdings:
+                    </p>
+
+                    {item('Collections — billions in fair value, zero on the books',
+                        <>Yale's collections — the Beinecke rare books and manuscripts, the Yale Art Gallery, the Center for British Art, the Peabody Museum's natural history specimens, the broader library — are deliberately excluded under <span className="mono">FASB ASC 958-360</span>. The standard lets NFPs decline to capitalize collections held for public exhibition, education, or research, provided they're protected, preserved, and policy-bound to reinvest any sale proceeds in more collection items. Yale takes that option. Footnotes disclose it ("works of art, literary works, historical treasures and similar items not capitalized"). The BS itself is silent. Multi-billion-dollar fair value, zero in the recorded total.</>)}
+
+                    {item('Human capital — Yale\'s faculty, students, staff',
+                        'The largest economic input to Yale\'s mission, and the largest determinant of its standing. The recognition convention excludes it from every organization\'s BS, NFP and for-profit alike. Same architectural reason: the entity didn\'t acquire its people in transactions that meet the convention\'s evidence test.')}
+
+                    {item('Brand and reputation — the Yale name itself',
+                        'Decisive for admissions, for donations, for hiring, for the value of any program. Off the books by the same rule that keeps internally developed intangibles off any BS. Note that this is the same reason CVS\'s brand value is off CVS\'s books.')}
+
+                    {item('Old buildings on a historical-cost basis',
+                        'The $6,340M "Land, buildings and equipment, net" reflects cost minus accumulated depreciation. For a Sterling-era stone building acquired or built decades-to-centuries ago, the residual book value is untethered from anything economically meaningful in 2025. The architecture works; the magnitude doesn\'t reflect today\'s value.')}
+
+                    <p className="text-sm italic mt-4 leading-relaxed" style={{ color: colors.earthDark }}>
+                        Each of these is a <strong>feature of the recognition convention</strong>, not a measurement failure.
+                        A − L = NA still works on whatever the convention captures; what it captures is a deliberate
+                        choice with identifiable trade-offs.
+                    </p>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // CompactSnapshot — for phase 5 onward. Bucketed net assets.
+        // ============================================================
+        const CompactSnapshot = ({ year, label, asOf }) => {
+            const d = compactSFP[year];
+            const noncash = d.totalAssets - d.cash;
+            const rowGrid = { display: 'grid', gridTemplateColumns: '1fr 6rem', columnGap: '0.5rem', alignItems: 'baseline' };
+            return (
+                <div className="bg-white rounded-lg p-4" style={{ backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>{label}</p>
+                    <h3 className="text-base font-bold" style={{ color: colors.primary }}>Statement of Financial Position</h3>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>{asOf} · in $ millions</p>
+
+                    <div className="mt-4 text-sm">
+                        {/* Cash — highlighted */}
+                        <div style={{ ...rowGrid, fontWeight: 600, padding: '0.4rem 0.5rem', margin: '0 -0.5rem', borderRadius: '0.25rem', backgroundColor: '#dbeafe' }}>
+                            <div style={{ color: colors.primary }}>Cash and cash equivalents</div>
+                            <div className="text-right mono" style={{ color: colors.primary }}>{fmt(d.cash)}</div>
+                        </div>
+
+                        {/* Noncash assets (which includes the dominant Investments line) */}
+                        <div style={{ ...rowGrid, paddingTop: '0.5rem', color: colors.earthDark }}>
+                            <div>Noncash assets <span className="italic" style={{ fontSize: '0.75rem', color: colors.earth }}>(incl. {fmt(d.investments)} investments)</span></div>
+                            <div className="text-right mono">{fmt(noncash)}</div>
+                        </div>
+
+                        {/* Total Assets */}
+                        <div style={{ ...rowGrid, marginTop: '0.4rem', paddingTop: '0.3rem', borderTop: `1px solid ${colors.earthDark}`, fontWeight: 700, color: colors.primary }}>
+                            <div>Total assets</div>
+                            <div className="text-right mono">{fmt(d.totalAssets)}</div>
+                        </div>
+
+                        {/* − Liabilities */}
+                        <div style={{ ...rowGrid, marginTop: '0.6rem', color: colors.earthDark }}>
+                            <div>− Total liabilities</div>
+                            <div className="text-right mono">{fmt(d.totalLiab)}</div>
+                        </div>
+
+                        {/* Net Assets bucketed: Without (with NCI sub-line), With */}
+                        <div style={{ ...rowGrid, marginTop: '0.5rem', paddingTop: '0.3rem', borderTop: `1px solid ${colors.earthDark}`, color: colors.earthDark }}>
+                            <div>= NA without donor restrictions</div>
+                            <div className="text-right mono">{fmt(d.naWithout)}</div>
+                        </div>
+                        <div style={{ ...rowGrid, marginTop: '0.05rem', color: colors.earth, fontSize: '0.78rem' }}>
+                            <div style={{ paddingLeft: '0.75rem', fontStyle: 'italic' }}>↳ of which Yale University</div>
+                            <div className="text-right mono">{fmt(d.naWithoutYale)}</div>
+                        </div>
+                        <div style={{ ...rowGrid, marginTop: '0.05rem', color: colors.earth, fontSize: '0.78rem' }}>
+                            <div style={{ paddingLeft: '0.75rem', fontStyle: 'italic' }}>↳ of which noncontrolling interests</div>
+                            <div className="text-right mono">{fmt(d.naWithoutNCI)}</div>
+                        </div>
+                        <div style={{ ...rowGrid, marginTop: '0.2rem', color: colors.earthDark }}>
+                            <div>+ NA with donor restrictions</div>
+                            <div className="text-right mono">{fmt(d.naWith)}</div>
+                        </div>
+                        <div style={{ ...rowGrid, marginTop: '0.25rem', paddingTop: '0.25rem', borderTop: `1px solid ${colors.earthDark}`, fontWeight: 700, color: colors.primary }}>
+                            <div>= Total net assets</div>
+                            <div className="text-right mono">{fmt(d.totalNA)}</div>
+                        </div>
+
+                        {/* Identity check */}
+                        <p className="text-xs italic mt-3 mono" style={{ color: colors.earth, textAlign: 'right' }}>
+                            {fmt(d.totalAssets)} − {fmt(d.totalLiab)} = {fmt(d.totalNA)} ✓
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SFPSplit — phase 4 (split + year-swap) and phase 5 (re-expand).
+        // showAll: false in phase 4 — only the totals are visible on each
+        //          snapshot. True in phase 5 — line items return.
+        // ============================================================
+        const SFPSplit = ({ phase }) => {
+            const showAll = phase === 5;
+            return (
+                <div className="grid gap-3" style={{ gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'start' }}>
+                    <Snapshot year="y2024" label="Beginning" asOf="June 30, 2024" showAll={showAll} />
+                    <div className="rounded-lg p-4 flex items-center justify-center"
+                         style={{ backgroundColor: '#fef9e7', border: `2px dashed ${colors.accent}`, color: colors.earth, minHeight: '200px' }}>
+                        <p className="text-sm text-center italic">
+                            A fiscal year between them.<br/><br/>
+                            The Cash Flow Statement<br/>
+                            and the Statement of Activities<br/>
+                            will fill this space.
+                        </p>
+                    </div>
+                    <Snapshot year="y2025" label="Ending" asOf="June 30, 2025" showAll={showAll} />
+                </div>
+            );
+        };
+
+        // ============================================================
+        // CompactSplit — phase 5+. Two compact bucketed SFPs flanking
+        // a middle column (question card or — in later phases — the
+        // CFS / SoA / synthesis).
+        // ============================================================
+        const CompactSplit = ({ phase, middle, sectionsVisible, expanded, toggleSection }) => {
+            const renderMiddle = () => {
+                if (middle === 'question-cash') {
+                    return (
+                        <div className="rounded-lg p-5 flex flex-col"
+                             style={{ backgroundColor: '#fef9e7', border: `2px dashed ${colors.accent}`, minHeight: '200px' }}>
+                            <p className="text-xs uppercase tracking-wider font-bold" style={{ color: colors.accent }}>The question</p>
+                            <h3 className="text-base font-bold mt-1" style={{ color: colors.primary }}>What happened to cash?</h3>
+                            <div className="mt-4 text-sm space-y-3" style={{ color: colors.earthDark, lineHeight: '1.5' }}>
+                                <p>Cash and cash equivalents decreased by</p>
+                                <p className="text-2xl font-bold mono text-center" style={{ color: colors.error }}>$293 million</p>
+                                <p className="text-center mono text-sm" style={{ color: colors.earth }}>$1,058 → $765</p>
+                                <p className="pt-2 italic">Out of $59 billion in recorded assets — with $49.7 billion of it in the endowment — Cash on the SFP went down a few hundred million. Where did money come from, and where did it go?</p>
+                            </div>
+                            <p className="mt-auto pt-4 text-xs italic" style={{ color: colors.earth }}>
+                                The Cash Flow Statement is the explanatory statement that traces what happened to cash.
+                            </p>
+                        </div>
+                    );
+                }
+                if (middle === 'cfs') {
+                    return (
+                        <SoCFCenter
+                            phase={phase}
+                            sectionsVisible={sectionsVisible}
+                            expanded={expanded}
+                            toggleSection={toggleSection}
+                        />
+                    );
+                }
+                return (
+                    <div className="rounded-lg p-4 flex items-center justify-center" style={{ backgroundColor: '#fef9e7', border: `2px dashed ${colors.accent}`, color: colors.earth, minHeight: '200px' }}>
+                        <p className="text-sm text-center italic">[middle content for phase {phase}]</p>
+                    </div>
+                );
+            };
+            return (
+                <div className="grid gap-3" style={{ gridTemplateColumns: '1fr 1.2fr 1fr', alignItems: 'start' }}>
+                    <CompactSnapshot year="y2024" label="Beginning" asOf="June 30, 2024" />
+                    {renderMiddle()}
+                    <CompactSnapshot year="y2025" label="Ending" asOf="June 30, 2025" />
+                </div>
+            );
+        };
+
+        // ============================================================
+        // BSReferenceStrip — for phases 7–12 while the BSes step aside.
+        // Compact recap of the cash question that motivates the CFS deep
+        // dive: cash decreased $293M between Beg and End SFP.
+        // ============================================================
+        const BSReferenceStrip = () => {
+            const beg = compactSFP.y2024;
+            const end = compactSFP.y2025;
+            const delta = end.cash - beg.cash;
+            return (
+                <div className="bg-white rounded-lg p-3 mb-4 grid gap-2"
+                     style={{ border: `1px solid ${colors.earthLight}`, gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'center' }}>
+                    <div className="text-center">
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Beginning SFP</p>
+                        <p className="text-xs" style={{ color: colors.earthDark }}>June 30, 2024</p>
+                        <p className="text-sm font-bold mono mt-1" style={{ color: colors.primary }}>Cash {fmt(beg.cash)}</p>
+                    </div>
+                    <div className="text-center" style={{ borderLeft: `1px solid ${colors.earthLight}`, borderRight: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.error }}>Question</p>
+                        <p className="text-lg font-bold mono" style={{ color: colors.error }}>{fmt(delta)}</p>
+                        <p className="text-xs italic" style={{ color: colors.earth }}>What happened to cash?</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Ending SFP</p>
+                        <p className="text-xs" style={{ color: colors.earthDark }}>June 30, 2025</p>
+                        <p className="text-sm font-bold mono mt-1" style={{ color: colors.primary }}>Cash {fmt(end.cash)}</p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SoCFDocumentForm — full 2-year SoCF as it appears in the
+        // report (PDF page 23), with progressive collapse:
+        //   dimmedColumns: years to dim (phase 8)
+        //   collapse: 'none' | 'subtotals' | 'netchange' (phases 9–10)
+        // ============================================================
+        const SoCFDocumentForm = ({ dimmedColumns, collapse }) => {
+            const isDim = (y) => dimmedColumns && dimmedColumns.includes(y);
+            const hideLineItems = collapse === 'subtotals' || collapse === 'netchange';
+            const hideSectionHeaders = collapse === 'subtotals' || collapse === 'netchange';
+            const hideSubtotals = collapse === 'netchange';
+            const hideReconBegEnd = collapse === 'netchange';
+            const years = ['y2025', 'y2024'];
+            const yearLabels = { y2025: '2025', y2024: '2024' };
+            const renderCell = (item, y) => {
+                if (item.dashFor && item.dashFor.includes(y)) {
+                    return <span style={{ color: colors.earth }}>—</span>;
+                }
+                const v = item[y];
+                if (typeof v !== 'number') return <span style={{ color: colors.earth }}>—</span>;
+                return <span className="mono" style={{ color: v < 0 ? colors.error : 'inherit' }}>{fmt(v)}</span>;
+            };
+            const gridStyle = { display: 'grid', gridTemplateColumns: '1fr 5rem 5rem', columnGap: '0.75rem', alignItems: 'baseline' };
+
+            const sectionBlock = (section, key, header) => (
+                <div key={key}>
+                    <div className={`socf-doc-row ${hideSectionHeaders ? 'hidden' : ''}`} style={{ marginTop: '0.75rem' }}>
+                        <div className="font-bold" style={{ color: colors.primary }}>{header}</div>
+                    </div>
+                    {section.items.map((item, ii) => (
+                        <div key={ii} className={`socf-doc-row ${hideLineItems ? 'hidden' : ''}`} style={{ ...gridStyle, padding: '0.1rem 0' }}>
+                            <div style={{ color: colors.earthDark, fontSize: '0.82rem', lineHeight: '1.35' }}>{item.label}</div>
+                            {years.map(y => (
+                                <div key={y} className={`text-right socf-col ${isDim(y) ? 'dim' : ''}`}>{renderCell(item, y)}</div>
+                            ))}
+                        </div>
+                    ))}
+                    <div className={`socf-doc-row ${hideSubtotals ? 'hidden' : ''}`} style={{
+                        ...gridStyle, marginTop: '0.25rem', paddingTop: '0.25rem',
+                        borderTop: `1px solid ${colors.earthDark}`, fontWeight: 600, color: colors.earthDark,
+                    }}>
+                        <div style={{ fontSize: '0.85rem' }}>{section.label}</div>
+                        {years.map(y => (
+                            <div key={y} className={`text-right socf-col ${isDim(y) ? 'dim' : ''}`}>{renderCell(section.subtotal, y)}</div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="bg-white rounded-lg p-6 mx-auto" style={{ maxWidth: '760px', backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Yale University · Consolidated Statements of Cash Flows</p>
+                    <h2 className="text-lg font-bold mt-1" style={{ color: colors.primary }}>Consolidated Statements of Cash Flows</h2>
+                    <p className="text-xs italic mt-1" style={{ color: colors.earth }}>for the years ended June 30, 2025 and 2024</p>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>In $ millions</p>
+
+                    <div className="mt-4 text-sm">
+                        <div style={{ ...gridStyle, paddingBottom: '0.25rem', borderBottom: `1px solid ${colors.earthLight}` }}>
+                            <div></div>
+                            {years.map(y => (
+                                <div key={y} className={`text-right font-semibold socf-col ${isDim(y) ? 'dim' : ''}`} style={{ color: colors.primary }}>{yearLabels[y]}</div>
+                            ))}
+                        </div>
+
+                        {sectionBlock(yaleSoCF2Year.operating, 'op', 'Operating activities:')}
+                        {sectionBlock(yaleSoCF2Year.investing, 'inv', 'Investing activities:')}
+                        {sectionBlock(yaleSoCF2Year.financing, 'fin', 'Financing activities:')}
+
+                        {/* Reconciliation footer */}
+                        <div className="mt-4">
+                            <div className="socf-doc-row" style={{
+                                ...gridStyle, marginTop: '0.5rem', paddingTop: '0.5rem',
+                                borderTop: `2px solid ${colors.primary}`, fontWeight: 500, color: colors.earthDark,
+                            }}>
+                                <div style={{ fontSize: '0.82rem', lineHeight: '1.35' }}>Net (decrease) increase in cash and cash equivalents</div>
+                                {years.map(y => (
+                                    <div key={y} className={`text-right socf-col ${isDim(y) ? 'dim' : ''}`}>{renderCell(yaleSoCF2Year.netChange, y)}</div>
+                                ))}
+                            </div>
+                            <div className={`socf-doc-row ${hideReconBegEnd ? 'hidden' : ''}`} style={{ ...gridStyle, marginTop: '0.15rem', color: colors.earthDark, fontWeight: 500 }}>
+                                <div style={{ fontSize: '0.82rem', lineHeight: '1.35' }}>Cash and cash equivalents, beginning of year</div>
+                                {years.map(y => (
+                                    <div key={y} className={`text-right socf-col ${isDim(y) ? 'dim' : ''}`}>{renderCell(yaleSoCF2Year.beginning, y)}</div>
+                                ))}
+                            </div>
+                            <div className={`socf-doc-row ${hideReconBegEnd ? 'hidden' : ''}`} style={{ ...gridStyle, marginTop: '0.15rem', fontWeight: 700, color: colors.primary }}>
+                                <div style={{ fontSize: '0.82rem', lineHeight: '1.35' }}>Cash and cash equivalents, end of year</div>
+                                {years.map(y => (
+                                    <div key={y} className={`text-right socf-col ${isDim(y) ? 'dim' : ''}`}>{renderCell(yaleSoCF2Year.ending, y)}</div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // CFSStrip — phase 11/12. Parallel to CVS's CFSStrip. Shows the
+        // CFS's bottom-line cash story (Beg / Net change / End) under
+        // the BS strip. Mismatch is obvious; phase 12 adds annotations
+        // that explain it via Note c (cash in investments).
+        // ============================================================
+        const CFSStrip = ({ withSolution }) => {
+            const beg = yaleCashRecon.beg;
+            const end = yaleCashRecon.end;
+            return (
+                <div className="bg-white rounded-lg p-3 mb-4 grid gap-2"
+                     style={{ border: `1px solid ${colors.earthLight}`, gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'center' }}>
+                    <div className="text-center">
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Beginning CFS</p>
+                        <p className="text-xs" style={{ color: colors.earthDark }}>July 1, 2024</p>
+                        <p className="text-sm font-bold mono mt-1" style={{ color: colors.primary }}>Cash {fmt(beg.total)}</p>
+                        {withSolution && (
+                            <p className="text-xs italic mt-1 mono" style={{ color: colors.success }}>
+                                = {fmt(beg.ccEquiv)} + cash in investments {fmt(beg.cashInInvestments)}
+                            </p>
+                        )}
+                    </div>
+                    <div className="text-center" style={{ borderLeft: `1px solid ${colors.earthLight}`, borderRight: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.error }}>CFS net change</p>
+                        <p className="text-lg font-bold mono" style={{ color: colors.error }}>{fmt(yaleSoCF2Year.netChange.y2025)}</p>
+                        <p className="text-xs italic" style={{ color: colors.earth }}>"Cash and cash equivalents" (CFS scope)</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Ending CFS</p>
+                        <p className="text-xs" style={{ color: colors.earthDark }}>June 30, 2025</p>
+                        <p className="text-sm font-bold mono mt-1" style={{ color: colors.primary }}>Cash {fmt(end.total)}</p>
+                        {withSolution && (
+                            <p className="text-xs italic mt-1 mono" style={{ color: colors.success }}>
+                                = {fmt(end.ccEquiv)} + cash in investments {fmt(end.cashInInvestments)}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // MismatchNotice — phase 11. Red callout flagging the mismatch
+        // between BS Cash change and CFS Cash change.
+        // ============================================================
+        const MismatchNotice = () => (
+            <div className="bg-white rounded-lg p-4 mb-4" style={{ border: `2px solid ${colors.error}`, backgroundColor: '#fef2f2' }}>
+                <p className="text-xs uppercase tracking-wider font-bold" style={{ color: colors.error }}>Notice — something is off</p>
+                <div className="mt-2 text-sm" style={{ color: colors.earthDark, lineHeight: '1.6' }}>
+                    <p>The Statement of Financial Position says <strong className="mono">Cash and cash equivalents</strong> decreased by <strong className="mono">$293</strong>: from $1,058 to $765.</p>
+                    <p className="mt-1">The Cash Flow Statement says cash decreased by <strong className="mono">$380</strong>: from $1,205 to $825.</p>
+                    <p className="mt-2 italic">Different numbers, different beginning and ending balances. Read the labels.</p>
+                </div>
+            </div>
+        );
+
+        // ============================================================
+        // SolutionBridge — phase 12. Note c reconciliation. Bridges BS
+        // Cash to CFS Cash via "cash included in investments."
+        // ============================================================
+        const SolutionBridge = () => {
+            const beg = yaleCashRecon.beg;
+            const end = yaleCashRecon.end;
+            return (
+                <div className="bg-white rounded-lg p-4 mb-4" style={{ border: `2px solid ${colors.success}`, backgroundColor: '#f0fdf4' }}>
+                    <p className="text-xs uppercase font-bold tracking-wider" style={{ color: colors.success }}>The solution — Note c reconciliation</p>
+                    <div className="mt-3 text-sm" style={{ color: colors.earthDark, lineHeight: '1.55' }}>
+                        <p>
+                            The SFP line reports <strong>"Cash and cash equivalents."</strong> The CFS reports cash flows for a broader category — what Note c on page 27 calls
+                            <strong> "Total cash and cash equivalents shown in the consolidated statements of cash flows"</strong> — which also picks up
+                            <em> cash held within the long-term investment pool awaiting deployment.</em> Add it at both dates and the numbers reconcile exactly:
+                        </p>
+                        <div className="mt-3 mono text-xs" style={{ color: colors.earthDark }}>
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 5rem 5rem', columnGap: '0.5rem' }}>
+                                <div></div>
+                                <div className="text-right" style={{ color: colors.earth }}>Beg (Jul 1, '24)</div>
+                                <div className="text-right" style={{ color: colors.earth }}>End (Jun 30, '25)</div>
+                            </div>
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 5rem 5rem', columnGap: '0.5rem' }}>
+                                <div>Cash &amp; cash equivalents (SFP face)</div>
+                                <div className="text-right">{fmt(beg.ccEquiv)}</div>
+                                <div className="text-right">{fmt(end.ccEquiv)}</div>
+                            </div>
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 5rem 5rem', columnGap: '0.5rem' }}>
+                                <div>+ Cash included in investments, at fair value</div>
+                                <div className="text-right">{fmt(beg.cashInInvestments)}</div>
+                                <div className="text-right">{fmt(end.cashInInvestments)}</div>
+                            </div>
+                            <div className="grid mt-1 pt-1 font-bold" style={{ gridTemplateColumns: '1fr 5rem 5rem', columnGap: '0.5rem', borderTop: `1px solid ${colors.earthDark}`, color: colors.primary }}>
+                                <div>= Total cash &amp; cash equivalents (per CFS)</div>
+                                <div className="text-right">{fmt(beg.total)}</div>
+                                <div className="text-right">{fmt(end.total)}</div>
+                            </div>
+                        </div>
+                        <p className="mt-3 italic">
+                            Same architectural lesson as CVS's restricted-cash reconciliation: each explanatory statement explains a
+                            <strong> specific change defined by its own scope.</strong> The SFP Cash line and the CFS cash bottom-line
+                            are <strong>not</strong> tracking the same thing — the label difference contains real information about
+                            cash temporarily parked in the investment portfolio. Read the labels.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SectionLine — one of the three CFS section rows used by
+        // SoCFCenter (phase 13–14). Phase 13 shows label + subtotal;
+        // phase 14 makes it click-to-expand for the line items.
+        // ============================================================
+        const SectionLine = ({ data, visible, expandable, expanded, onToggle }) => {
+            const isNeg = data.subtotal.y2025 < 0;
+            return (
+                <div className={`socf-section-row ${visible ? 'visible' : ''}`}>
+                    <div
+                        className={expandable ? 'socf-section-toggle' : ''}
+                        onClick={expandable ? onToggle : undefined}
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1.25rem 1fr 6rem',
+                            alignItems: 'center',
+                            padding: '0.5rem 0.25rem',
+                            borderBottom: `1px solid ${colors.earthLight}`,
+                            borderRadius: '0.25rem',
+                        }}>
+                        <div style={{ color: colors.earth, fontSize: '0.75rem' }}>
+                            {expandable ? (expanded ? '▼' : '▶') : ''}
+                        </div>
+                        <div className="text-sm" style={{ color: colors.earthDark, fontWeight: 600 }}>{data.label}</div>
+                        <div className="text-right mono text-sm" style={{ color: isNeg ? colors.error : colors.primary, fontWeight: 600 }}>
+                            {fmt(data.subtotal.y2025)}
+                        </div>
+                    </div>
+                    <div className={`socf-detail-panel ${expanded ? 'open' : ''}`}
+                         style={{ backgroundColor: '#fafaf7', padding: expanded ? '0.5rem 0.5rem 0.5rem 1.25rem' : '0 0.5rem 0 1.25rem' }}>
+                        {data.items.map((item, i) => {
+                            const v = item.y2025;
+                            const isDash = item.dashFor && item.dashFor.includes('y2025');
+                            return (
+                                <div key={i} className="grid" style={{ gridTemplateColumns: '1fr 5rem', padding: '0.2rem 0', columnGap: '0.5rem' }}>
+                                    <div style={{ color: colors.earthDark, fontSize: '0.78rem', lineHeight: '1.3' }}>{item.label}</div>
+                                    <div className="text-right mono" style={{ fontSize: '0.78rem', color: isDash ? colors.earth : (v < 0 ? colors.error : colors.earthDark) }}>
+                                        {isDash ? '—' : fmt(v)}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        <div className="grid mt-1 pt-1" style={{ gridTemplateColumns: '1fr 5rem', borderTop: `1px solid ${colors.earthDark}`, columnGap: '0.5rem' }}>
+                            <div style={{ fontSize: '0.78rem', color: colors.primary, fontWeight: 700 }}>{data.label}</div>
+                            <div className="text-right mono" style={{ fontSize: '0.78rem', color: isNeg ? colors.error : colors.primary, fontWeight: 700 }}>{fmt(data.subtotal.y2025)}</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SoCFCenter — compact CFS in the middle column of the 3-up
+        // architecture grid (phases 13–14). Three sections sum to the
+        // net change. Operating section, when expanded in phase 14,
+        // exposes the indirect-method reconciliation (Change in Net
+        // Assets minus endowment gain etc.) which is Module 3.1's
+        // NI→CFO rule landing on real numbers.
+        // ============================================================
+        const SoCFCenter = ({ phase, sectionsVisible, expanded, toggleSection }) => {
+            const showBody = phase >= 13;
+            const expandable = phase >= 14;
+            return (
+                <div className="rounded-lg p-4 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>From the report · page 23</p>
+                    <h3 className="text-base font-bold" style={{ color: colors.primary }}>Cash Flow Statement</h3>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>Year ended June 30, 2025 · in $ millions</p>
+
+                    <div className="mt-4 p-3 rounded text-sm" style={{ backgroundColor: '#fff8e1', border: `1px solid ${colors.accent}` }}>
+                        <p className="text-xs uppercase font-bold mb-2" style={{ color: colors.accent }}>What the CFS reconciles</p>
+                        <p className="text-xs italic mb-2" style={{ color: colors.earth }}>
+                            "Cash and cash equivalents" (CFS scope: incl. cash in investments)
+                        </p>
+                        <div className="mono" style={{ fontSize: '0.85rem', color: colors.earthDark }}>
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 5rem' }}>
+                                <div>Beginning of year</div>
+                                <div className="text-right">{fmt(yaleSoCF2Year.beginning.y2025)}</div>
+                            </div>
+                            <div className="grid" style={{ gridTemplateColumns: '1fr 5rem' }}>
+                                <div>+ Net change</div>
+                                <div className="text-right" style={{ color: colors.error }}>{fmt(yaleSoCF2Year.netChange.y2025)}</div>
+                            </div>
+                            <div className="grid mt-1 pt-1 font-bold" style={{ gridTemplateColumns: '1fr 5rem', borderTop: `1px solid ${colors.earthDark}`, color: colors.primary }}>
+                                <div>End of year</div>
+                                <div className="text-right">{fmt(yaleSoCF2Year.ending.y2025)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {showBody && (
+                        <div className="mt-5">
+                            <p className="text-xs uppercase font-bold mb-2" style={{ color: colors.primary }}>The three sections</p>
+                            <SectionLine
+                                data={yaleSoCF2Year.operating}
+                                visible={sectionsVisible >= 1}
+                                expandable={expandable}
+                                expanded={expanded.operating}
+                                onToggle={() => toggleSection('operating')}
+                            />
+                            <SectionLine
+                                data={yaleSoCF2Year.investing}
+                                visible={sectionsVisible >= 2}
+                                expandable={expandable}
+                                expanded={expanded.investing}
+                                onToggle={() => toggleSection('investing')}
+                            />
+                            <SectionLine
+                                data={yaleSoCF2Year.financing}
+                                visible={sectionsVisible >= 3}
+                                expandable={expandable}
+                                expanded={expanded.financing}
+                                onToggle={() => toggleSection('financing')}
+                            />
+                            <div className={`socf-section-row ${sectionsVisible >= 3 ? 'visible' : ''}`}>
+                                <div className="grid mt-2 pt-2 mono font-bold"
+                                     style={{ gridTemplateColumns: '1.25rem 1fr 6rem', borderTop: `2px solid ${colors.primary}`, color: colors.primary, padding: '0.5rem 0.25rem' }}>
+                                    <div></div>
+                                    <div className="text-sm">Net change in cash &amp; cash equivalents</div>
+                                    <div className="text-right text-sm" style={{ color: colors.error }}>{fmt(yaleSoCF2Year.netChange.y2025)}</div>
+                                </div>
+                            </div>
+                            {expandable && sectionsVisible >= 3 && (
+                                <p className="text-xs italic mt-3" style={{ color: colors.earth }}>
+                                    Click any section above to expand. Yale uses the indirect method — Operating opens with Change in Net Assets and reverses out non-cash items (endowment gain, contributed securities, non-operating contributions) to arrive at Net Cash Used in Operating Activities.
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================================
+        // STUB — placeholder content for phases not yet implemented.
+        // ============================================================
+        const PhaseStub = ({ phase, label }) => (
+            <div className="bg-white rounded-lg p-8 mx-auto text-center" style={{ maxWidth: '600px', border: `2px dashed ${colors.earthLight}` }}>
+                <p className="text-xs uppercase tracking-wider font-bold mb-2" style={{ color: colors.earth }}>Phase {phase}</p>
+                <h2 className="text-lg font-bold mb-3" style={{ color: colors.primary }}>{label}</h2>
+                <p className="text-sm italic" style={{ color: colors.earth }}>Choreography to be built.</p>
+            </div>
+        );
+
+        // ============================================================
+        // APP
+        // ============================================================
+        const App = () => {
+            const [phase, setPhase] = useState(1);
+            const [devMode, setDevMode] = useState(false);
+            const [hdrClicks, setHdrClicks] = useState(0);
+            // Phase 13 sequential reveal of CFS section subtotals
+            const [sectionsVisible, setSectionsVisible] = useState(0);
+            const [expanded, setExpanded] = useState({ operating: false, investing: false, financing: false });
+
+            useEffect(() => {
+                if (phase === 13) {
+                    setSectionsVisible(0);
+                    const t1 = setTimeout(() => setSectionsVisible(1), 400);
+                    const t2 = setTimeout(() => setSectionsVisible(2), 1200);
+                    const t3 = setTimeout(() => setSectionsVisible(3), 2000);
+                    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+                }
+                if (phase >= 14) {
+                    setSectionsVisible(3);
+                } else if (phase < 13) {
+                    setSectionsVisible(0);
+                    setExpanded({ operating: false, investing: false, financing: false });
+                }
+            }, [phase]);
+
+            const toggleSection = (s) => setExpanded(e => ({ ...e, [s]: !e[s] }));
+
+            const handleHdrClick = () => {
+                const n = hdrClicks + 1; setHdrClicks(n);
+                if (n >= 3) { setDevMode(!devMode); setHdrClicks(0); }
+            };
+            const reset = () => setPhase(1);
+            const setPhaseSmart = (next) => {
+                // Phase 3 → 4 (or 4 → 3): swap via View Transitions API for FLIP.
+                // The year-labeled elements (2025, 2024) animate between their
+                // document-form positions and their snapshot-pair positions.
+                const isSwap = (phase === 3 && next === 4) || (phase === 4 && next === 3);
+                if (isSwap && document.startViewTransition) {
+                    document.startViewTransition(() => {
+                        ReactDOM.flushSync(() => setPhase(next));
+                    });
+                } else {
+                    setPhase(next);
+                }
+            };
+            const advance = () => setPhaseSmart(Math.min(phase + 1, 24));
+            const back = () => setPhaseSmart(Math.max(phase - 1, 1));
+            const progress = Math.round(((phase - 1) / 23) * 100);
+
+            const Header = () => (
+                <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary }}>
+                    <div className="flex justify-between items-start">
+                        <div onClick={handleHdrClick} style={{ cursor: 'pointer' }}>
+                            <h1 className="text-lg font-bold text-white">Mockup: Yale University SFP + Cash Flows + Activities</h1>
+                            <p className="text-sm mt-1" style={{ color: colors.earthLight }}>
+                                Phase {phase} of 24 &middot; {PHASES[phase-1].label}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {/* Context-aware home button (same pattern as the CVS mockup) */}
+                            <a href={(typeof window !== 'undefined' && window.location.pathname.includes('/module-4/')) ? '../index.html' : '../index-mockup.html'}
+                               className="p-2 rounded-lg hover:bg-white/10 text-white text-xl no-underline inline-flex items-center justify-center"
+                               title="Return to Main">🏠</a>
+                            <button onClick={reset}
+                                    className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                    title="Restart">↺</button>
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <div className="flex justify-between text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                            <span>Progress</span><span>{progress}%</span>
+                        </div>
+                        <div className="h-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+                            <div className="h-full rounded-full transition-all duration-500"
+                                 style={{ width: `${progress}%`, backgroundColor: colors.accent }} />
+                        </div>
+                    </div>
+                    {devMode && (
+                        <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                            <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>Dev: jump to phase</p>
+                            <div className="flex gap-1 flex-wrap">
+                                {Array.from({length: 24}, (_, i) => i + 1).map(p => (
+                                    <button key={p} onClick={() => setPhaseSmart(p)}
+                                            className="px-2 py-1 rounded text-xs border-0 cursor-pointer"
+                                            style={{
+                                                backgroundColor: phase === p ? 'white' : 'rgba(255,255,255,0.2)',
+                                                color: phase === p ? colors.primary : 'white'
+                                            }}>{p}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            const Narrative = () => (
+                <div className="bg-white rounded-lg p-5 mb-4" style={{ border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider font-bold mb-2" style={{ color: colors.accent }}>
+                        Phase {phase}: {PHASES[phase-1].label}
+                    </p>
+                    <p className="text-sm leading-relaxed" style={{ color: colors.earthDark }}>
+                        {PHASES[phase-1].narrative}
+                    </p>
+                </div>
+            );
+
+            const Nav = () => (
+                <div className="flex justify-between mb-4">
+                    <button onClick={back} disabled={phase === 1}
+                            className="px-4 py-2 rounded-lg border bg-white text-sm cursor-pointer disabled:cursor-not-allowed"
+                            style={{ borderColor: colors.earthLight, color: phase === 1 ? colors.earth : colors.primary, opacity: phase === 1 ? 0.5 : 1 }}>
+                        ← Back
+                    </button>
+                    <button onClick={advance} disabled={phase === 24}
+                            className="px-4 py-2 rounded-lg font-bold text-white text-sm border-0 cursor-pointer disabled:cursor-not-allowed"
+                            style={{ backgroundColor: colors.primary, opacity: phase === 24 ? 0.5 : 1 }}>
+                        {phase < 24 ? 'Next →' : 'End of mockup'}
+                    </button>
+                </div>
+            );
+
+            return (
+                <div className="max-w-6xl mx-auto p-4">
+                    <Header />
+
+                    <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#fef9e7', border: `2px solid ${colors.accent}` }}>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            <strong>Mockup:</strong> Visual choreography for Tutorial 4.2 (Yale University). Built in parallel
+                            with 4.1 (CVS Health). All values in $ millions (Yale's report uses thousands; we round). Same
+                            architecture from Module 3, with NFP-specific labels and bucketing. 24 phases: Part I — SFP
+                            (1–6, mirroring CVS's BS choreography: document form → what's NOT on the SFP → strip to totals →
+                            split with year-swap → re-expand → compact + bucket + ask about cash); Part II — CFS (7–14, with
+                            a cash-in-investments mismatch + Note c reconciliation parallel to CVS's restricted cash);
+                            Part III — Statement of Activities (15–23, doing IS + SoCE work combined, with "Net assets
+                            released from restrictions" as a unique NFP beat); Part IV — Synthesis (24).
+                            <br/><br/>
+                            <strong>Current state:</strong> Part I (phases 1–6) is implemented. Phases 7–24 are stubbed.
+                        </p>
+                    </div>
+
+                    <Narrative />
+                    <Nav />
+
+                    {phase === 1 && <SFPDocumentForm phase={phase} />}
+                    {phase === 2 && <WhatsNotOnSFP />}
+                    {phase === 3 && <SFPDocumentForm phase={phase} />}
+                    {(phase === 4 || phase === 5) && <SFPSplit phase={phase} />}
+                    {phase === 6 && <CompactSplit phase={phase} middle="question-cash" />}
+                    {phase === 7 && (
+                        <>
+                            <BSReferenceStrip />
+                            <SoCFDocumentForm dimmedColumns={[]} collapse="none" />
+                        </>
+                    )}
+                    {phase === 8 && (
+                        <>
+                            <BSReferenceStrip />
+                            <SoCFDocumentForm dimmedColumns={['y2024']} collapse="none" />
+                        </>
+                    )}
+                    {phase === 9 && (
+                        <>
+                            <BSReferenceStrip />
+                            <SoCFDocumentForm dimmedColumns={['y2024']} collapse="subtotals" />
+                        </>
+                    )}
+                    {phase === 10 && (
+                        <>
+                            <BSReferenceStrip />
+                            <SoCFDocumentForm dimmedColumns={['y2024']} collapse="netchange" />
+                        </>
+                    )}
+                    {phase === 11 && (
+                        <>
+                            <BSReferenceStrip />
+                            <CFSStrip withSolution={false} />
+                            <MismatchNotice />
+                        </>
+                    )}
+                    {phase === 12 && (
+                        <>
+                            <BSReferenceStrip />
+                            <CFSStrip withSolution={true} />
+                            <SolutionBridge />
+                        </>
+                    )}
+                    {(phase === 13 || phase === 14) && (
+                        <CompactSplit
+                            phase={phase}
+                            middle="cfs"
+                            sectionsVisible={sectionsVisible}
+                            expanded={expanded}
+                            toggleSection={toggleSection}
+                        />
+                    )}
+                    {phase >= 15 && <PhaseStub phase={phase} label={PHASES[phase-1].label} />}
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
