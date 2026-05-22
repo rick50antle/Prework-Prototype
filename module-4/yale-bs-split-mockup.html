@@ -258,53 +258,65 @@
 
         // Yale Statement of Activities — by net asset class, with operating and
         // non-operating sections plus the "Net assets released from restrictions"
-        // reclass. All in $ millions, 2025 column only (we'll add 2024 totals
-        // for the document-form view in a later phase batch).
-        const yaleSoA = {
-            operating: {
-                revenuesAndReleases: {
-                    items: [
-                        { label: 'Net tuition, room and board',                                     wo: 499,   wi: 0 },
-                        { label: 'Grant and contract income, primarily for research and training', wo: 1274,  wi: 0 },
-                        { label: 'Medical services income, net',                                   wo: 1681,  wi: 0 },
-                        { label: 'Contributions',                                                  wo: 16,    wi: 203 },
-                        { label: 'Allocation of endowment spending from non-operating',            wo: 588,   wi: 1492 },
-                        { label: 'Other investment income',                                        wo: 163,   wi: 9 },
-                        { label: 'Other income',                                                   wo: 228,   wi: 0 },
-                    ],
-                    revenuesSubtotal: { label: 'Total revenues', wo: 4450, wi: 1705 },
-                    releases:         { label: 'Net assets released from restrictions', wo: 1545, wi: -1545 },
-                    grandSubtotal:    { label: 'Total revenues and releases', wo: 5995, wi: 159 },
-                },
-                expenses: {
-                    items: [
-                        { label: 'Salaries and wages',                       wo: 2737, wi: 0 },
-                        { label: 'Employee benefits',                        wo: 862,  wi: 0 },
-                        { label: 'Depreciation, amortization and interest', wo: 505,  wi: 0 },
-                        { label: 'Other operating expenditures',             wo: 1704, wi: 0 },
-                    ],
-                    subtotal: { label: 'Total expenses', wo: 5808, wi: 0 },
-                },
-                netChange: { label: 'Increase in net assets from operating activities', wo: 187, wi: 159 },
-            },
-            nonOperating: {
-                items: [
-                    { label: 'Contributions',                                          wo: 1,    wi: 307 },
-                    { label: 'Total endowment return',                                 wo: 790,  wi: 3718 },
-                    { label: 'Allocation of endowment spending to operations',         wo: -372, wi: -1708 },
-                    { label: 'Other investment income',                                wo: 44,   wi: 0 },
-                    { label: 'Change in funding status of defined benefit plans',      wo: 156,  wi: 0 },
-                    { label: 'Other increases',                                        wo: 48,   wi: 2 },
-                ],
-                releases: { label: 'Net assets released from restrictions', wo: 70, wi: -70 },
-                netChange: { label: 'Increase in net assets from non-operating activities', wo: 738, wi: 2248 },
-            },
-            totalIncreaseYU:   { label: 'Total increase in net assets — Yale University', wo: 925,  wi: 2407, nci: 0,    total: 3332 },
-            nciChange:         { label: 'Change in noncontrolling interests',             wo: 0,    wi: 0,    nci: 1,    total: 1 },
-            totalIncrease:     { label: 'Total increase in net assets',                   wo: 925,  wi: 2407, nci: 1,    total: 3334 },
-            beginningOfYear:   { label: 'Net assets, beginning of year',                  wo: 9835, wi: 36202, nci: 3,   total: 46037 },
-            endOfYear:         { label: 'Net assets, end of year',                        wo: 10762, wi: 38609, nci: 5,  total: 49371 },
-        };
+        // reclass. All in $ millions. The PDF shows 4 columns: W/O Restrictions,
+        // W/I Restrictions, 2025 Total (= wo + wi), 2024 Total (prior year comp).
+        // Stored as a flat list of rows with role tags for the choreography:
+        //   role keys: op-rev, op-rev-subtotal, op-releases, op-rev-grand,
+        //              op-exp, op-exp-subtotal, op-net,
+        //              nonop, nonop-releases, nonop-net,
+        //              total-yu, nci, total-incl-nci, balance-beg, balance-end
+        const yaleSoARows = [
+            { type: 'section-header', label: 'Operating' },
+            { type: 'subsection-header', label: 'Revenues and releases:' },
+            { type: 'line', role: 'op-rev', label: 'Net tuition, room and board',                                     wo: 499,   wi: 0,    prior: 472 },
+            { type: 'line', role: 'op-rev', label: 'Grant and contract income, primarily for research and training', wo: 1274,  wi: 0,    prior: 1192 },
+            { type: 'line', role: 'op-rev', label: 'Medical services income, net',                                   wo: 1681,  wi: 0,    prior: 1587 },
+            { type: 'line', role: 'op-rev', label: 'Contributions',                                                  wo: 16,    wi: 203,  prior: 169 },
+            { type: 'line', role: 'op-rev', label: 'Allocation of endowment spending from non-operating',            wo: 588,   wi: 1492, prior: 1945 },
+            { type: 'line', role: 'op-rev', label: 'Other investment income',                                        wo: 163,   wi: 9,    prior: 167 },
+            { type: 'line', role: 'op-rev', label: 'Other income',                                                   wo: 228,   wi: 0,    prior: 224 },
+            { type: 'subtotal', role: 'op-rev-subtotal', label: 'Total revenues',                                    wo: 4450,  wi: 1705, prior: 5755 },
+            { type: 'line', role: 'op-releases', label: 'Net assets released from restrictions',                     wo: 1545,  wi: -1545, prior: 0 },
+            { type: 'subtotal', role: 'op-rev-grand', label: 'Total revenues and releases',                          wo: 5995,  wi: 159,  prior: 5755 },
+
+            { type: 'subsection-header', label: 'Expenses:' },
+            { type: 'line', role: 'op-exp', label: 'Salaries and wages',                       wo: 2737, wi: 0, prior: 2547 },
+            { type: 'line', role: 'op-exp', label: 'Employee benefits',                        wo: 862,  wi: 0, prior: 799 },
+            { type: 'line', role: 'op-exp', label: 'Depreciation, amortization and interest', wo: 505,  wi: 0, prior: 471 },
+            { type: 'line', role: 'op-exp', label: 'Other operating expenditures',             wo: 1704, wi: 0, prior: 1596 },
+            { type: 'subtotal', role: 'op-exp-subtotal', label: 'Total expenses',              wo: 5808, wi: 0, prior: 5412 },
+
+            { type: 'subtotal-major', role: 'op-net', label: 'Increase in net assets from operating activities', wo: 187, wi: 159, prior: 343 },
+
+            { type: 'section-header', label: 'Non-operating' },
+            { type: 'line', role: 'nonop', label: 'Contributions',                                          wo: 1,    wi: 307,   prior: 255 },
+            { type: 'line', role: 'nonop', label: 'Total endowment return',                                 wo: 790,  wi: 3718,  prior: 2271 },
+            { type: 'line', role: 'nonop', label: 'Allocation of endowment spending to operations',         wo: -372, wi: -1708, prior: -1945 },
+            { type: 'line', role: 'nonop', label: 'Other investment income',                                wo: 44,   wi: 0,     prior: 204 },
+            { type: 'line', role: 'nonop', label: 'Change in funding status of defined benefit plans',      wo: 156,  wi: 0,     prior: 128 },
+            { type: 'line', role: 'nonop', label: 'Other increases',                                        wo: 48,   wi: 2,     prior: 52 },
+            { type: 'line', role: 'nonop-releases', label: 'Net assets released from restrictions',         wo: 70,   wi: -70,   prior: 0 },
+            { type: 'subtotal-major', role: 'nonop-net', label: 'Increase in net assets from non-operating activities', wo: 738, wi: 2248, prior: 966 },
+
+            { type: 'total', role: 'total-yu', label: 'Total increase in net assets — Yale University', wo: 925,   wi: 2407,  prior: 1309 },
+            { type: 'line', role: 'nci', label: 'Change in noncontrolling interests',                   wo: 1,     wi: 0,     prior: 0 },
+            { type: 'total', role: 'total-incl-nci', label: 'Total increase in net assets',             wo: 926,   wi: 2407,  prior: 1309 },
+            { type: 'line', role: 'balance-beg', label: 'Net assets, beginning of year',                wo: 9835,  wi: 36202, prior: 44728 },
+            { type: 'total', role: 'balance-end', label: 'Net assets, end of year',                     wo: 10762, wi: 38609, prior: 46037 },
+        ];
+
+        // Subset of rows for the running-totals animation in phase 21. These are
+        // the actual movement rows (not subtotals/balances) — what trace each
+        // bucket's change. The releases reclass is shown as a single combined row.
+        const yaleSoAMovements2025 = [
+            { label: 'Operating revenues',                  wo: 4450,  wi: 1705 },
+            { label: 'Operating expenses',                  wo: -5808, wi: 0 },
+            { label: 'Releases from restrictions (op + nonop)', wo: 1615, wi: -1615 },
+            { label: 'Non-operating contributions',         wo: 1,     wi: 307 },
+            { label: 'Endowment return (net of allocation)', wo: 418,  wi: 2010 },
+            { label: 'Other non-operating (incl. pension)', wo: 248,   wi: 2 },
+            { label: 'NCI change',                          wo: 1,     wi: 0 },
+        ];
 
         // ============================================================
         // PHASE DEFINITIONS — 23 phases organized into four parts.
@@ -326,18 +338,18 @@
             { n: 12, label: 'Present the solution — Note c reconciliation', narrative: "Note c on page 27 of the financial report reconciles the two. The SFP reports \"Cash and cash equivalents\" of $765 (end) and $1,058 (beginning). The CFS adds \"Cash included in investments, at fair value\" — $61 (end) and $147 (beginning) — to arrive at $825 and $1,205. That's cash temporarily held within Yale's long-term investment pool awaiting deployment. Add it back at both dates and the two strips reconcile exactly. Each explanatory statement explains a specific change defined by its own scope. Read the labels." },
             { n: 13, label: 'Architecture restored — CFS in the middle', narrative: "Strips give way to the architecture. The 2025 CFS column slots between the two SFPs. The three sections appear — Operating $(500)M, Investing $(602)M, Financing $722M — summing to net change of $(380)M. The architecture from Module 3 holds on the $59-billion-asset university." },
             { n: 14, label: 'Explore the CFS details', narrative: "Each section is now expandable. Click any section to see the line items behind its subtotal. The Operating section reveals Yale's indirect-method reconciliation: Change in net assets $3,334M, minus Net endowment investment gain $(3,859)M (huge non-cash item — most of the endowment's gain was unrealized appreciation), minus Non-operating contributions $(308)M (those went to Financing instead), plus Depreciation $387M, plus working-capital changes — landing at Net Cash Used in Operating of $(500)M. This is Module 3.1's NI→CFO rule (\"changes in noncash assets and liabilities arising from operations\") rendered on real numbers." },
-            // Part III — Statement of Activities (stub)
-            { n: 15, label: 'Meet the Statement of Activities', narrative: "[to be built]" },
-            { n: 16, label: 'Dim 2024', narrative: "[to be built]" },
-            { n: 17, label: 'Bucket the columns by net asset class', narrative: "[to be built]" },
-            { n: 18, label: 'Operating section', narrative: "[to be built]" },
-            { n: 19, label: 'Non-operating section', narrative: "[to be built]" },
-            { n: 20, label: 'Net assets released from restrictions', narrative: "[to be built]" },
-            { n: 21, label: "Trace each bucket's change", narrative: "[to be built]" },
-            { n: 22, label: 'Architecture restored — SoA in the middle', narrative: "[to be built]" },
-            { n: 23, label: 'Explore the SoA details', narrative: "[to be built]" },
-            // Part IV — Synthesis (stub)
-            { n: 24, label: 'Synthesis — both explanatory statements at once', narrative: "[to be built]" },
+            // Part III — Statement of Activities
+            { n: 15, label: 'Meet the Statement of Activities', narrative: "Here is Yale's Statement of Activities, as presented on page 22 of the report. Four columns: Without Donor Restrictions, With Donor Restrictions, 2025 Total (= Without + With), and 2024 Total (prior-year comparison). The SoA does what CVS's Income Statement AND Statement of Shareholders' Equity do combined — for an NFP, all changes in net assets flow through this one statement. Two main sections: Operating activities (revenues − expenses) and Non-operating activities (endowment return, contributions to endowment, pension changes). Between them lives the unique NFP move — Net assets released from restrictions — that we'll surface separately." },
+            { n: 16, label: 'Dim the 2024 column', narrative: "Same move as the CFS: the 2025 columns cover the period between our two SFPs (July 1, 2024 → June 30, 2025). The 2024 column is just a prior-year comparison; it doesn't connect anything we're holding. Drop it out of focus." },
+            { n: 17, label: 'Bucket the columns by net asset class', narrative: "The 2024 column drops away. What's left is the bucket structure: Without donor restrictions, With donor restrictions, and the 2025 total. These columns match the net asset buckets we showed on each SFP. Every row of activity lands in one or both buckets." },
+            { n: 18, label: 'Operating section', narrative: "Operating revenues (tuition, grants, medical services, contributions, endowment spending allocation, other) minus operating expenses (salaries, benefits, depreciation, other) yields Increase in net assets from operating activities: $187M Without, $159M With, $347M total. Note how revenues split into both columns (research grants Without, donor-restricted contributions With, endowment spending allocation in both), while expenses are entirely Without restrictions — donor-restricted dollars don't pay salaries directly until they're released from restrictions." },
+            { n: 19, label: 'Non-operating section', narrative: "Non-operating activities — dominated by Total endowment return of $4,508M ($790M Without, $3,718M With). The bulk of Yale's endowment gain is restricted by donor intent. Add new endowment contributions ($308M, mostly With restrictions), subtract the allocation back to operations ($(2,081)M, mirroring the operating revenue line), plus pension funding and other non-op items. Result: Increase in net assets from non-operating activities of $738M Without + $2,248M With = $2,986M total. The non-op section is where Yale's endowment story lives." },
+            { n: 20, label: 'Net assets released from restrictions', narrative: "The most distinctively NFP move on the statement. As donor-imposed time or purpose restrictions expire, net assets get reclassified from With Donor Restrictions to Without Donor Restrictions. In 2025 Yale reclassified $1,545M operating + $70M non-operating = $1,615M total. With column DECREASES by $1,615M; Without column INCREASES by $1,615M. Total: zero. No new resources arrive; donor constraints simply lift on existing ones. This row exists because the SoA tracks both classes — without it, the bucket totals wouldn't reconcile to the SFP." },
+            { n: 21, label: "Trace each bucket's change", narrative: "Now watch the running totals at the bottom update as each movement row fires. Starting from June 30, 2024 balances ($9,835M Without / $36,202M With), the movements run: operating revenues + expenses, releases reclass, non-operating contributions, endowment return net of allocation, other non-operating items, NCI change. After all seven, the running totals land at the June 30, 2025 closing balances ($10,762M Without / $38,609M With) — small ($1M) discrepancies are rounding to millions." },
+            { n: 22, label: 'Architecture restored — SoA in the middle', narrative: "Strips give way to the architecture. The 2025 SoA slots into the middle between the two SFPs. Each SFP shows its bucketed net assets (Without / With); the SoA shows the path of activity that explains the bucket changes. The CFS we explored earlier still belongs in this middle column — but the SoA is the focus now." },
+            { n: 23, label: 'Explore the SoA details', narrative: "Each section is now expandable. Click any row to see the underlying movements that compose it. Operating breaks into revenues, expenses, and the operating releases. Non-operating exposes the endowment return, the allocation to operations, contributions, and other items. Together the SoA explains every dollar of net asset change between June 30, 2024 and June 30, 2025." },
+            // Part IV — Synthesis
+            { n: 24, label: 'Synthesis — both explanatory statements at once', narrative: "Both explanatory statements together. The middle column stacks them: Cash Flow Statement at top (where the cash story lives), Statement of Activities at the bottom (where all changes in net assets flow). Two statements, not three — Yale's NFP architecture combines what CVS uses three statements for. Together they explain the full path from the Beginning Statement of Financial Position to the Ending Statement of Financial Position — the architecture from Module 3, operating at the scale of a $59-billion-asset university." },
         ];
 
         // ============================================================
@@ -600,7 +612,7 @@
         // a middle column (question card or — in later phases — the
         // CFS / SoA / synthesis).
         // ============================================================
-        const CompactSplit = ({ phase, middle, sectionsVisible, expanded, toggleSection }) => {
+        const CompactSplit = ({ phase, middle, sectionsVisible, expanded, toggleSection, soaExpanded, toggleSoaSection }) => {
             const renderMiddle = () => {
                 if (middle === 'question-cash') {
                     return (
@@ -629,6 +641,18 @@
                             toggleSection={toggleSection}
                         />
                     );
+                }
+                if (middle === 'soa') {
+                    return (
+                        <SoACenter
+                            phase={phase}
+                            expanded={soaExpanded}
+                            toggleSection={toggleSoaSection}
+                        />
+                    );
+                }
+                if (middle === 'synthesis') {
+                    return <SynthesisCenter />;
                 }
                 return (
                     <div className="rounded-lg p-4 flex items-center justify-center" style={{ backgroundColor: '#fef9e7', border: `2px dashed ${colors.accent}`, color: colors.earth, minHeight: '200px' }}>
@@ -1011,6 +1035,439 @@
         };
 
         // ============================================================
+        // SoAReferenceStrip — for phases 15–21 while the SFPs step aside.
+        // Recap of bucketed net asset changes between the two SFP dates.
+        // ============================================================
+        const SoAReferenceStrip = () => {
+            const beg = compactSFP.y2024;
+            const end = compactSFP.y2025;
+            const dWO = end.naWithout - beg.naWithout;
+            const dWI = end.naWith - beg.naWith;
+            const dT  = end.totalNA - beg.totalNA;
+            const cell = (label, begV, endV, delta) => (
+                <div className="text-xs" style={{ color: colors.earthDark }}>
+                    <div className="font-bold" style={{ color: colors.primary }}>{label}</div>
+                    <div className="mono">{fmt(begV)} → {fmt(endV)}</div>
+                    <div className="mono font-bold" style={{ color: delta < 0 ? colors.error : (delta > 0 ? colors.success : colors.earth) }}>
+                        Δ {fmt(delta)}
+                    </div>
+                </div>
+            );
+            return (
+                <div className="bg-white rounded-lg p-3 mb-4 grid gap-3"
+                     style={{ border: `1px solid ${colors.earthLight}`, gridTemplateColumns: '0.7fr 1fr 1fr 1fr', alignItems: 'center' }}>
+                    <div className="text-xs">
+                        <p className="uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>What the SoA explains</p>
+                        <p className="italic" style={{ color: colors.earthDark }}>net asset changes between Jun 30, 2024 and Jun 30, 2025</p>
+                    </div>
+                    {cell('Without donor restrictions', beg.naWithout, end.naWithout, dWO)}
+                    {cell('With donor restrictions', beg.naWith, end.naWith, dWI)}
+                    {cell('Total net assets', beg.totalNA, end.totalNA, dT)}
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SoADocumentForm — Yale's Statement of Activities, multi-row,
+        // 4-column (W/O, W/I, 2025 Total, 2024 Prior) form.
+        //   collapse: 'none' (phase 15-16) | 'bucketed' (phase 17+)
+        //             — bucketed drops the prior-year column entirely.
+        //   dimmedPrior: when true, prior column dims to 15% (phase 16).
+        //   highlight: 'op' | 'nonop' | 'releases' | null (phases 18-20)
+        // ============================================================
+        const SoADocumentForm = ({ collapse, dimmedPrior, highlight }) => {
+            const showPrior = collapse !== 'bucketed';
+            const dimPrior = dimmedPrior && showPrior;
+            const isRoleHighlighted = (role) => {
+                if (!highlight) return false;
+                if (highlight === 'op')     return role && role.startsWith('op-') || role === 'op-net';
+                if (highlight === 'nonop')  return role === 'nonop' || role === 'nonop-releases' || role === 'nonop-net';
+                if (highlight === 'releases') return role === 'op-releases' || role === 'nonop-releases';
+                return false;
+            };
+            const gridCols = showPrior ? '1fr 5rem 5rem 5rem 5rem' : '1fr 5rem 5rem 5rem';
+            const gridStyle = { display: 'grid', gridTemplateColumns: gridCols, columnGap: '0.5rem', alignItems: 'baseline' };
+
+            const cellStyle = (v, isNeg) => ({
+                fontSize: '0.78rem',
+                color: (typeof v === 'number' && v < 0) || isNeg ? colors.error : 'inherit',
+            });
+            const renderCell = (v, key, dim) => {
+                if (v === 0 || v === undefined) {
+                    return <div key={key} className="text-right" style={{ color: colors.earth, fontSize: '0.78rem', opacity: dim ? 0.15 : 1, transition: 'opacity 700ms ease-out' }}>—</div>;
+                }
+                return <div key={key} className="text-right mono" style={{ ...cellStyle(v), opacity: dim ? 0.15 : 1, transition: 'opacity 700ms ease-out' }}>{fmt(v)}</div>;
+            };
+
+            const headerRow = () => (
+                <div style={{ ...gridStyle, paddingBottom: '0.25rem', borderBottom: `1px solid ${colors.earthLight}` }}>
+                    <div></div>
+                    <div className="text-right text-xs" style={{ color: colors.primary, fontWeight: 600, lineHeight: '1.15' }}>Without Donor Restrictions</div>
+                    <div className="text-right text-xs" style={{ color: colors.primary, fontWeight: 600, lineHeight: '1.15' }}>With Donor Restrictions</div>
+                    <div className="text-right text-xs" style={{ color: colors.primary, fontWeight: 600, lineHeight: '1.15' }}>2025 Total</div>
+                    {showPrior && (
+                        <div className="text-right text-xs" style={{ color: colors.primary, fontWeight: 600, lineHeight: '1.15', opacity: dimPrior ? 0.15 : 1, transition: 'opacity 700ms ease-out' }}>2024 Total</div>
+                    )}
+                </div>
+            );
+
+            const renderRow = (row, i) => {
+                if (row.type === 'section-header') {
+                    return (
+                        <div key={i} className="font-bold mt-3 mb-1" style={{ color: colors.primary, fontSize: '0.95rem' }}>{row.label}</div>
+                    );
+                }
+                if (row.type === 'subsection-header') {
+                    return (
+                        <div key={i} className="font-bold mt-2 italic" style={{ color: colors.earthDark, fontSize: '0.82rem' }}>{row.label}</div>
+                    );
+                }
+                const total = (row.wo || 0) + (row.wi || 0);
+                const highlighted = isRoleHighlighted(row.role);
+                const baseStyle = {
+                    ...gridStyle,
+                    padding: '0.1rem 0.25rem',
+                };
+                // Subtotals/totals get top borders
+                let extra = {};
+                if (row.type === 'subtotal') {
+                    extra = { marginTop: '0.25rem', paddingTop: '0.25rem', borderTop: `1px solid ${colors.earthDark}`, fontWeight: 600, color: colors.earthDark };
+                } else if (row.type === 'subtotal-major') {
+                    extra = { marginTop: '0.4rem', paddingTop: '0.4rem', borderTop: `2px solid ${colors.primary}`, fontWeight: 700, color: colors.primary };
+                } else if (row.type === 'total') {
+                    extra = { marginTop: '0.4rem', paddingTop: '0.4rem', borderTop: `2px solid ${colors.primary}`, fontWeight: 700, color: colors.primary };
+                } else {
+                    extra = { color: colors.earthDark };
+                }
+                const highlightStyle = highlighted ? {
+                    backgroundColor: '#fef9e7',
+                    borderLeft: `3px solid ${colors.accent}`,
+                    paddingLeft: '0.5rem',
+                    marginLeft: '-0.5rem',
+                    borderRadius: '0.25rem',
+                } : {};
+                return (
+                    <div key={i} style={{ ...baseStyle, ...extra, ...highlightStyle }}>
+                        <div style={{ fontSize: '0.78rem', lineHeight: '1.3' }}>{row.label}</div>
+                        {renderCell(row.wo, 'wo')}
+                        {renderCell(row.wi, 'wi')}
+                        {renderCell(total, 'total')}
+                        {showPrior && renderCell(row.prior, 'prior', dimPrior)}
+                    </div>
+                );
+            };
+
+            const maxWidth = showPrior ? '960px' : '820px';
+
+            return (
+                <div className="bg-white rounded-lg p-6 mx-auto" style={{ maxWidth, backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Yale University · Consolidated Statement of Activities</p>
+                    <h2 className="text-lg font-bold mt-1" style={{ color: colors.primary }}>Consolidated Statement of Activities</h2>
+                    <p className="text-xs italic mt-1" style={{ color: colors.earth }}>for the year ended June 30, 2025{showPrior ? ' with summarized comparative totals for the year ended June 30, 2024' : ''}</p>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>In $ millions</p>
+
+                    <div className="mt-4 text-sm">
+                        {headerRow()}
+                        {yaleSoARows.map((row, i) => renderRow(row, i))}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SoARunningTotals — phase 21. Animated trace of each bucket's
+        // change. Movement rows fire in sequence; running totals at the
+        // bottom update with every row.
+        // ============================================================
+        const SoARunningTotals = ({ movementsVisible }) => {
+            const begWO = compactSFP.y2024.naWithout;
+            const begWI = compactSFP.y2024.naWith;
+            const endWO = compactSFP.y2025.naWithout;
+            const endWI = compactSFP.y2025.naWith;
+            // Accumulate as movements come in
+            let accWO = begWO, accWI = begWI;
+            for (let i = 0; i < Math.min(movementsVisible, yaleSoAMovements2025.length); i++) {
+                accWO += (yaleSoAMovements2025[i].wo || 0);
+                accWI += (yaleSoAMovements2025[i].wi || 0);
+            }
+            const gridStyle = { display: 'grid', gridTemplateColumns: '1fr 6rem 6rem 6rem', columnGap: '0.5rem', alignItems: 'baseline' };
+            const cell = (v, key) => {
+                if (v === 0) return <div key={key} className="text-right" style={{ color: colors.earth, fontSize: '0.82rem' }}>—</div>;
+                return <div key={key} className="text-right mono" style={{ fontSize: '0.82rem', color: v < 0 ? colors.error : colors.earthDark }}>{fmt(v)}</div>;
+            };
+            const headerCell = (text) => (
+                <div className="text-right text-xs" style={{ color: colors.primary, fontWeight: 600, lineHeight: '1.15' }}>{text}</div>
+            );
+            return (
+                <div className="bg-white rounded-lg p-6 mx-auto" style={{ maxWidth: '820px', backgroundColor: colors.paper, border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider" style={{ color: colors.earth }}>Trace each bucket's change</p>
+                    <h2 className="text-lg font-bold mt-1" style={{ color: colors.primary }}>SoA movements summing to bucket changes</h2>
+                    <p className="text-xs italic mt-1 mb-3" style={{ color: colors.earth }}>year ended June 30, 2025 · in $ millions</p>
+
+                    <div style={{ ...gridStyle, paddingBottom: '0.25rem', borderBottom: `1px solid ${colors.earthLight}` }}>
+                        <div></div>
+                        {headerCell('Without')}
+                        {headerCell('With')}
+                        {headerCell('Total')}
+                    </div>
+
+                    {/* Opening balance */}
+                    <div style={{ ...gridStyle, paddingTop: '0.4rem', fontWeight: 700, color: colors.primary }}>
+                        <div style={{ fontSize: '0.85rem' }}>Net assets, beginning of year (Jun 30, 2024)</div>
+                        {cell(begWO, 'b-wo')}
+                        {cell(begWI, 'b-wi')}
+                        {cell(begWO + begWI, 'b-t')}
+                    </div>
+
+                    {/* Movement rows (sequential reveal) */}
+                    {yaleSoAMovements2025.map((m, i) => {
+                        const visible = i < movementsVisible;
+                        const total = (m.wo || 0) + (m.wi || 0);
+                        return (
+                            <div key={i} className={`socf-section-row ${visible ? 'visible' : ''}`}
+                                 style={{ ...gridStyle, padding: '0.15rem 0', color: colors.earthDark }}>
+                                <div style={{ fontSize: '0.82rem', lineHeight: '1.3' }}>{m.label}</div>
+                                {cell(m.wo, 'wo')}
+                                {cell(m.wi, 'wi')}
+                                {cell(total, 't')}
+                            </div>
+                        );
+                    })}
+
+                    {/* Running total (updates with each visible movement) */}
+                    <div style={{
+                        ...gridStyle,
+                        marginTop: '0.5rem',
+                        paddingTop: '0.4rem',
+                        borderTop: `2px dashed ${colors.accent}`,
+                        fontWeight: 700,
+                        color: colors.accent,
+                    }}>
+                        <div style={{ fontSize: '0.82rem', fontStyle: 'italic' }}>
+                            Running total ({movementsVisible} of {yaleSoAMovements2025.length})
+                        </div>
+                        <div className="text-right mono" style={{ fontSize: '0.82rem' }}>{fmt(accWO)}</div>
+                        <div className="text-right mono" style={{ fontSize: '0.82rem' }}>{fmt(accWI)}</div>
+                        <div className="text-right mono" style={{ fontSize: '0.82rem' }}>{fmt(accWO + accWI)}</div>
+                    </div>
+
+                    {/* Target — closing balance */}
+                    <div style={{ ...gridStyle, marginTop: '0.3rem', color: colors.earth, fontStyle: 'italic' }}>
+                        <div style={{ fontSize: '0.75rem' }}>Target: Net assets, end of year (Jun 30, 2025)</div>
+                        <div className="text-right mono" style={{ fontSize: '0.75rem' }}>{fmt(endWO)}</div>
+                        <div className="text-right mono" style={{ fontSize: '0.75rem' }}>{fmt(endWI)}</div>
+                        <div className="text-right mono" style={{ fontSize: '0.75rem' }}>{fmt(endWO + endWI)}</div>
+                    </div>
+                    <p className="text-xs italic mt-2" style={{ color: colors.earth, fontSize: '0.7rem' }}>
+                        Small ($1M) discrepancies between running totals and target reflect rounding to millions.
+                    </p>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SoACenter — compact SoA in the 3-up architecture grid for
+        // phases 22–23. Two-column (Without / With) view showing the
+        // movement rows and bucket totals.
+        // ============================================================
+        const SoACenter = ({ phase, expanded, toggleSection }) => {
+            const expandable = phase >= 23;
+            const begWO = compactSFP.y2024.naWithout, begWI = compactSFP.y2024.naWith;
+            const endWO = compactSFP.y2025.naWithout, endWI = compactSFP.y2025.naWith;
+            const gridStyle = { display: 'grid', gridTemplateColumns: '1.25rem 1fr 4.5rem 4.5rem 4.5rem', columnGap: '0.3rem', alignItems: 'baseline' };
+            const cell = (v, key) => {
+                if (v === 0 || v === undefined) return <div key={key} className="text-right" style={{ color: colors.earth, fontSize: '0.75rem' }}>—</div>;
+                return <div key={key} className="text-right mono" style={{ fontSize: '0.75rem', color: v < 0 ? colors.error : colors.earthDark }}>{fmt(v)}</div>;
+            };
+            const headerCell = (text) => (
+                <div className="text-right text-xs" style={{ color: colors.earth, fontWeight: 600, fontSize: '0.65rem' }}>{text}</div>
+            );
+
+            const sections = [
+                { key: 'operating', label: 'Operating activities', wo: 187, wi: 159, items: [
+                    { label: 'Operating revenues', wo: 4450, wi: 1705 },
+                    { label: 'Operating expenses', wo: -5808, wi: 0 },
+                    { label: 'Releases (operating)', wo: 1545, wi: -1545 },
+                ]},
+                { key: 'nonoperating', label: 'Non-operating activities', wo: 738, wi: 2248, items: [
+                    { label: 'Contributions', wo: 1, wi: 307 },
+                    { label: 'Total endowment return', wo: 790, wi: 3718 },
+                    { label: 'Allocation to operations', wo: -372, wi: -1708 },
+                    { label: 'Other non-operating', wo: 248, wi: 2 },
+                    { label: 'Releases (non-operating)', wo: 70, wi: -70 },
+                ]},
+                { key: 'nci', label: 'NCI change', wo: 1, wi: 0, items: [
+                    { label: 'Change in noncontrolling interests', wo: 1, wi: 0 },
+                ]},
+            ];
+
+            return (
+                <div className="rounded-lg p-4 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                    <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: colors.earth }}>From the report · page 22</p>
+                    <h3 className="text-base font-bold" style={{ color: colors.primary }}>Statement of Activities</h3>
+                    <p className="text-xs italic" style={{ color: colors.earth }}>Year ended June 30, 2025 · bucketed · in $ millions</p>
+
+                    <div className="mt-3">
+                        <div style={{ ...gridStyle, paddingBottom: '0.25rem', borderBottom: `1px solid ${colors.earthLight}` }}>
+                            <div></div>
+                            <div></div>
+                            {headerCell('Without')}
+                            {headerCell('With')}
+                            {headerCell('Total')}
+                        </div>
+
+                        {/* Opening balance */}
+                        <div style={{ ...gridStyle, paddingTop: '0.3rem', fontWeight: 700, color: colors.primary }}>
+                            <div></div>
+                            <div style={{ fontSize: '0.78rem' }}>Net assets, Jun 30, 2024</div>
+                            <div className="text-right mono" style={{ fontSize: '0.78rem' }}>{fmt(begWO)}</div>
+                            <div className="text-right mono" style={{ fontSize: '0.78rem' }}>{fmt(begWI)}</div>
+                            <div className="text-right mono" style={{ fontSize: '0.78rem' }}>{fmt(begWO + begWI)}</div>
+                        </div>
+
+                        {/* Section summary rows (expandable) */}
+                        {sections.map(s => {
+                            const total = (s.wo || 0) + (s.wi || 0);
+                            const isNeg = total < 0;
+                            return (
+                                <div key={s.key}>
+                                    <div
+                                        className={expandable ? 'socf-section-toggle' : ''}
+                                        onClick={expandable ? () => toggleSection(s.key) : undefined}
+                                        style={{
+                                            ...gridStyle,
+                                            padding: '0.3rem 0.25rem',
+                                            borderBottom: `1px solid ${colors.earthLight}`,
+                                            fontWeight: 600,
+                                            color: colors.earthDark,
+                                        }}>
+                                        <div style={{ color: colors.earth, fontSize: '0.7rem' }}>{expandable ? (expanded[s.key] ? '▼' : '▶') : ''}</div>
+                                        <div style={{ fontSize: '0.78rem' }}>{s.label}</div>
+                                        {cell(s.wo, 'wo')}
+                                        {cell(s.wi, 'wi')}
+                                        <div className="text-right mono" style={{ fontSize: '0.78rem', color: isNeg ? colors.error : colors.primary, fontWeight: 700 }}>{fmt(total)}</div>
+                                    </div>
+                                    <div className={`socf-detail-panel ${expanded[s.key] ? 'open' : ''}`}
+                                         style={{ backgroundColor: '#fafaf7', padding: expanded[s.key] ? '0.5rem 0.5rem 0.5rem 1.5rem' : '0 0.5rem 0 1.5rem' }}>
+                                        {s.items.map((item, i) => {
+                                            const t = (item.wo || 0) + (item.wi || 0);
+                                            return (
+                                                <div key={i} className="grid" style={{ gridTemplateColumns: '1fr 4.5rem 4.5rem 4.5rem', padding: '0.2rem 0', columnGap: '0.3rem' }}>
+                                                    <div style={{ color: colors.earthDark, fontSize: '0.72rem', lineHeight: '1.3' }}>{item.label}</div>
+                                                    <div className="text-right mono" style={{ fontSize: '0.72rem', color: item.wo < 0 ? colors.error : colors.earthDark }}>{item.wo === 0 ? '—' : fmt(item.wo)}</div>
+                                                    <div className="text-right mono" style={{ fontSize: '0.72rem', color: item.wi < 0 ? colors.error : colors.earthDark }}>{item.wi === 0 ? '—' : fmt(item.wi)}</div>
+                                                    <div className="text-right mono" style={{ fontSize: '0.72rem', color: t < 0 ? colors.error : colors.earthDark }}>{t === 0 ? '—' : fmt(t)}</div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        {/* Closing balance */}
+                        <div style={{ ...gridStyle, marginTop: '0.4rem', paddingTop: '0.3rem', borderTop: `2px solid ${colors.primary}`, fontWeight: 700, color: colors.primary }}>
+                            <div></div>
+                            <div style={{ fontSize: '0.78rem' }}>Net assets, Jun 30, 2025</div>
+                            <div className="text-right mono" style={{ fontSize: '0.78rem' }}>{fmt(endWO)}</div>
+                            <div className="text-right mono" style={{ fontSize: '0.78rem' }}>{fmt(endWI)}</div>
+                            <div className="text-right mono" style={{ fontSize: '0.78rem' }}>{fmt(endWO + endWI)}</div>
+                        </div>
+
+                        {expandable && (
+                            <p className="text-xs italic mt-3" style={{ color: colors.earth }}>
+                                Click any row above to expand the constituent movements.
+                            </p>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SynthesisCenter — phase 24. Middle column stacks the two
+        // explanatory statements (CFS at top, SoA at bottom) between
+        // the two compact SFPs. Only two statements, not three —
+        // Yale's NFP architecture combines what CVS uses three
+        // statements for.
+        // ============================================================
+        const SynthesisCenter = () => {
+            const begWO = compactSFP.y2024.naWithout, begWI = compactSFP.y2024.naWith;
+            const endWO = compactSFP.y2025.naWithout, endWI = compactSFP.y2025.naWith;
+            return (
+                <div className="space-y-3">
+                    {/* Mini CFS (top) */}
+                    <div className="rounded-lg p-3 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs uppercase tracking-wider font-bold" style={{ color: colors.primary }}>Cash Flow Statement (2025)</p>
+                        <div className="mt-2 text-xs" style={{ color: colors.earthDark, lineHeight: '1.5' }}>
+                            <div className="flex justify-between"><span>Net cash used in operating activities</span><span className="mono" style={{ color: colors.error }}>{fmt(-500)}</span></div>
+                            <div className="flex justify-between"><span>Net cash used in investing activities</span><span className="mono" style={{ color: colors.error }}>{fmt(-602)}</span></div>
+                            <div className="flex justify-between"><span>Net cash provided by financing activities</span><span className="mono">{fmt(722)}</span></div>
+                            <div className="flex justify-between font-bold border-t mt-1 pt-1" style={{ borderColor: colors.earthDark, color: colors.primary }}>
+                                <span>Net change in cash &amp; cash equivalents (CFS scope)</span>
+                                <span className="mono" style={{ color: colors.error }}>{fmt(-380)}</span>
+                            </div>
+                            <div className="flex justify-between text-xs italic mt-1" style={{ color: colors.earth }}>
+                                <span>− change in cash held within investments</span><span className="mono">87</span>
+                            </div>
+                            <div className="flex justify-between font-bold border-t mt-1 pt-1" style={{ borderColor: colors.earthDark, color: colors.primary }}>
+                                <span>SFP Cash &amp; cash equivalents change</span>
+                                <span className="mono" style={{ color: colors.error }}>{fmt(-293)}</span>
+                            </div>
+                        </div>
+                        <p className="text-xs italic mt-2" style={{ color: colors.earth }}>
+                            Explains the change in SFP Cash (after the cash-in-investments adjustment from Note c).
+                        </p>
+                    </div>
+
+                    {/* Mini SoA (bottom) */}
+                    <div className="rounded-lg p-3 bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs uppercase tracking-wider font-bold" style={{ color: colors.primary }}>Statement of Activities (2025)</p>
+                        <div className="mt-2 text-xs grid" style={{ gridTemplateColumns: '1fr 4.5rem 4.5rem 4.5rem', columnGap: '0.3rem', color: colors.earthDark }}>
+                            <div></div>
+                            <div className="text-right text-xs" style={{ color: colors.earth, fontSize: '0.65rem' }}>Without</div>
+                            <div className="text-right text-xs" style={{ color: colors.earth, fontSize: '0.65rem' }}>With</div>
+                            <div className="text-right text-xs" style={{ color: colors.earth, fontSize: '0.65rem' }}>Total</div>
+
+                            <div className="font-bold" style={{ color: colors.primary }}>Opening (Jun 30, 2024)</div>
+                            <div className="text-right mono">{fmt(begWO)}</div>
+                            <div className="text-right mono">{fmt(begWI)}</div>
+                            <div className="text-right mono">{fmt(begWO + begWI)}</div>
+
+                            <div>Operating activities (net)</div>
+                            <div className="text-right mono">{fmt(187)}</div>
+                            <div className="text-right mono">{fmt(159)}</div>
+                            <div className="text-right mono">{fmt(347)}</div>
+
+                            <div>Non-operating activities (net)</div>
+                            <div className="text-right mono">{fmt(738)}</div>
+                            <div className="text-right mono">{fmt(2248)}</div>
+                            <div className="text-right mono">{fmt(2986)}</div>
+
+                            <div className="italic" style={{ color: colors.earth, fontSize: '0.7rem' }}>(of which releases from restrictions, reclass)</div>
+                            <div className="text-right mono" style={{ color: colors.earth, fontSize: '0.7rem' }}>{fmt(1615)}</div>
+                            <div className="text-right mono" style={{ color: colors.earth, fontSize: '0.7rem' }}>{fmt(-1615)}</div>
+                            <div className="text-right mono" style={{ color: colors.earth, fontSize: '0.7rem' }}>—</div>
+
+                            <div>NCI change</div>
+                            <div className="text-right mono">{fmt(1)}</div>
+                            <div className="text-right mono">—</div>
+                            <div className="text-right mono">{fmt(1)}</div>
+
+                            <div className="font-bold border-t pt-1" style={{ borderColor: colors.earthDark, color: colors.primary }}>Closing (Jun 30, 2025)</div>
+                            <div className="text-right mono font-bold border-t pt-1" style={{ borderColor: colors.earthDark }}>{fmt(endWO)}</div>
+                            <div className="text-right mono font-bold border-t pt-1" style={{ borderColor: colors.earthDark }}>{fmt(endWI)}</div>
+                            <div className="text-right mono font-bold border-t pt-1" style={{ borderColor: colors.earthDark }}>{fmt(endWO + endWI)}</div>
+                        </div>
+                        <p className="text-xs italic mt-2" style={{ color: colors.earth }}>
+                            Explains the change in each net asset bucket. Closing balances match the bucketed net assets on the Ending SFP.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
         // STUB — placeholder content for phases not yet implemented.
         // ============================================================
         const PhaseStub = ({ phase, label }) => (
@@ -1032,6 +1489,10 @@
             const [sectionsVisible, setSectionsVisible] = useState(0);
             const [expanded, setExpanded] = useState({ operating: false, investing: false, financing: false });
 
+            // Phase 21 sequential reveal of SoA movement rows (running totals)
+            const [soaMovementsVisible, setSoaMovementsVisible] = useState(0);
+            const [soaExpanded, setSoaExpanded] = useState({ operating: false, nonoperating: false, nci: false });
+
             useEffect(() => {
                 if (phase === 13) {
                     setSectionsVisible(0);
@@ -1048,7 +1509,25 @@
                 }
             }, [phase]);
 
+            useEffect(() => {
+                if (phase === 21) {
+                    setSoaMovementsVisible(0);
+                    const timeouts = [];
+                    for (let i = 1; i <= yaleSoAMovements2025.length; i++) {
+                        timeouts.push(setTimeout(() => setSoaMovementsVisible(i), 400 + (i - 1) * 650));
+                    }
+                    return () => timeouts.forEach(clearTimeout);
+                }
+                if (phase >= 22) {
+                    setSoaMovementsVisible(yaleSoAMovements2025.length);
+                } else if (phase < 21) {
+                    setSoaMovementsVisible(0);
+                    setSoaExpanded({ operating: false, nonoperating: false, nci: false });
+                }
+            }, [phase]);
+
             const toggleSection = (s) => setExpanded(e => ({ ...e, [s]: !e[s] }));
+            const toggleSoaSection = (s) => setSoaExpanded(e => ({ ...e, [s]: !e[s] }));
 
             const handleHdrClick = () => {
                 const n = hdrClicks + 1; setHdrClicks(n);
@@ -1159,7 +1638,7 @@
                             Part III — Statement of Activities (15–23, doing IS + SoCE work combined, with "Net assets
                             released from restrictions" as a unique NFP beat); Part IV — Synthesis (24).
                             <br/><br/>
-                            <strong>Current state:</strong> Part I (phases 1–6) is implemented. Phases 7–24 are stubbed.
+                            <strong>Current state:</strong> All 24 phases implemented.
                         </p>
                     </div>
 
@@ -1218,7 +1697,59 @@
                             toggleSection={toggleSection}
                         />
                     )}
-                    {phase >= 15 && <PhaseStub phase={phase} label={PHASES[phase-1].label} />}
+                    {phase === 15 && (
+                        <>
+                            <SoAReferenceStrip />
+                            <SoADocumentForm collapse="none" dimmedPrior={false} highlight={null} />
+                        </>
+                    )}
+                    {phase === 16 && (
+                        <>
+                            <SoAReferenceStrip />
+                            <SoADocumentForm collapse="none" dimmedPrior={true} highlight={null} />
+                        </>
+                    )}
+                    {phase === 17 && (
+                        <>
+                            <SoAReferenceStrip />
+                            <SoADocumentForm collapse="bucketed" dimmedPrior={false} highlight={null} />
+                        </>
+                    )}
+                    {phase === 18 && (
+                        <>
+                            <SoAReferenceStrip />
+                            <SoADocumentForm collapse="bucketed" dimmedPrior={false} highlight="op" />
+                        </>
+                    )}
+                    {phase === 19 && (
+                        <>
+                            <SoAReferenceStrip />
+                            <SoADocumentForm collapse="bucketed" dimmedPrior={false} highlight="nonop" />
+                        </>
+                    )}
+                    {phase === 20 && (
+                        <>
+                            <SoAReferenceStrip />
+                            <SoADocumentForm collapse="bucketed" dimmedPrior={false} highlight="releases" />
+                        </>
+                    )}
+                    {phase === 21 && (
+                        <>
+                            <SoAReferenceStrip />
+                            <SoARunningTotals movementsVisible={soaMovementsVisible} />
+                        </>
+                    )}
+                    {(phase === 22 || phase === 23) && (
+                        <CompactSplit
+                            phase={phase}
+                            middle="soa"
+                            soaExpanded={soaExpanded}
+                            toggleSoaSection={toggleSoaSection}
+                        />
+                    )}
+                    {phase === 24 && (
+                        <CompactSplit phase={phase} middle="synthesis" />
+                    )}
 
                 </div>
             );
