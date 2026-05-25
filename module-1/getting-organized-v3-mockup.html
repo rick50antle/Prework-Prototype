@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 1.1 v3: Getting Organized (feel the volume) — Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        @keyframes systemPulse {
+            0%, 100% { opacity: 0.85; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+        }
+        .system-sorting { animation: systemPulse 1.2s ease-in-out infinite; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        /**
+         * Tutorial 1.1 v3: Getting Organized (feel the volume) — Mockup
+         * CMU METALS Accounting Prework — Module 1, Activity 1
+         *
+         * @version 3.0-mockup
+         * @date 2026-05-25
+         * @description Expanded from v2.0's 8-item list to ~42 items in 4 receipts
+         *   plus a personal pile. The student is told upfront to place a few items
+         *   in each bin — once the system has examples from each receipt and each
+         *   side of the line (plus at least one disambiguator), an "I've got the
+         *   line — sort the rest" affordance appears. Clicking it shows a
+         *   "System is sorting..." beat while remaining items stream into their
+         *   correct bins at ~50ms intervals. Pedagogical move: once the rule is
+         *   clear, the system handles the volume. Plants the systems seed
+         *   alongside v2.0's entity seed. Pre-entity language throughout; no
+         *   accounting jargon; no dollar amounts in the bins (dollar amounts
+         *   appear only on the receipts as context).
+         */
+
+        // ============================================================
+        // Color palette (project standard — do not substitute)
+        // ============================================================
+        const colors = {
+            primary: '#00356b',
+            sand: '#f5f1e8',
+            earth: '#8b7355',
+            earthLight: '#d4c4a8',
+            earthDark: '#5c4d3d',
+            accent: '#c9a227',
+            clay: '#c4a574',
+            clayLight: '#e8dcc8',
+            clayDark: '#a08050',
+            success: '#22c55e',
+            successBg: '#f0fdf4',
+            warning: '#f59e0b',
+            warningBg: '#fffbeb',
+            error: '#dc2626',
+            errorBg: '#fef2f2',
+        };
+
+        // ============================================================
+        // Glossary (plain-language only — no accounting jargon)
+        // ============================================================
+        const glossaryTerms = [
+            { term: 'Promise', definition: 'Something you have agreed to do or pay, where the doing or paying comes later.' },
+            { term: 'Bill', definition: 'A statement of money you owe to someone.' },
+            { term: 'Deposit', definition: 'Money paid in advance for something you will receive or have done.' },
+            { term: 'Customer', definition: 'Someone who pays you for goods or services.' },
+            { term: 'Supplier', definition: 'A business you buy from.' },
+        ];
+
+        // ============================================================
+        // Sound functions (Web Audio API — no files)
+        // ============================================================
+        const createAudioContext = () =>
+            new (window.AudioContext || window.webkitAudioContext)();
+
+        const playSuccessTone = () => {
+            try {
+                const ctx = createAudioContext();
+                [523.25, 659.25, 783.99].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.frequency.value = freq; osc.type = 'sine';
+                    const t = ctx.currentTime + i * 0.1;
+                    gain.gain.setValueAtTime(0, t);
+                    gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+                    osc.start(t); osc.stop(t + 0.25);
+                });
+                setTimeout(() => ctx.close(), 600);
+            } catch(e) {}
+        };
+
+        const playSoftNope = () => {
+            try {
+                const ctx = createAudioContext();
+                [400, 300].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.frequency.value = freq; osc.type = 'sine';
+                    const t = ctx.currentTime + i * 0.12;
+                    gain.gain.setValueAtTime(0, t);
+                    gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+                    osc.start(t); osc.stop(t + 0.17);
+                });
+                setTimeout(() => ctx.close(), 400);
+            } catch(e) {}
+        };
+
+        const playBuzzer = () => {
+            try {
+                const ctx = createAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = 150; osc.type = 'sawtooth';
+                const t = ctx.currentTime;
+                gain.gain.setValueAtTime(0.25, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                osc.start(t); osc.stop(t + 0.35);
+                setTimeout(() => ctx.close(), 400);
+            } catch(e) {}
+        };
+
+        const playContinueClick = () => {
+            try {
+                const ctx = createAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = 600; osc.type = 'sine';
+                const t = ctx.currentTime;
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.15, t + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+                osc.start(t); osc.stop(t + 0.1);
+                setTimeout(() => ctx.close(), 150);
+            } catch(e) {}
+        };
+
+        // ============================================================
+        // Tutorial app
+        // ============================================================
+        const TutorialApp = () => {
+            // Navigation
+            const [phase, setPhase] = useState('welcome');
+            const [step, setStep] = useState(0);
+
+            // UI overlays
+            const [showGlossary, setShowGlossary] = useState(false);
+            const [devMode, setDevMode] = useState(false);
+            const [headerClickCount, setHeaderClickCount] = useState(0);
+
+            // Phase 2: scenarios click-to-reveal
+            const [scenariosRevealed, setScenariosRevealed] = useState(0);
+
+            // Phase 3: list1 drag-and-drop + v3 autocomplete
+            const [list1DraggedId, setList1DraggedId] = useState(null);
+            const [list1Placements, setList1Placements] = useState({});
+            const [list1Feedback, setList1Feedback] = useState(null);
+            const [expandedItemId, setExpandedItemId] = useState(null);   // which item's ⓘ is open
+            const [sortingNow, setSortingNow] = useState(false);          // true during the "System is sorting" beat
+            const [autocompleteDone, setAutocompleteDone] = useState(false);  // true after the stream finishes
+
+            // Phase 4: reflect-boundary (multiple choice)
+            const [q1Selected, setQ1Selected] = useState(null);
+            const [q1Attempts, setQ1Attempts] = useState(0);
+            const [q1Submitted, setQ1Submitted] = useState(false);
+
+            // Phase 5: list2 drag-and-drop (promises sort — combined with intro)
+            const [list2DraggedId, setList2DraggedId] = useState(null);
+            const [list2Placements, setList2Placements] = useState({});
+            const [list2Feedback, setList2Feedback] = useState(null);
+
+            // Phase 8: reflect-promises (multiple choice)
+            const [q3Selected, setQ3Selected] = useState(null);
+            const [q3Attempts, setQ3Attempts] = useState(0);
+            const [q3Submitted, setQ3Submitted] = useState(false);
+
+            // Complete screen: Pacioli rabbit-hole panel (collapsible)
+            const [pacioliExpanded, setPacioliExpanded] = useState(false);
+
+            // ============================================================
+            // Constants
+            // ============================================================
+            const phaseOrder = [
+                'welcome',
+                'scenarios',
+                'list1-sort',
+                'reflect-boundary',
+                'list2-sort',
+                'reflect-promises',
+                'complete',
+            ];
+
+            const scenarios = [
+                {
+                    label: 'A customer asks',
+                    content: 'A customer walks in with a broken derailleur. "Do you have a 24mm wrench? I left mine at home." You think you do — somewhere in that toolbox under the bench, or maybe in the drawer. You start digging.',
+                },
+                {
+                    label: 'It’s not all in your head anymore',
+                    content: 'Tonight you unwrapped a fork crown race tool you bought last week — and found another one already in the drawer, still in its package. Third time this month you’ve reordered something you already had. The "keep it all in your head" system isn’t working. If you want to be more systematic, the first step is to write down what you’ve got.',
+                },
+                {
+                    label: 'What if something happened?',
+                    content: 'A fire two blocks over last night gets you thinking: you should have insurance, and you don’t really know what’s at risk. The repair stand, the parts, all the tools — it’s a lot, and you couldn’t list it from memory if you tried. To buy a sensible policy, you’d need to know what you’re protecting.',
+                },
+            ];
+
+            // v3 (location-based redesign): items live in two LOCATIONS the student
+            // can see — the rented space and home. Each location has a MIX:
+            // mostly-shop at the rented space (with a few personal "intruders" — the
+            // guitar in the corner, family photos on the wall, the phone on the
+            // workbench, the daily commuter bike up on the truing stand); mostly-
+            // personal at home (with a few shop "intruders" — the desk where the
+            // bookkeeping happens, a pedal wrench borrowed and never returned, the
+            // laptop, a misdelivered box of cables, customer receipts on the desk).
+            //
+            // The visual grouping is by LOCATION, which is misleading on purpose:
+            // location ≠ category. The student engages with each item (via an ⓘ
+            // button that reveals how the item shows up in life) and decides
+            // which side of the line it belongs on. The location-doesn't-equal-
+            // category insight is exactly what Q1's geographic distractor is
+            // testing for — and the student lives through it here.
+            //
+            // `correctZone` is the actual answer (shop or personal).
+            // `isOutOfPlace` flags items whose location doesn't match their
+            // correct zone — these are the pedagogically load-bearing ones.
+            // The autocomplete trigger requires at least one of these placed.
+
+            const rentedSpaceItems = [
+                { id: 'stand',     text: 'Bicycle repair stand',    correctZone: 'shop',     isOutOfPlace: false, info: 'Anchored to the workbench. Every repair starts here.' },
+                { id: 'wrenches',  text: 'Set of wrenches',         correctZone: 'shop',     isOutOfPlace: false, info: 'On the pegboard above the workbench. Hex, socket, open-end.' },
+                { id: 'parts',     text: 'Boxes of spare parts',    correctZone: 'shop',     isOutOfPlace: false, info: 'On the supply shelves at the back wall.' },
+                { id: 'drawer',    text: 'Cash drawer',             correctZone: 'shop',     isOutOfPlace: false, info: 'A wooden box on the workbench. Where you keep cash to make change for customers.' },
+                { id: 'cash',      text: 'Cash in the cash drawer (~$50)', correctZone: 'shop', isOutOfPlace: false, info: 'Loose bills and coins inside the drawer — to make change for customers.' },
+                { id: 'truer',     text: 'Wheel truing stand',      correctZone: 'shop',     isOutOfPlace: false, info: 'On a side bench. Holds wheels true so you can tweak the spokes.' },
+                { id: 'compressor',text: 'Air compressor',          correctZone: 'shop',     isOutOfPlace: false, info: 'In the back corner. Runs the impact tools and inflates tires.' },
+                { id: 'workbench', text: 'Workbench',               correctZone: 'shop',     isOutOfPlace: false, info: 'The main work surface. Built it yourself.' },
+                { id: 'vacuum',    text: 'Shop vacuum',             correctZone: 'shop',     isOutOfPlace: false, info: 'Under the workbench. For metal shavings and shop dust.' },
+                { id: 'washer',    text: 'Parts washer',            correctZone: 'shop',     isOutOfPlace: false, info: 'By the back door. Solvent bath for greasy parts.' },
+                { id: 'headset',   text: 'Headset press',           correctZone: 'shop',     isOutOfPlace: false, info: 'On the workbench. For pressing in bearing cups.' },
+                { id: 'grinder',   text: 'Bench grinder',           correctZone: 'shop',     isOutOfPlace: false, info: 'On a side bench. For sharpening and small metal work.' },
+                { id: 'sign',      text: 'Painted sign',            correctZone: 'shop',     isOutOfPlace: false, info: 'Above the door. Hand-painted last month.' },
+                { id: 'shelves',   text: 'Shelving units',          correctZone: 'shop',     isOutOfPlace: false, info: 'Along the back wall. Holds the parts inventory.' },
+                { id: 'display',   text: 'Display rack',            correctZone: 'shop',     isOutOfPlace: false, info: 'Near the front door. For tubes, tools, and small items you sell.' },
+                { id: 'firstaid',  text: 'First-aid kit',           correctZone: 'shop',     isOutOfPlace: false, info: 'On the wall by the workbench. For the inevitable cuts.' },
+                { id: 'torque',    text: 'Torque wrench',           correctZone: 'shop',     isOutOfPlace: false, info: 'In the tool drawer. For careful bolt tightening.' },
+                { id: 'hex',       text: 'Hex / Allen key set',     correctZone: 'shop',     isOutOfPlace: false, info: 'In the tool drawer. For pretty much every bike bolt.' },
+                { id: 'cutters',   text: 'Cable cutters',           correctZone: 'shop',     isOutOfPlace: false, info: 'Hanging on the pegboard. For trimming brake and shift cables.' },
+                { id: 'breaker',   text: 'Chain breaker',           correctZone: 'shop',     isOutOfPlace: false, info: 'In the tool drawer. For installing and removing chains.' },
+                { id: 'levers',    text: 'Tire levers',             correctZone: 'shop',     isOutOfPlace: false, info: 'In the tool drawer. For prying tires off rims.' },
+                { id: 'tires',     text: 'Crate of tires',          correctZone: 'shop',     isOutOfPlace: false, info: 'Under the workbench. Mix of road and mountain sizes.' },
+                { id: 'chains',    text: 'Box of chains',           correctZone: 'shop',     isOutOfPlace: false, info: 'On the supply shelves. Various speeds.' },
+                { id: 'pads',      text: 'Box of brake pads',       correctZone: 'shop',     isOutOfPlace: false, info: 'On the supply shelves. For rim and disc brakes.' },
+                { id: 'saddles',   text: 'Stack of saddles',        correctZone: 'shop',     isOutOfPlace: false, info: 'On the supply shelves.' },
+                { id: 'bbs',       text: 'Box of bottom brackets',  correctZone: 'shop',     isOutOfPlace: false, info: 'On the supply shelves. Assorted sizes.' },
+                // Personal "intruders" at the rented space
+                { id: 'guitar',    text: 'Acoustic guitar',         correctZone: 'personal', isOutOfPlace: true,  info: 'In the corner by the door. You play sometimes when things are slow.' },
+                { id: 'phone',     text: 'Phone',                   correctZone: 'personal', isOutOfPlace: true,  info: 'On the workbench. Your personal phone — but you also use it to look up parts.' },
+                { id: 'photos',    text: 'Family photos',           correctZone: 'personal', isOutOfPlace: true,  info: 'Taped to the wall over the workbench. From the kid’s birthday.' },
+                { id: 'commuter',  text: 'Trek 7.5',                correctZone: 'personal', isOutOfPlace: true,  info: 'On the truing stand. Your daily commuter — brought in to fix the rear wheel.' },
+            ];
+
+            const homeItems = [
+                { id: 'couch',     text: 'Couch',                   correctZone: 'personal', isOutOfPlace: false, info: 'In the living room. Where you collapse at night.' },
+                { id: 'bed',       text: 'Bed',                     correctZone: 'personal', isOutOfPlace: false, info: 'In the bedroom. Where you sleep.' },
+                { id: 'knives',    text: 'Kitchen knives',          correctZone: 'personal', isOutOfPlace: false, info: 'In the kitchen knife block.' },
+                { id: 'coffee',    text: 'Coffee maker',            correctZone: 'personal', isOutOfPlace: false, info: 'On the kitchen counter.' },
+                { id: 'books',     text: 'Books on the shelf',      correctZone: 'personal', isOutOfPlace: false, info: 'In the living room. Mix of novels and bike books.' },
+                { id: 'tv',        text: 'TV',                      correctZone: 'personal', isOutOfPlace: false, info: 'In the living room. For unwinding.' },
+                // Shop "intruders" at home
+                { id: 'desk',      text: 'Desk',                    correctZone: 'shop',     isOutOfPlace: true,  info: 'In the corner of the living room. Where you sit with the laptop in the evening to order parts and look up how-to videos.' },
+                { id: 'pedalw',    text: 'Pedal wrench',            correctZone: 'shop',     isOutOfPlace: true,  info: 'In the kitchen drawer. Borrowed from the rented space a month ago to adjust a pedal and never returned.' },
+                { id: 'laptop',    text: 'Laptop',                  correctZone: 'shop',     isOutOfPlace: true,  info: 'On the desk. For ordering parts, reviewing online manuals, watching how-to videos.' },
+                { id: 'cables',    text: 'Box of derailleur cables',correctZone: 'shop',     isOutOfPlace: true,  info: 'In the entryway. UPS dropped them here instead of at the rented space.' },
+                { id: 'receipts',  text: 'Box of customer receipts',correctZone: 'shop',     isOutOfPlace: true,  info: 'On the desk. Paperwork from last month’s repairs.' },
+            ];
+
+            // Flat lookup: every item with its correct zone, location, out-of-place flag, and info.
+            const list1Items = (() => {
+                const all = [];
+                rentedSpaceItems.forEach(it => all.push({ ...it, location: 'rentedSpace' }));
+                homeItems.forEach(it => all.push({ ...it, location: 'home' }));
+                return all;
+            })();
+
+            const q1Options = [
+                { id: 'a', text: 'Things related to your repair work' },
+                { id: 'b', text: 'Things you use for repairing bicycles' },
+                { id: 'c', text: 'Things physically in the space' },
+                { id: 'd', text: 'Things the business owns' },
+            ];
+            const Q1_CORRECT_ID = 'a';
+            const q1Hints = [
+                'Take the cash drawer. You don’t use it for repairing bicycles, and you might keep it locked at the front. Yet it’s on the list. What is it about the cash drawer that puts it there?',
+                'It’s not about where things physically are, and it’s not about one specific task. It’s about what they’re for — your repair work.',
+            ];
+            const q1Answer = 'Things related to your repair work. The cash drawer, the cash in it, the parts, the repair stand, the wrenches, the rented space — they all relate to your repair work. The guitar and the apartment don’t. That line is the most important thing you drew today.';
+
+            const list2Items = [
+                { id: 'parts',  text: 'Bought parts last week — put them on my credit card.',                          correctZone: 'shop' },
+                { id: 'dinner', text: 'Promised to take a friend to dinner — my treat.',                                correctZone: 'personal' },
+                { id: 'frame',  text: 'Promised to build a custom frame for Smith. He paid me $220 up front for it.', correctZone: 'shop' },
+            ];
+
+            const q3Options = [
+                { id: 'a', text: 'Promises related to your repair work' },
+                { id: 'b', text: 'Promises made to people connected to the business' },
+                { id: 'c', text: 'Promises the business has made' },
+            ];
+            const Q3_CORRECT_ID = 'a';
+            const q3Hints = [
+                'It’s the same line you drew the first time. The first list wasn’t about counterparties or locations or specific tasks — what was it about?',
+                'Each promise was either related to your repair work or it wasn’t — regardless of who you owe.',
+            ];
+            const q3Answer = 'Promises related to your repair work. The parts you owe for, the frame you owe Smith — both related to your repair work. The friend dinner — not. Same line as the first list, applied to promises.';
+
+            // ============================================================
+            // Derived
+            // ============================================================
+            const progress = Math.round(
+                (phaseOrder.indexOf(phase) / (phaseOrder.length - 1)) * 100
+            );
+            const list1Unplaced = list1Items.filter(item => !list1Placements[item.id]);
+            const list1AllPlaced = Object.keys(list1Placements).length === list1Items.length;
+            const list2Unplaced = list2Items.filter(item => !list2Placements[item.id]);
+            const list2AllPlaced = Object.keys(list2Placements).length === list2Items.length;
+
+            // v3 (location-based) autocomplete trigger: student has placed at least
+            // N items correctly AND at least one item in each bin AND at least one
+            // out-of-place item (personal at the rented space, or shop at home).
+            // The out-of-place requirement forces engagement with the load-bearing
+            // insight: location ≠ category.
+            const correctPlacements = list1Items.filter(
+                it => list1Placements[it.id] === it.correctZone
+            );
+            const placedInShop = list1Items.some(it => list1Placements[it.id] === 'shop');
+            const placedInPersonal = list1Items.some(it => list1Placements[it.id] === 'personal');
+            const placedAnyOutOfPlace = list1Items
+                .filter(it => it.isOutOfPlace)
+                .some(it => list1Placements[it.id] === it.correctZone);
+            const triggerMet =
+                correctPlacements.length >= 8 &&
+                placedInShop && placedInPersonal && placedAnyOutOfPlace;
+
+            // ============================================================
+            // Handlers
+            // ============================================================
+            const handleHeaderClick = () => {
+                const n = headerClickCount + 1;
+                setHeaderClickCount(n);
+                if (n >= 3) { setDevMode(!devMode); setHeaderClickCount(0); }
+            };
+
+            const handleRestart = () => {
+                playContinueClick();
+                setPhase('welcome');
+                setStep(0);
+                setScenariosRevealed(0);
+                setList1DraggedId(null); setList1Placements({}); setList1Feedback(null);
+                setExpandedItemId(null); setSortingNow(false); setAutocompleteDone(false);
+                setQ1Selected(null); setQ1Attempts(0); setQ1Submitted(false);
+                setList2DraggedId(null); setList2Placements({}); setList2Feedback(null);
+                setQ3Selected(null); setQ3Attempts(0); setQ3Submitted(false);
+                setPacioliExpanded(false);
+            };
+
+            // v3 autocomplete handler — animates remaining items into their correct
+            // bins at ~50ms stagger while the "System is sorting" beat plays.
+            const handleSystemSort = () => {
+                if (sortingNow || autocompleteDone) return;
+                playContinueClick();
+                setSortingNow(true);
+                const unplaced = list1Items.filter(it => !list1Placements[it.id]);
+                unplaced.forEach((item, i) => {
+                    setTimeout(() => {
+                        setList1Placements(prev => ({ ...prev, [item.id]: item.correctZone }));
+                        if (i === unplaced.length - 1) {
+                            // Brief pause so the last item is visible before clearing the beat
+                            setTimeout(() => {
+                                setSortingNow(false);
+                                setAutocompleteDone(true);
+                                playSuccessTone();
+                            }, 250);
+                        }
+                    }, i * 50);
+                });
+            };
+
+            const handleList1Drop = (zoneId) => {
+                if (!list1DraggedId) return;
+                const item = list1Items.find(i => i.id === list1DraggedId);
+                const correct = item.correctZone === zoneId;
+                setList1Feedback(correct ? 'correct' : 'wrong');
+                if (correct) {
+                    setList1Placements({ ...list1Placements, [list1DraggedId]: zoneId });
+                    playSuccessTone();
+                } else {
+                    playSoftNope();
+                }
+                setList1DraggedId(null);
+                setTimeout(() => setList1Feedback(null), 800);
+            };
+
+            const handleList2Drop = (zoneId) => {
+                if (!list2DraggedId) return;
+                const item = list2Items.find(i => i.id === list2DraggedId);
+                const correct = item.correctZone === zoneId;
+                setList2Feedback(correct ? 'correct' : 'wrong');
+                if (correct) {
+                    setList2Placements({ ...list2Placements, [list2DraggedId]: zoneId });
+                    playSuccessTone();
+                } else {
+                    playSoftNope();
+                }
+                setList2DraggedId(null);
+                setTimeout(() => setList2Feedback(null), 800);
+            };
+
+            const handleQ1Select = (id) => {
+                if (q1Submitted) return;
+                setQ1Selected(id);
+                if (id === Q1_CORRECT_ID) {
+                    playSuccessTone(); setQ1Submitted(true);
+                } else {
+                    const n = q1Attempts + 1; setQ1Attempts(n);
+                    if (n >= 3) { playBuzzer(); setQ1Submitted(true); }
+                    else { playSoftNope(); }
+                }
+            };
+
+            const handleQ3Select = (id) => {
+                if (q3Submitted) return;
+                setQ3Selected(id);
+                if (id === Q3_CORRECT_ID) {
+                    playSuccessTone(); setQ3Submitted(true);
+                } else {
+                    const n = q3Attempts + 1; setQ3Attempts(n);
+                    if (n >= 3) { playBuzzer(); setQ3Submitted(true); }
+                    else { playSoftNope(); }
+                }
+            };
+
+            // ============================================================
+            // Reusable components
+            // ============================================================
+            const Header = () => (
+                <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary }}>
+                    <div className="flex justify-between items-start">
+                        <div onClick={handleHeaderClick} style={{ cursor: 'pointer' }}>
+                            <h1 className="text-lg font-bold text-white">Tutorial 1.1: Getting Organized</h1>
+                            <p className="text-sm mt-1" style={{ color: colors.earthLight }}>
+                                Bicycle repairs &middot; ~10 min
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <a
+                                href="../Module-1-Redesign/index-mockup.html"
+                                className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer no-underline inline-flex items-center justify-center"
+                                title="Return to Main"
+                                aria-label="Return to Main"
+                            >🏠</a>
+                            <button
+                                onClick={() => setShowGlossary(true)}
+                                className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                title="Glossary"
+                                aria-label="Open glossary"
+                            >📖</button>
+                            <button
+                                onClick={handleRestart}
+                                className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                title="Restart tutorial"
+                                aria-label="Restart tutorial"
+                            >↺</button>
+                        </div>
+                    </div>
+
+                    <div className="mt-4">
+                        <div className="flex justify-between text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                            <span>Progress</span>
+                            <span>{progress}%</span>
+                        </div>
+                        <div
+                            className="h-2 rounded-full"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                            role="progressbar"
+                            aria-valuenow={progress}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                        >
+                            <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${progress}%`, backgroundColor: colors.accent }}
+                            />
+                        </div>
+                    </div>
+
+                    {devMode && (
+                        <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                            <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>Dev: skip to phase</p>
+                            <div className="flex flex-wrap gap-1">
+                                {phaseOrder.map(p => (
+                                    <button
+                                        key={p}
+                                        onClick={() => { setStep(0); setPhase(p); }}
+                                        className="px-2 py-1 rounded text-xs border-0 cursor-pointer"
+                                        style={{
+                                            backgroundColor: phase === p ? 'white' : 'rgba(255,255,255,0.2)',
+                                            color: phase === p ? colors.primary : 'white'
+                                        }}
+                                    >{p}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            const NarrativeBlock = ({ children }) => (
+                <div
+                    className="p-4 rounded-lg mb-4 italic"
+                    style={{
+                        backgroundColor: colors.sand,
+                        borderLeft: `4px solid ${colors.accent}`,
+                        color: '#374151'
+                    }}
+                >
+                    {children}
+                </div>
+            );
+
+            const InsightPanel = ({ title, children }) => (
+                <div
+                    className="p-4 rounded-lg border-2 mb-4"
+                    style={{ backgroundColor: colors.successBg, borderColor: colors.success }}
+                >
+                    <div className="flex items-start gap-2">
+                        <span className="text-lg mt-0.5 flex-shrink-0" style={{ color: colors.success }}>✓</span>
+                        <div>
+                            {title && (
+                                <p className="font-bold mb-2" style={{ color: colors.success }}>{title}</p>
+                            )}
+                            <div style={{ color: '#166534' }}>{children}</div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const KeyInsightBox = ({ children }) => (
+                <div
+                    className="p-4 rounded-lg border-2 mb-4"
+                    style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}
+                >
+                    <div className="flex items-start gap-3">
+                        <span className="text-lg flex-shrink-0 mt-0.5" style={{ color: colors.accent }}>💡</span>
+                        <div style={{ color: colors.earthDark }}>{children}</div>
+                    </div>
+                </div>
+            );
+
+            const InfoCard = ({ title, children }) => (
+                <div
+                    className="rounded-lg border-2 overflow-hidden mb-4"
+                    style={{ backgroundColor: colors.clayLight, borderColor: colors.clayDark }}
+                >
+                    {title && (
+                        <div
+                            className="py-2 px-4 font-bold text-sm border-b-2"
+                            style={{
+                                backgroundColor: colors.clay,
+                                borderColor: colors.clayDark,
+                                color: colors.earthDark
+                            }}
+                        >
+                            {title}
+                        </div>
+                    )}
+                    <div className="p-4" style={{ color: colors.earthDark }}>
+                        {children}
+                    </div>
+                </div>
+            );
+
+            const ContinueButton = ({ onClick, children = 'Continue' }) => (
+                <button
+                    onClick={() => { playContinueClick(); onClick(); }}
+                    className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 border-0 cursor-pointer"
+                    style={{ backgroundColor: colors.primary }}
+                >
+                    {children} →
+                </button>
+            );
+
+            const GlossaryModal = () => (
+                <div
+                    className="fixed inset-0 flex items-center justify-center p-4 z-50"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                >
+                    <div className="bg-white rounded-xl max-w-md w-full" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+                        <div
+                            className="p-4 border-b flex justify-between items-center sticky top-0 bg-white"
+                            style={{ borderColor: colors.earthLight }}
+                        >
+                            <h3 className="font-bold" style={{ color: colors.primary }}>📖 Glossary</h3>
+                            <button
+                                onClick={() => setShowGlossary(false)}
+                                className="text-gray-500 hover:text-gray-700 text-2xl font-light border-0 bg-transparent cursor-pointer"
+                                aria-label="Close glossary"
+                            >✕</button>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            {glossaryTerms.map((item, i) => (
+                                <div key={i}>
+                                    <p className="font-semibold text-sm" style={{ color: colors.primary }}>{item.term}</p>
+                                    <p className="text-xs mt-0.5" style={{ color: colors.earthDark }}>{item.definition}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // ============================================================
+            // Phase renderers
+            // ============================================================
+            const renderWelcome = () => (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-2xl mx-auto">
+                        <Header />
+
+                        <NarrativeBlock>
+                            You&rsquo;ve been doing bicycle repairs for a few months. Things have been going so well
+                            you even rented a small space for the activity. Tools are scattered, parts are stacked in
+                            corners, and you have been keeping most things in your head. It isn&rsquo;t really working
+                            anymore. You want to be more systematic.
+                        </NarrativeBlock>
+
+                        <div
+                            className="rounded-lg p-4 border-2 mb-4"
+                            style={{ backgroundColor: 'white', borderColor: colors.earthLight }}
+                        >
+                            <h3 className="font-bold mb-3" style={{ color: colors.primary }}>
+                                What You&rsquo;ll Discover
+                            </h3>
+                            <ul className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.accent }}>→</span>
+                                    Why getting organized requires writing things down.
+                                </li>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.accent }}>→</span>
+                                    That making a list naturally draws a line &mdash; between what&rsquo;s related to your repair work and what isn&rsquo;t.
+                                </li>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.accent }}>→</span>
+                                    That you&rsquo;ll need a second list &mdash; for promises, not just things.
+                                </li>
+                            </ul>
+                        </div>
+
+                        <ContinueButton onClick={() => { setStep(0); setPhase('scenarios'); }}>
+                            Begin Tutorial
+                        </ContinueButton>
+                    </div>
+                </div>
+            );
+
+            const renderScenarios = () => (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-2xl mx-auto">
+                        <Header />
+
+                        <NarrativeBlock>
+                            Three things happened this week. None of them went smoothly.
+                        </NarrativeBlock>
+
+                        <div className="space-y-3 mb-4">
+                            {scenarios.map((s, i) => (
+                                <div key={i}>
+                                    {i < scenariosRevealed ? (
+                                        <div
+                                            className="p-3 rounded-lg border-2 text-sm"
+                                            style={{ backgroundColor: 'white', borderColor: colors.earthLight }}
+                                        >
+                                            <p className="font-bold mb-1" style={{ color: colors.primary }}>{s.label}</p>
+                                            <p style={{ color: colors.earthDark }}>{s.content}</p>
+                                        </div>
+                                    ) : i === scenariosRevealed ? (
+                                        <button
+                                            onClick={() => { playContinueClick(); setScenariosRevealed(scenariosRevealed + 1); }}
+                                            className="w-full p-3 rounded-lg border-2 text-sm font-medium text-left cursor-pointer"
+                                            style={{
+                                                borderColor: colors.primary,
+                                                color: colors.primary,
+                                                backgroundColor: 'white'
+                                            }}
+                                        >
+                                            Reveal: {s.label} →
+                                        </button>
+                                    ) : (
+                                        <div
+                                            className="p-3 rounded-lg border-2 text-sm"
+                                            style={{ borderColor: colors.earthLight, backgroundColor: colors.sand, color: colors.earth }}
+                                        >
+                                            [Locked]
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {scenariosRevealed >= scenarios.length && (
+                            <>
+                                <InsightPanel>
+                                    Three different moments, the same realization: there&rsquo;s no list. Time to make one.
+                                </InsightPanel>
+                                <ContinueButton onClick={() => { setStep(0); setPhase('list1-sort'); }}>
+                                    Let&rsquo;s make one
+                                </ContinueButton>
+                            </>
+                        )}
+                    </div>
+                </div>
+            );
+
+            const renderList1Sort = () => {
+                const zoneInfo = {
+                    shop: { label: 'Things related to your repair work' },
+                    personal: { label: 'Things unrelated to your repair work' },
+                };
+                const interactionDisabled = sortingNow || autocompleteDone;
+
+                // Row used inside each location's list. Item name + ⓘ button;
+                // clicking ⓘ expands the row inline to show how the item shows up
+                // in your life (the "your use" data). Row is draggable.
+                const ItemRow = ({ item }) => {
+                    if (list1Placements[item.id]) return null;
+                    const isExpanded = expandedItemId === item.id;
+                    return (
+                        <div className="mb-1">
+                            <div
+                                draggable={!interactionDisabled}
+                                onDragStart={() => setList1DraggedId(item.id)}
+                                className="flex items-center justify-between gap-2 px-2 py-1 rounded select-none"
+                                style={{
+                                    border: `1px solid ${colors.primary}`,
+                                    backgroundColor: list1DraggedId === item.id ? colors.sand : 'white',
+                                    color: colors.primary,
+                                    cursor: interactionDisabled ? 'default' : 'grab',
+                                }}
+                            >
+                                <span className="text-xs font-medium">{item.text}</span>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedItemId(isExpanded ? null : item.id);
+                                    }}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onDragStart={(e) => e.stopPropagation()}
+                                    className="text-xs leading-none border-0 bg-transparent cursor-pointer ml-1 px-1"
+                                    style={{ color: isExpanded ? colors.accent : colors.earth }}
+                                    title="What is this?"
+                                    aria-label="More info"
+                                >ⓘ</button>
+                            </div>
+                            {isExpanded && (
+                                <div
+                                    className="px-2 py-1 text-xs italic"
+                                    style={{
+                                        color: colors.earthDark,
+                                        backgroundColor: '#fffbe6',
+                                        borderLeft: `2px solid ${colors.accent}`,
+                                    }}
+                                >
+                                    {item.info}
+                                </div>
+                            )}
+                        </div>
+                    );
+                };
+
+                const LocationSection = ({ label, sub, items }) => {
+                    const remaining = items.filter(it => !list1Placements[it.id]);
+                    return (
+                        <div
+                            className="rounded-lg p-3 mb-3"
+                            style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}
+                        >
+                            <p className="text-xs font-bold uppercase tracking-wide" style={{ color: colors.primary }}>
+                                {label}
+                            </p>
+                            {sub && (
+                                <p className="text-xs italic mb-2" style={{ color: colors.earth }}>{sub}</p>
+                            )}
+                            <div className="mt-2">
+                                {remaining.length === 0 ? (
+                                    <p className="text-xs italic" style={{ color: colors.earth }}>(all placed)</p>
+                                ) : (
+                                    remaining.map(it => <ItemRow key={it.id} item={it} />)
+                                )}
+                            </div>
+                        </div>
+                    );
+                };
+
+                return (
+                    <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                        <div className="p-4 max-w-5xl mx-auto">
+                            <Header />
+
+                            <NarrativeBlock>
+                                Let&rsquo;s make that list. <strong>First, stand in the middle of the rented space
+                                and look around.</strong> Most of what you see is for the work &mdash; but a few
+                                personal things have crept in. <strong>Then walk home and look around the
+                                apartment.</strong> Mostly personal &mdash; but some work things have ended up
+                                there too.
+                                <br /><br />
+                                Click the <strong>ⓘ</strong> on any item to see how it shows up in your life, then
+                                drag it to the right bin. Place a few in each bin to show the line &mdash; once
+                                it&rsquo;s clear, the system will sort the rest.
+                            </NarrativeBlock>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Left column: two location-based source areas, stacked */}
+                                {!autocompleteDone && (
+                                    <div>
+                                        <LocationSection
+                                            label="At the rented space"
+                                            sub="Looking around the room from the middle."
+                                            items={rentedSpaceItems}
+                                        />
+                                        <LocationSection
+                                            label="At home"
+                                            sub="Looking around the apartment."
+                                            items={homeItems}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Right column: bins (sticky so they stay visible while scrolling the source) */}
+                                <div className={autocompleteDone ? "md:col-span-2" : ""}>
+                                    <div className="md:sticky" style={{ top: '0.5rem' }}>
+                                        {['shop', 'personal'].map(zoneId => {
+                                const itemsInZone = list1Items.filter(it => list1Placements[it.id] === zoneId);
+                                return (
+                                    <div
+                                        key={zoneId}
+                                        onDragOver={(e) => e.preventDefault()}
+                                        onDrop={() => handleList1Drop(zoneId)}
+                                        className="min-h-20 p-3 rounded-lg border-2 border-dashed mb-3"
+                                        style={{
+                                            borderColor: list1Feedback === 'correct' ? colors.success
+                                                : list1Feedback === 'wrong' ? colors.error
+                                                : colors.earthLight,
+                                            backgroundColor: zoneId === 'shop' ? colors.clayLight : colors.sand,
+                                        }}
+                                    >
+                                        <p className="text-sm font-bold mb-2" style={{ color: colors.earthDark }}>
+                                            {zoneInfo[zoneId].label}
+                                            <span className="ml-2 text-xs font-normal" style={{ color: colors.earth }}>
+                                                ({itemsInZone.length} placed)
+                                            </span>
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {itemsInZone.map(item => (
+                                                <div
+                                                    key={item.id}
+                                                    className="px-2 py-1 rounded text-xs font-medium"
+                                                    style={{
+                                                        backgroundColor: colors.successBg,
+                                                        color: '#166534',
+                                                        border: `1px solid ${colors.success}`,
+                                                    }}
+                                                >
+                                                    {item.text} ✓
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                                    </div>{/* close md:sticky */}
+                                </div>{/* close right column */}
+                            </div>{/* close grid */}
+
+                            {/* Trigger affordance: appears only when conditions met, before autocomplete */}
+                            {triggerMet && !sortingNow && !autocompleteDone && (
+                                <div className="rounded-lg p-3 mb-3 border-2"
+                                     style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}>
+                                    <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                                        <strong>The line looks clear.</strong> You&rsquo;ve placed examples from both
+                                        sides of the line, including at least one item whose location didn&rsquo;t
+                                        match where it belongs. The system can take it from here.
+                                    </p>
+                                    <button
+                                        onClick={handleSystemSort}
+                                        className="w-full py-3 rounded-lg font-bold text-white border-0 cursor-pointer"
+                                        style={{ backgroundColor: colors.primary }}
+                                    >
+                                        Sort the rest →
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* "System is sorting" beat */}
+                            {sortingNow && (
+                                <div
+                                    className="rounded-lg p-4 mb-3 system-sorting"
+                                    style={{ backgroundColor: colors.primary, color: 'white', textAlign: 'center' }}
+                                >
+                                    <p className="text-base font-bold">⚙ System is sorting…</p>
+                                    <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.8)' }}>
+                                        Applying the line you drew to the remaining items.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Progress-toward-trigger hint while not yet met */}
+                            {!triggerMet && !sortingNow && !autocompleteDone && (
+                                <div className="rounded-lg p-3 mb-3 text-xs"
+                                     style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}`, color: colors.earthDark }}>
+                                    <p className="font-bold mb-1" style={{ color: colors.primary }}>
+                                        To unlock the system sort, place:
+                                    </p>
+                                    <ul className="space-y-0.5">
+                                        <li className="flex gap-2">
+                                            <span>{correctPlacements.length >= 8 ? '✓' : '·'}</span>
+                                            <span>at least 8 items in the right bin ({correctPlacements.length}/8 so far)</span>
+                                        </li>
+                                        <li className="flex gap-2">
+                                            <span>{placedInShop ? '✓' : '·'}</span>
+                                            <span>at least one item in the shop-related bin</span>
+                                        </li>
+                                        <li className="flex gap-2">
+                                            <span>{placedInPersonal ? '✓' : '·'}</span>
+                                            <span>at least one item in the unrelated bin</span>
+                                        </li>
+                                        <li className="flex gap-2">
+                                            <span>{placedAnyOutOfPlace ? '✓' : '·'}</span>
+                                            <span>at least one item whose location didn&rsquo;t match where it belongs</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            )}
+
+                            {autocompleteDone && (
+                                <>
+                                    <InsightPanel>
+                                        Forty-some items, two bins. You placed maybe a handful; the system did the
+                                        rest once it had the line. That move &mdash; <em>once the rule is clear, the
+                                        system handles the volume</em> &mdash; is what you&rsquo;re going to feel
+                                        again and again across this prework.
+                                    </InsightPanel>
+                                    <ContinueButton onClick={() => { setStep(0); setPhase('reflect-boundary'); }} />
+                                </>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderReflectBoundary = () => (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-2xl mx-auto">
+                        <Header />
+
+                        <NarrativeBlock>
+                            Look at what you just did. Your guitar ended up off the list &mdash; and the cash drawer
+                            ended up on it. You drew a line. Which of these best describes it?
+                        </NarrativeBlock>
+
+                        <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                            <p className="text-sm mb-3 font-medium" style={{ color: colors.earthDark }}>
+                                Which of these best describes what&rsquo;s on the list you kept?
+                            </p>
+                            <div className="space-y-2">
+                                {q1Options.map(opt => {
+                                    const isCorrect = opt.id === Q1_CORRECT_ID;
+                                    const isSelected = q1Selected === opt.id;
+                                    let borderColor = colors.earthLight;
+                                    let bg = 'white';
+                                    if (q1Submitted && isCorrect) { borderColor = colors.success; bg = colors.successBg; }
+                                    else if (q1Submitted && isSelected) { borderColor = colors.error; bg = colors.errorBg; }
+                                    else if (isSelected) { borderColor = colors.primary; bg = colors.sand; }
+
+                                    return (
+                                        <button
+                                            key={opt.id}
+                                            onClick={() => handleQ1Select(opt.id)}
+                                            disabled={q1Submitted}
+                                            className="w-full p-3 rounded-lg border-2 text-left cursor-pointer disabled:cursor-default"
+                                            style={{ borderColor, backgroundColor: bg, color: colors.earthDark }}
+                                        >
+                                            <span className="font-bold mr-2" style={{ color: colors.primary }}>
+                                                {opt.id.toUpperCase()}.
+                                            </span>
+                                            {opt.text}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {q1Attempts > 0 && !q1Submitted && (
+                                <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: colors.warningBg }}>
+                                    <p className="text-sm" style={{ color: '#92400e' }}>
+                                        <strong>Hint {q1Attempts}/2:</strong> {q1Hints[q1Attempts - 1]}
+                                    </p>
+                                </div>
+                            )}
+                            {q1Submitted && q1Attempts < 3 && (
+                                <p className="mt-3 text-sm font-medium" style={{ color: colors.success }}>
+                                    ✓ Right.
+                                </p>
+                            )}
+                            {q1Submitted && q1Attempts >= 3 && (
+                                <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: colors.warningBg }}>
+                                    <p className="text-sm font-medium" style={{ color: '#92400e' }}>
+                                        Here&rsquo;s what we were looking for:
+                                    </p>
+                                    <p className="text-sm mt-1" style={{ color: '#92400e' }}>{q1Answer}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {q1Submitted && (
+                            <>
+                                <KeyInsightBox>
+                                    <p>
+                                        You drew a line: things related to your repair work go on the list. Things unrelated
+                                        &mdash; even if they&rsquo;re useful, even if they&rsquo;re yours &mdash; stay off.
+                                        That line is the most important thing you drew today. Next, you&rsquo;ll see whether
+                                        the same line works on a second list &mdash; a different kind of list.
+                                    </p>
+                                </KeyInsightBox>
+                                <ContinueButton onClick={() => { setStep(0); setPhase('list2-sort'); }} />
+                            </>
+                        )}
+                    </div>
+                </div>
+            );
+
+            const renderList2Sort = () => {
+                const zoneInfo = {
+                    shop: { label: 'Promises related to your repair work' },
+                    personal: { label: 'Promises unrelated to your repair work' },
+                };
+
+                return (
+                    <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                        <div className="p-4 max-w-2xl mx-auto">
+                            <Header />
+
+                            <NarrativeBlock>
+                                That&rsquo;s the first list &mdash; things related to your repair work. But there&rsquo;s
+                                another kind of thing worth tracking: <em>promises</em>. Not things you use &mdash; things
+                                you&rsquo;ve agreed to do or pay, where the doing or paying comes later. Three of them
+                                come to mind from the last week or two. Some are related to your repair work; some aren&rsquo;t.
+                                Sort them out.
+                            </NarrativeBlock>
+
+                            {list2Unplaced.length > 0 && (
+                                <div className="mb-4">
+                                    <p className="text-sm font-medium mb-2" style={{ color: colors.earthDark }}>
+                                        Drag each promise into the right bin:
+                                    </p>
+                                    <div
+                                        className="p-3 rounded-lg border-2 flex flex-wrap gap-2"
+                                        style={{ borderColor: colors.earthLight, backgroundColor: 'white' }}
+                                    >
+                                        {list2Unplaced.map(item => (
+                                            <div
+                                                key={item.id}
+                                                draggable
+                                                onDragStart={() => setList2DraggedId(item.id)}
+                                                className="px-3 py-2 rounded-lg border-2 font-medium text-sm select-none"
+                                                style={{
+                                                    borderColor: colors.primary,
+                                                    backgroundColor: list2DraggedId === item.id ? colors.sand : 'white',
+                                                    color: colors.primary,
+                                                    cursor: 'grab',
+                                                    maxWidth: '100%',
+                                                }}
+                                            >
+                                                {item.text}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {['shop', 'personal'].map(zoneId => (
+                                <div
+                                    key={zoneId}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={() => handleList2Drop(zoneId)}
+                                    className="min-h-20 p-3 rounded-lg border-2 border-dashed mb-3"
+                                    style={{
+                                        borderColor: list2Feedback === 'correct' ? colors.success
+                                            : list2Feedback === 'wrong' ? colors.error
+                                            : colors.earthLight,
+                                        backgroundColor: zoneId === 'shop' ? colors.clayLight : colors.sand,
+                                    }}
+                                >
+                                    <p className="text-sm font-bold mb-2" style={{ color: colors.earthDark }}>
+                                        {zoneInfo[zoneId].label}
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {list2Items
+                                            .filter(item => list2Placements[item.id] === zoneId)
+                                            .map(item => (
+                                                <div
+                                                    key={item.id}
+                                                    className="px-3 py-2 rounded-lg text-sm font-medium"
+                                                    style={{ backgroundColor: colors.successBg, color: '#166534', border: `1px solid ${colors.success}` }}
+                                                >
+                                                    {item.text} ✓
+                                                </div>
+                                            ))
+                                        }
+                                    </div>
+                                </div>
+                            ))}
+
+                            {list2AllPlaced && (
+                                <>
+                                    <InsightPanel>
+                                        Three promises, two bins. Now take a look at what you just did.
+                                    </InsightPanel>
+                                    <ContinueButton onClick={() => { setStep(0); setPhase('reflect-promises'); }} />
+                                </>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderReflectPromises = () => (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-2xl mx-auto">
+                        <Header />
+
+                        <NarrativeBlock>
+                            Two of the three promises ended up on the repair-related list. One didn&rsquo;t.
+                            Now look at what you just did.
+                        </NarrativeBlock>
+
+                        <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                            <p className="text-sm mb-3 font-medium" style={{ color: colors.earthDark }}>
+                                Which of these best describes what&rsquo;s on the promises list you kept?
+                            </p>
+                            <div className="space-y-2">
+                                {q3Options.map(opt => {
+                                    const isCorrect = opt.id === Q3_CORRECT_ID;
+                                    const isSelected = q3Selected === opt.id;
+                                    let borderColor = colors.earthLight;
+                                    let bg = 'white';
+                                    if (q3Submitted && isCorrect) { borderColor = colors.success; bg = colors.successBg; }
+                                    else if (q3Submitted && isSelected) { borderColor = colors.error; bg = colors.errorBg; }
+                                    else if (isSelected) { borderColor = colors.primary; bg = colors.sand; }
+
+                                    return (
+                                        <button
+                                            key={opt.id}
+                                            onClick={() => handleQ3Select(opt.id)}
+                                            disabled={q3Submitted}
+                                            className="w-full p-3 rounded-lg border-2 text-left cursor-pointer disabled:cursor-default"
+                                            style={{ borderColor, backgroundColor: bg, color: colors.earthDark }}
+                                        >
+                                            <span className="font-bold mr-2" style={{ color: colors.primary }}>
+                                                {opt.id.toUpperCase()}.
+                                            </span>
+                                            {opt.text}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {q3Attempts > 0 && !q3Submitted && (
+                                <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: colors.warningBg }}>
+                                    <p className="text-sm" style={{ color: '#92400e' }}>
+                                        <strong>Hint {q3Attempts}/2:</strong> {q3Hints[q3Attempts - 1]}
+                                    </p>
+                                </div>
+                            )}
+                            {q3Submitted && q3Attempts < 3 && (
+                                <p className="mt-3 text-sm font-medium" style={{ color: colors.success }}>
+                                    ✓ Right.
+                                </p>
+                            )}
+                            {q3Submitted && q3Attempts >= 3 && (
+                                <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: colors.warningBg }}>
+                                    <p className="text-sm font-medium" style={{ color: '#92400e' }}>
+                                        Here&rsquo;s what we were looking for:
+                                    </p>
+                                    <p className="text-sm mt-1" style={{ color: '#92400e' }}>{q3Answer}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {q3Submitted && (
+                            <>
+                                <KeyInsightBox>
+                                    <p>
+                                        Same line, second time. You drew it between things related to your repair work and
+                                        things unrelated. Now you&rsquo;ve drawn it again &mdash; between promises related
+                                        to your repair work and promises unrelated. The line is the same. It works in both places.
+                                    </p>
+                                </KeyInsightBox>
+                                <ContinueButton onClick={() => { setStep(0); setPhase('complete'); }} />
+                            </>
+                        )}
+                    </div>
+                </div>
+            );
+
+            const renderComplete = () => (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-2xl mx-auto">
+                        <Header />
+
+                        <div className="text-center mb-6">
+                            <div
+                                className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
+                                style={{ backgroundColor: colors.accent }}
+                            >
+                                <span className="text-4xl">🏆</span>
+                            </div>
+                            <h2 className="text-2xl font-bold" style={{ color: colors.primary }}>
+                                Tutorial Complete!
+                            </h2>
+                        </div>
+
+                        <div
+                            className="rounded-lg p-4 mb-4 border-2"
+                            style={{ backgroundColor: 'white', borderColor: colors.success }}
+                        >
+                            <h3 className="font-bold mb-3" style={{ color: colors.primary }}>
+                                What You Discovered
+                            </h3>
+                            <ol className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.success }}>✓</span>
+                                    Getting organized requires keeping lists &mdash; more than one.
+                                </li>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.success }}>✓</span>
+                                    Making a list draws a line: things related to your repair work go on it; things unrelated stay off.
+                                </li>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.success }}>✓</span>
+                                    Things and promises each need their own list &mdash; two lists in all.
+                                </li>
+                                <li className="flex gap-2">
+                                    <span style={{ color: colors.success }}>✓</span>
+                                    The same line works for both lists.
+                                </li>
+                            </ol>
+                        </div>
+
+                        <KeyInsightBox>
+                            <p className="font-semibold mb-2">Why these lists, and not others</p>
+                            <p>
+                                You didn&rsquo;t draw the line for the sake of drawing it. You drew it because the goal
+                                was to get your bike repair activities in order &mdash; to stop losing track of tools,
+                                to know what you owe and to whom, to know what&rsquo;s at risk. Your guitar, your apartment,
+                                the friend dinner &mdash; those are real, and they matter in your life. They just don&rsquo;t
+                                help with that goal. There&rsquo;s no reason to write lists of them now; on these lists,
+                                they&rsquo;d only be a distraction.
+                            </p>
+                        </KeyInsightBox>
+
+                        <KeyInsightBox>
+                            <p className="font-semibold mb-2">The deeper point</p>
+                            <p>
+                                Drawing the line between your repair work and your personal life is a first step toward
+                                thinking of all of it &mdash; the work, the things, the promises &mdash; as a separate
+                                thing. In reality, your repair work is an integral part
+                                of your life &mdash; but in keeping information about it in a more formal way, it&rsquo;s
+                                useful to think of it as separate. You&rsquo;ll keep building this picture over the next
+                                few activities. By the end of the module, what you&rsquo;ve built will have a name.
+                            </p>
+                        </KeyInsightBox>
+
+                        {/* Pacioli rabbit-hole: collapsible panel, default closed */}
+                        <div className="rounded-lg mb-4 overflow-hidden"
+                             style={{ border: `1px solid ${colors.earthLight}`, backgroundColor: 'white' }}>
+                            <button
+                                onClick={() => { playContinueClick(); setPacioliExpanded(!pacioliExpanded); }}
+                                className="w-full px-4 py-3 text-left cursor-pointer border-0 bg-transparent flex items-center justify-between"
+                                style={{ color: colors.earthDark }}
+                                aria-expanded={pacioliExpanded}
+                            >
+                                <span className="text-sm italic">
+                                    📖 Going deeper &mdash; you just did the first step from a 530-year-old manual
+                                </span>
+                                <span className="text-xs" style={{ color: colors.earth }}>{pacioliExpanded ? '▲' : '▼'}</span>
+                            </button>
+                            {pacioliExpanded && (
+                                <div className="px-4 pb-4 pt-1 text-sm" style={{ color: colors.earthDark, borderTop: `1px solid ${colors.earthLight}` }}>
+                                    <p className="mb-3 mt-3">
+                                        You just did the first step in a 530-year-old accounting manual.
+                                    </p>
+                                    <p className="mb-3">
+                                        In 1494 a Franciscan friar in northern Italy named Luca Pacioli published a
+                                        book &mdash; <em>Summa de Arithmetica</em> &mdash; with a section that was,
+                                        essentially, a do-it-yourself accounting manual for merchants. He didn&rsquo;t
+                                        invent what he wrote about. Italian merchants had been doing it for two
+                                        centuries. He wrote it down so apprentices could learn from each other.
+                                    </p>
+                                    <p className="mb-3">
+                                        His first chapter says that to carry on business carefully you need three
+                                        things: <em>cash</em>, to be a good <em>bookkeeper</em> and a ready
+                                        mathematician, and an <em>information system</em> that lets you tell at a
+                                        glance what is going on.
+                                    </p>
+
+                                    <p className="mb-3">
+                                        The first step in setting up the information system is to take an inventory
+                                        of what you have. He gives guidance on compiling it, and an example:
+                                    </p>
+
+                                    <div className="rounded p-3 mb-2 italic"
+                                         style={{ backgroundColor: colors.sand, borderLeft: `3px solid ${colors.accent}`, color: colors.earthDark }}>
+                                        &ldquo;The following is the inventory of myself, N. N., of Venice, Street of
+                                        the Holy Apostles. I have written down systematically, or had written by Mr.
+                                        So-and-So, this inventory of all my property, personal and real, what is owed
+                                        to me, and what is owed by me...&rdquo;
+                                    </div>
+
+                                    <p className="text-xs mb-3" style={{ color: colors.earth }}>
+                                        &mdash; Pacioli, 1494 (modern paraphrase &mdash; citation TK)
+                                    </p>
+
+                                    <p>
+                                        His inventory includes both things and promises. Yours does too. Your list
+                                        is in plain English; his was in Italian. The work &mdash; drawing a line
+                                        around what belongs to you, sorting it into things and what&rsquo;s owed
+                                        &mdash; is the same.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div
+                            className="rounded-lg p-4 mb-4"
+                            style={{ backgroundColor: colors.clayLight }}
+                        >
+                            <h3 className="font-bold mb-2" style={{ color: colors.primary }}>Coming Next</h3>
+                            <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                                You made two lists today, but you didn&rsquo;t look closely at what&rsquo;s actually on each.
+                                Next: a closer look at the two kinds of things that ended up on the lists you made.
+                            </p>
+                            <p className="font-bold" style={{ color: colors.primary }}>
+                                Next: Tutorial 1.2 &mdash; Ready for the Agent
+                            </p>
+                        </div>
+
+                        <a
+                            href="ready-for-the-agent.html"
+                            className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 mb-3 border-0 cursor-pointer no-underline"
+                            style={{ backgroundColor: colors.primary }}
+                        >
+                            Next Tutorial →
+                        </a>
+
+                        <button
+                            onClick={handleRestart}
+                            className="w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 cursor-pointer"
+                            style={{
+                                border: `2px solid ${colors.primary}`,
+                                color: colors.primary,
+                                backgroundColor: 'transparent'
+                            }}
+                        >
+                            ↺ Restart Tutorial
+                        </button>
+                    </div>
+                </div>
+            );
+
+            // ============================================================
+            // Phase router
+            // ============================================================
+            const renderPhase = () => {
+                if (phase === 'welcome') return renderWelcome();
+                if (phase === 'scenarios') return renderScenarios();
+                if (phase === 'list1-sort') return renderList1Sort();
+                if (phase === 'reflect-boundary') return renderReflectBoundary();
+                if (phase === 'list2-sort') return renderList2Sort();
+                if (phase === 'reflect-promises') return renderReflectPromises();
+                if (phase === 'complete') return renderComplete();
+                return null;
+            };
+
+            return (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    {renderPhase()}
+                    {showGlossary && <GlossaryModal />}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<TutorialApp />);
+    </script>
+</body>
+</html>
