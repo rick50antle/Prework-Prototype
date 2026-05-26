@@ -12,6 +12,11 @@
         body { font-family: 'Inter', sans-serif; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .handwritten { font-family: 'Caveat', cursive; }
+        @keyframes systemPulse {
+            0%, 100% { opacity: 0.85; transform: scale(1); }
+            50%      { opacity: 1;    transform: scale(1.02); }
+        }
+        .system-sorting { animation: systemPulse 1.2s ease-in-out infinite; }
     </style>
 </head>
 <body>
@@ -196,6 +201,13 @@
             // Phase 3: sort (shop vs personal)
             const [expandedDescId, setExpandedDescId] = useState(null);
             const [classifications, setClassifications] = useState({});
+            const [sortChecked, setSortChecked] = useState(false);
+            // Autocomplete after the rule is clear — matches 1.1 v3 / 1.2 sheet 1.
+            // Trigger fires after ≥5 correct + ≥1 of each category; remaining
+            // unclassified rows stream in correctly. Wrong manual classifications
+            // are preserved and surfaced by the existing "Check my sort" flow.
+            const [sortAutoActive, setSortAutoActive] = useState(false);
+            const [sortAutoDone, setSortAutoDone] = useState(false);
 
             // Phase 4: probe-rent
             const [invoiceShown, setInvoiceShown] = useState(false);
@@ -208,12 +220,16 @@
             const [q2Selected, setQ2Selected] = useState(null);
             const [q2Correct, setQ2Correct] = useState(false);
 
-            // Phase 6: probe-customers
+            // Phase 6: probe-cashbox (the $50 ATM withdrawal)
+            const [q3Selected, setQ3Selected] = useState(null);
+            const [q3Correct, setQ3Correct] = useState(false);
+
+            // Phase 7: probe-customers
             const [notebookShown, setNotebookShown] = useState(false);
             const [depositAnswers, setDepositAnswers] = useState({ d1: null, d2: null, d3: null });
 
             // ============================================================
-            const phaseOrder = ['welcome', 'statement-view', 'sort', 'probe-rent', 'probe-parts', 'probe-customers', 'wrap-up', 'complete'];
+            const phaseOrder = ['welcome', 'statement-view', 'sort', 'probe-rent', 'probe-parts', 'probe-cashbox', 'probe-customers', 'wrap-up', 'complete'];
 
             // Derived state
             const progress = Math.round((phaseOrder.indexOf(phase) / (phaseOrder.length - 1)) * 100);
@@ -221,7 +237,19 @@
             const personalCount = Object.values(classifications).filter(c => c === 'personal').length;
             const unsortedCount = txns.length - shopCount - personalCount;
             const allClassified = unsortedCount === 0;
+            const wrongSortIds = txns
+                .filter(tx => classifications[tx.id] && classifications[tx.id] !== tx.cat)
+                .map(tx => tx.id);
+            const sortAllCorrect = sortChecked && wrongSortIds.length === 0;
             const allDepositsCorrect = deposits.every(d => depositAnswers[d.id] === d.correct);
+            // Sort autocomplete trigger (5 correct + 1 of each category)
+            const correctClassifiedTxns = txns.filter(tx => classifications[tx.id] === tx.cat);
+            const sortHasShop     = correctClassifiedTxns.some(tx => tx.cat === 'shop');
+            const sortHasPersonal = correctClassifiedTxns.some(tx => tx.cat === 'personal');
+            const sortTriggerMet =
+                correctClassifiedTxns.length >= 5 &&
+                sortHasShop && sortHasPersonal &&
+                !allClassified && !sortAutoActive && !sortAutoDone;
 
             // ============================================================
             // HANDLERS
@@ -235,12 +263,37 @@
             const handleRestart = () => {
                 playContinueClick();
                 setPhase('welcome'); setStep(0);
-                setExpandedDescId(null); setClassifications({});
+                setExpandedDescId(null); setClassifications({}); setSortChecked(false);
+                setSortAutoActive(false); setSortAutoDone(false);
                 setInvoiceShown(false); setQ1Selected(null); setQ1Correct(false);
                 setPackingSlipShown(false); setStockroomShown(false);
                 setQ2Selected(null); setQ2Correct(false);
+                setQ3Selected(null); setQ3Correct(false);
                 setNotebookShown(false);
                 setDepositAnswers({ d1: null, d2: null, d3: null });
+            };
+
+            // Autocomplete handler — stream remaining unclassified txns into their
+            // correct categories at ~60ms intervals. Wrong manual classifications
+            // are left alone for the existing "Check my sort" flow to surface.
+            const handleSortAutocomplete = () => {
+                if (sortAutoActive || sortAutoDone) return;
+                playContinueClick();
+                setSortAutoActive(true);
+                setExpandedDescId(null);
+                const unclassified = txns.filter(tx => !classifications[tx.id]);
+                unclassified.forEach((tx, i) => {
+                    setTimeout(() => {
+                        setClassifications(prev => ({ ...prev, [tx.id]: tx.cat }));
+                        if (i === unclassified.length - 1) {
+                            setTimeout(() => {
+                                setSortAutoActive(false);
+                                setSortAutoDone(true);
+                                playSuccessTone();
+                            }, 250);
+                        }
+                    }, i * 60);
+                });
             };
 
             const toggleDesc = (id) => setExpandedDescId(expandedDescId === id ? null : id);
@@ -266,6 +319,13 @@
                 if (q2Correct) return;
                 setQ2Selected(id);
                 if (id === 'c') { playSuccessTone(); setQ2Correct(true); }
+                else playSoftNope();
+            };
+
+            const handleQ3 = (id) => {
+                if (q3Correct) return;
+                setQ3Selected(id);
+                if (id === 'c') { playSuccessTone(); setQ3Correct(true); }
                 else playSoftNope();
             };
 
@@ -446,7 +506,9 @@
                             const isExpanded = interactive && expandedDescId === tx.id;
                             const cls = classifications[tx.id];
                             const isClassified = cls !== undefined;
-                            const stripe = cls === 'shop' ? colors.primary : (cls === 'personal' ? colors.earth : 'transparent');
+                            const isWrongMark = interactive && sortChecked && isClassified && cls !== tx.cat;
+                            const baseStripe = cls === 'shop' ? colors.primary : (cls === 'personal' ? colors.earth : 'transparent');
+                            const stripe = isWrongMark ? colors.warning : baseStripe;
                             const rowBg = i % 2 === 1 ? '#fafaf7' : 'white';
                             return (
                                 <div key={tx.id}>
@@ -468,6 +530,16 @@
                                                           border: `1px solid ${cls === 'shop' ? colors.primary : colors.earth}`,
                                                       }}>
                                                     {cls === 'shop' ? 'Shop' : 'Personal'}
+                                                </span>
+                                            )}
+                                            {isWrongMark && (
+                                                <span className="ml-2 text-xs px-1.5 py-0.5 rounded font-semibold"
+                                                      style={{
+                                                          backgroundColor: colors.warningBg,
+                                                          color: '#92400e',
+                                                          border: `1px solid ${colors.warning}`,
+                                                      }}>
+                                                    ↻ rethink
                                                 </span>
                                             )}
                                         </span>
@@ -631,16 +703,65 @@
                                 </div>
                             </div>
                         </div>
-                        {allClassified && (
-                            <InsightPanel>
-                                All sorted. Eight shop-related transactions to dig into.
-                            </InsightPanel>
+                        {/* Autocomplete trigger — appears once the rule is clear */}
+                        {sortTriggerMet && (
+                            <div className="rounded-lg p-3 mb-4 border-2"
+                                 style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}>
+                                <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                                    <strong>You&rsquo;ve got the rule.</strong> Five sorted correctly, both sides
+                                    covered. Apply it to the rest.
+                                </p>
+                                <button onClick={handleSortAutocomplete}
+                                        className="w-full py-3 rounded-lg font-bold text-white border-0 cursor-pointer"
+                                        style={{ backgroundColor: colors.primary }}>
+                                    Sort the rest →
+                                </button>
+                            </div>
                         )}
-                        <ContinueButton
-                            onClick={() => { setStep(0); setPhase('probe-rent'); }}
-                            disabled={!allClassified}>
-                            {allClassified ? "Bring Anna in on the rent" : `${unsortedCount} still to classify`}
-                        </ContinueButton>
+
+                        {/* "Sorting…" beat */}
+                        {sortAutoActive && (
+                            <div className="rounded-lg p-4 mb-4 system-sorting"
+                                 style={{ backgroundColor: colors.primary, color: 'white', textAlign: 'center' }}>
+                                <p className="text-base font-bold">⚙ Sorting the rest&hellip;</p>
+                                <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.8)' }}>
+                                    Applying the shop-vs-personal rule to the remaining rows.
+                                </p>
+                            </div>
+                        )}
+
+                        {!allClassified && !sortTriggerMet && !sortAutoActive && (
+                            <ContinueButton onClick={() => {}} disabled={true}>
+                                {`${unsortedCount} still to classify`}
+                            </ContinueButton>
+                        )}
+                        {allClassified && !sortChecked && (
+                            <ContinueButton onClick={() => setSortChecked(true)}>
+                                Check my sort
+                            </ContinueButton>
+                        )}
+                        {allClassified && sortChecked && sortAllCorrect && (
+                            <>
+                                <InsightPanel>
+                                    Nicely sorted. Eight shop-related transactions to dig into.
+                                </InsightPanel>
+                                <ContinueButton onClick={() => { setStep(0); setPhase('probe-rent'); }}>
+                                    Bring Anna in on the rent
+                                </ContinueButton>
+                            </>
+                        )}
+                        {allClassified && sortChecked && !sortAllCorrect && (
+                            <>
+                                <AnnaBox>
+                                    "Let's take another look at {wrongSortIds.length === 1 ? 'this one' : `these ${wrongSortIds.length}`}.
+                                    Scroll back up — I've marked {wrongSortIds.length === 1 ? 'the row' : 'the rows'} that
+                                    need a second pass. Open the <strong>ⓘ</strong> to re-read what each was, then re-classify."
+                                </AnnaBox>
+                                <ContinueButton onClick={() => {}} disabled={true}>
+                                    {wrongSortIds.length} {wrongSortIds.length === 1 ? 'row' : 'rows'} still need another look
+                                </ContinueButton>
+                            </>
+                        )}
                     </div>
                 </div>
             );
@@ -941,6 +1062,80 @@
                                        bikes. About $200 is still here as parts on the shelf, ready for future repairs.
                                        The bank statement showed one line; the story is two pieces.</p>
                                 </KeyInsightBox>
+                                <ContinueButton onClick={() => { setStep(0); setPhase('probe-cashbox'); }}>
+                                    Anna's next question
+                                </ContinueButton>
+                            </>
+                        )}
+                    </div>
+                </div>
+            );
+
+            const renderProbeCashbox = () => (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-3xl mx-auto">
+                        <Header />
+                        <NarrativeBlock>
+                            Anna's finger ran further down the list and stopped on May 18 — the $50 ATM withdrawal.
+                        </NarrativeBlock>
+                        <TxCard txId="t12" gold />
+                        <AnnaBox>
+                            "$50 cash, out of your bank account. The bank statement only tells us the money left.
+                            Where did it actually go?"
+                        </AnnaBox>
+                        <div className="rounded-lg p-4 mb-3 border-2"
+                             style={{ borderColor: colors.clayDark, backgroundColor: 'white' }}>
+                            <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.primary }}>ANNA</p>
+                            <p className="text-sm italic mb-3" style={{ color: colors.earthDark }}>
+                                "So what does the bank statement <em>not</em> tell us about this $50?"
+                            </p>
+                            <div className="space-y-2">
+                                {[
+                                    { id: 'a', text: 'The exact dollar amount of the withdrawal.' },
+                                    { id: 'b', text: 'That the $50 was your personal walking-around cash.' },
+                                    { id: 'c', text: 'That the $50 went into the cash box at the shop — it didn\'t disappear, it just moved to a different place.' },
+                                    { id: 'd', text: 'That the withdrawal happened at an ATM on Main Street.' },
+                                ].map(opt => {
+                                    const isSelected = q3Selected === opt.id;
+                                    const showAsCorrect = q3Correct && opt.id === 'c';
+                                    const showAsWrong = (q3Correct && isSelected && opt.id !== 'c') ||
+                                                        (!q3Correct && isSelected);
+                                    let borderColor = colors.earthLight, bg = 'white';
+                                    if (showAsCorrect) { borderColor = colors.success; bg = colors.successBg; }
+                                    else if (showAsWrong) { borderColor = colors.error; bg = colors.errorBg; }
+                                    return (
+                                        <button key={opt.id} onClick={() => handleQ3(opt.id)} disabled={q3Correct}
+                                                className="w-full p-3 rounded-lg border-2 text-left cursor-pointer disabled:cursor-default text-sm"
+                                                style={{ borderColor, backgroundColor: bg, color: colors.earthDark }}>
+                                            <span className="font-bold mr-2" style={{ color: colors.primary }}>{opt.id.toUpperCase()}.</span>
+                                            {opt.text}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {!q3Correct && q3Selected && q3Selected !== 'c' && (
+                                <div className="p-3 rounded-lg mt-3" style={{ backgroundColor: colors.warningBg }}>
+                                    <p className="text-sm" style={{ color: '#92400e' }}>
+                                        Anna: {q3Selected === 'b'
+                                            ? '"That was the other ATM withdrawal — May 16, the $200 one. This is the May 18 one. Different reason."'
+                                            : '"That was already on the bank statement. The new piece is where the cash went after it left the bank."'}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                        {q3Correct && (
+                            <>
+                                <AnnaBox>
+                                    "Right. The $50 didn't disappear — it just moved. Your bank account went down by $50,
+                                    and the cash box at the shop went up by $50. Same money, different place. So that
+                                    $50 belongs on your shop things list — cash on hand, ready to make change for customers."
+                                </AnnaBox>
+                                <KeyInsightBox>
+                                    <p className="font-semibold mb-2">One withdrawal, two places.</p>
+                                    <p>The bank statement only sees money <em>leaving</em> your bank account. It doesn't
+                                       see where the money went. In your shop records, that $50 is still here — sitting
+                                       in the cash box, as a thing you have.</p>
+                                </KeyInsightBox>
                                 <ContinueButton onClick={() => { setStep(0); setPhase('probe-customers'); }}>
                                     Anna's next question
                                 </ContinueButton>
@@ -1073,6 +1268,8 @@
                       recovered: 'Two months: $650 April back rent + $650 May current.', status: 'recovered' },
                     { tx: 'May 15 — QBP Distributing parts ($500)', evidence: 'Packing slip + shelf check',
                       recovered: '~$300 used on customer bikes; ~$200 still on the shelf.', status: 'recovered' },
+                    { tx: 'May 18 — ATM withdrawal ($50)', evidence: 'What you did with it',
+                      recovered: '$50 moved from your bank account to the cash box at the shop — still here as cash on hand.', status: 'recovered' },
                     { tx: 'May 7 — Customer deposit ($340)', evidence: 'Notebook entry',
                       recovered: 'Earnings — brake job, tune-up, tire mountings (work done).', status: 'recovered' },
                     { tx: 'May 22 — Customer deposit ($220)', evidence: 'Notebook entry',
@@ -1087,7 +1284,8 @@
                             <NarrativeBlock>
                                 You and Anna spent the afternoon at the workbench, going through every shop-related
                                 transaction from May. Each one had a story. Some you recovered from invoices and packing
-                                slips. Some from rough notes. One took reasoning from your other lists.
+                                slips. One you just knew, because you'd done it yourself. Some from rough notes. One took
+                                reasoning from your other lists.
                             </NarrativeBlock>
                             <div className="rounded-lg mb-4 overflow-hidden"
                                  style={{ border: `1px solid ${colors.earthLight}`, backgroundColor: 'white' }}>
@@ -1116,9 +1314,10 @@
                             <AnnaBox>
                                 <p className="mb-2">
                                     "OK — that took us most of the afternoon. Some of it was easy: you had invoices,
-                                    packing slips. Some of it took real digging. And that $180 deposit? We couldn't
-                                    recover it directly — we had to reason it out from your other lists. We got
-                                    there, but it was a best guess, not a record."
+                                    packing slips. One you just knew — the $50 you took to the cash box; you remembered
+                                    doing it. Some of it took real digging. And that $180 deposit? We couldn't recover
+                                    it directly — we had to reason it out from your other lists. We got there, but it
+                                    was a best guess, not a record."
                                 </p>
                                 <p>
                                     "Here's the thing. Every transaction had a reason at the time you made it. You
@@ -1232,6 +1431,7 @@
                 if (phase === 'sort') return renderSort();
                 if (phase === 'probe-rent') return renderProbeRent();
                 if (phase === 'probe-parts') return renderProbeParts();
+                if (phase === 'probe-cashbox') return renderProbeCashbox();
                 if (phase === 'probe-customers') return renderProbeCustomers();
                 if (phase === 'wrap-up') return renderWrapUp();
                 if (phase === 'complete') return renderComplete();

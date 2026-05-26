@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 1.2 (redesign): Insurance and Anna — Mockup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        @keyframes systemPulse {
+            0%, 100% { opacity: 0.85; transform: scale(1); }
+            50%      { opacity: 1;    transform: scale(1.02); }
+        }
+        .system-sorting { animation: systemPulse 1.2s ease-in-out infinite; }
+    </style>
+</head>
+<body class="min-h-screen" style="background-color: #f5f1e8;">
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        /**
+         * Tutorial 1.2 (redesign): Insurance and Anna — Mockup
+         * CMU METALS Accounting Prework — Module 1, Activity 2
+         *
+         * @version 2.0-mockup
+         * @date 2026-05-25
+         * @description Rebuilt to align with 1.1 v3's location-based redesign:
+         *   - Pre-entity language throughout. "Repair work," not "shop work."
+         *     Entity words ("shop", "the business") stay off the page until
+         *     they appear deliberately as wrong-answer trap material later.
+         *   - Welcome + Maria's arrival combined into one step.
+         *   - Two-sheet form structure:
+         *       Sheet 1 — categorize (Equipment / Supplies / Fixtures). No $.
+         *       Sheet 2 — value (receipts + credit card statement). $.
+         *   - Both sheets reuse v3's autocomplete pattern: student does a few,
+         *     system handles the volume. Same move, applied to a categorization
+         *     rule (sheet 1) and a documents-to-dollars rule (sheet 2).
+         *   - Sidebar shows the first ~8 of ~31 items + "+23 more" indicator.
+         *     The full list streams into the bins after autocomplete fires.
+         *   - Not-on-form items (rented space, cash) surface during sheet 1
+         *     through Maria's nudges. They stay on the broader list, picked
+         *     up by Anna in step 4 (cash) or left as a learning moment (space).
+         *   - Anna names Liabilities. The Things and Promises lists get
+         *     renamed to Assets and Liabilities. "Equities" and "Entity"
+         *     wait for 1.5.
+         */
+
+        // ============================================================
+        // Color palette
+        // ============================================================
+        const colors = {
+            primary: '#00356b',
+            sand: '#f5f1e8',
+            earth: '#8b7355',
+            earthLight: '#d4c4a8',
+            earthDark: '#5c4d3d',
+            accent: '#c9a227',
+            clay: '#c4a574',
+            clayLight: '#e8dcc8',
+            clayDark: '#a08050',
+            success: '#22c55e',
+            successBg: '#f0fdf4',
+            warning: '#f59e0b',
+            warningBg: '#fffbeb',
+            error: '#dc2626',
+            errorBg: '#fef2f2',
+        };
+
+        // ============================================================
+        // Glossary
+        // ============================================================
+        const glossaryTerms = [
+            { term: 'Asset', definition: 'Something you own that you can put a dollar amount on. Maria asks for a list of yours by category.' },
+            { term: 'Liability', definition: 'A promise to pay or do something later. You would have to come up with money, or do work, to settle it.' },
+            { term: 'Property policy', definition: 'Insurance that pays the owner if covered things are damaged or destroyed. Doesn’t cover cash, and doesn’t cover what you don’t own.' },
+            { term: 'Replacement cost', definition: 'What it would cost today to buy a brand-new version of the thing.' },
+            { term: 'Promise', definition: 'Something you have agreed to do or pay, where the doing or paying comes later.' },
+            { term: 'Bill', definition: 'A statement of money you owe to someone.' },
+            { term: 'Deposit', definition: 'Money paid in advance for something you will receive or have done.' },
+            { term: 'Customer', definition: 'Someone who pays you for goods or services.' },
+            { term: 'Supplier', definition: 'A business you buy from.' },
+        ];
+
+        // ============================================================
+        // Sound functions (Web Audio API)
+        // ============================================================
+        const createAudioContext = () =>
+            new (window.AudioContext || window.webkitAudioContext)();
+
+        const playSuccessTone = () => {
+            try {
+                const ctx = createAudioContext();
+                [523.25, 659.25, 783.99].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.frequency.value = freq; osc.type = 'sine';
+                    const t = ctx.currentTime + i * 0.1;
+                    gain.gain.setValueAtTime(0, t);
+                    gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+                    osc.start(t); osc.stop(t + 0.25);
+                });
+                setTimeout(() => ctx.close(), 600);
+            } catch(e) {}
+        };
+
+        const playSoftNope = () => {
+            try {
+                const ctx = createAudioContext();
+                [400, 300].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.frequency.value = freq; osc.type = 'sine';
+                    const t = ctx.currentTime + i * 0.12;
+                    gain.gain.setValueAtTime(0, t);
+                    gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+                    osc.start(t); osc.stop(t + 0.17);
+                });
+                setTimeout(() => ctx.close(), 400);
+            } catch(e) {}
+        };
+
+        const playBuzzer = () => {
+            try {
+                const ctx = createAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = 150; osc.type = 'sawtooth';
+                const t = ctx.currentTime;
+                gain.gain.setValueAtTime(0.25, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                osc.start(t); osc.stop(t + 0.35);
+                setTimeout(() => ctx.close(), 400);
+            } catch(e) {}
+        };
+
+        const playContinueClick = () => {
+            try {
+                const ctx = createAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = 600; osc.type = 'sine';
+                const t = ctx.currentTime;
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.15, t + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+                osc.start(t); osc.stop(t + 0.1);
+                setTimeout(() => ctx.close(), 150);
+            } catch(e) {}
+        };
+
+        // ============================================================
+        // Data
+        // ============================================================
+        // 31 items carried from 1.1 v3's repair-related Things list. Each is
+        // mapped to one of Maria's three insurable categories (Equipment /
+        // Supplies / Fixtures), to "not-on-form" with a rejectType, or
+        // distinguished from the form entirely. Costs are tuned so the
+        // category subtotals land on clean round numbers:
+        //   Equipment $2,200  |  Supplies $1,200  |  Fixtures $750
+        //   Total insurable     $4,150
+        //   + Cash extra        $50
+        //   Total assets        $4,200
+        // (Supplies dropped from $1,400 → $1,200 because Parts asset value is
+        // $300 on-shelf, not the $500 originally paid. The $200 difference
+        // went into customer jobs — picked up by Anna's bridge line at the
+        // end and analyzed in 1.3.)
+        //
+        // `sourced` controls how the value appears in sheet 2:
+        //   'receipt'      — student types the amount, validating against a visible receipt
+        //   'credit-card'  — student types the amount, validating against the CC statement
+        //   'estimate'     — not entered by hand; rolled up under "+X more (estimate)"
+        // Only items with `sourced` of 'receipt' or 'credit-card' appear by
+        // name in sheet 2's form; everything else is aggregated.
+        const items = [
+            // EQUIPMENT — 15 items, subtotal $2,200
+            { id: 'stand',     name: 'Bicycle repair stand',     category: 'equipment', cost: 250, sourced: 'receipt'      },
+            { id: 'wrenches',  name: 'Set of wrenches',          category: 'equipment', cost: 180, sourced: 'receipt'      },
+            { id: 'truer',     name: 'Wheel truing stand',       category: 'equipment', cost: 130, sourced: 'estimate'     },
+            { id: 'compressor',name: 'Air compressor',           category: 'equipment', cost: 320, sourced: 'estimate'     },
+            { id: 'vacuum',    name: 'Shop vacuum',              category: 'equipment', cost: 80,  sourced: 'estimate'     },
+            { id: 'washer',    name: 'Parts washer',             category: 'equipment', cost: 180, sourced: 'estimate'     },
+            { id: 'headset',   name: 'Headset press',            category: 'equipment', cost: 90,  sourced: 'estimate'     },
+            { id: 'grinder',   name: 'Bench grinder',            category: 'equipment', cost: 120, sourced: 'estimate'     },
+            { id: 'torque',    name: 'Torque wrench',            category: 'equipment', cost: 80,  sourced: 'estimate'     },
+            { id: 'hex',       name: 'Hex / Allen key set',      category: 'equipment', cost: 60,  sourced: 'estimate'     },
+            { id: 'cutters',   name: 'Cable cutters',            category: 'equipment', cost: 40,  sourced: 'estimate'     },
+            { id: 'breaker',   name: 'Chain breaker',            category: 'equipment', cost: 30,  sourced: 'estimate'     },
+            { id: 'levers',    name: 'Tire levers',              category: 'equipment', cost: 10,  sourced: 'estimate'     },
+            { id: 'pedalw',    name: 'Pedal wrench',             category: 'equipment', cost: 20,  sourced: 'estimate'     },
+            { id: 'laptop',    name: 'Laptop',                   category: 'equipment', cost: 610, sourced: 'estimate'     },
+
+            // SUPPLIES — 8 items, subtotal $1,200
+            // Parts is the only consumable with a documented purchase cost AND a
+            // distinct on-hand value. The $500 credit-card purchase (still a
+            // liability) went toward parts that were partly consumed in customer
+            // jobs over the past few months. Asset value = what's on the shelf
+            // now ($300), not what was paid ($500). The $200 gap is a setup for
+            // 1.3 (cost-of-jobs-done vs. customer payments).
+            { id: 'parts',     name: 'Boxes of spare parts',     category: 'supplies',  cost: 300, sourced: 'credit-card', valueLabel: 'on shelf' },
+            { id: 'tires',     name: 'Crate of tires',           category: 'supplies',  cost: 240, sourced: 'estimate'     },
+            { id: 'chains',    name: 'Box of chains',            category: 'supplies',  cost: 180, sourced: 'estimate'     },
+            { id: 'pads',      name: 'Box of brake pads',        category: 'supplies',  cost: 140, sourced: 'estimate'     },
+            { id: 'saddles',   name: 'Stack of saddles',         category: 'supplies',  cost: 120, sourced: 'estimate'     },
+            { id: 'bbs',       name: 'Box of bottom brackets',   category: 'supplies',  cost: 90,  sourced: 'estimate'     },
+            { id: 'cables',    name: 'Box of derailleur cables', category: 'supplies',  cost: 80,  sourced: 'estimate'     },
+            { id: 'firstaid',  name: 'First-aid kit',            category: 'supplies',  cost: 50,  sourced: 'estimate'     },
+
+            // FIXTURES — 6 items, subtotal $750
+            { id: 'drawer',    name: 'Cash drawer',              category: 'fixtures',  cost: 40,  sourced: 'receipt'      },
+            { id: 'workbench', name: 'Workbench',                category: 'fixtures',  cost: 80,  sourced: 'estimate'     },
+            { id: 'shelves',   name: 'Shelving units',           category: 'fixtures',  cost: 180, sourced: 'estimate'     },
+            { id: 'display',   name: 'Display rack',             category: 'fixtures',  cost: 100, sourced: 'estimate'     },
+            { id: 'sign',      name: 'Painted sign',             category: 'fixtures',  cost: 150, sourced: 'estimate'     },
+            { id: 'desk',      name: 'Desk',                     category: 'fixtures',  cost: 200, sourced: 'estimate'     },
+
+            // NOT ON MARIA'S FORM
+            { id: 'space',     name: 'The space you rent',       category: null, cost: null, rejectType: 'not-owned'    },
+            { id: 'cash',      name: 'Cash in the cash drawer',  category: null, cost: 50,   rejectType: 'not-insurable' },
+        ];
+
+        // First ~8 items the student sees in the sidebar during sheet 1.
+        // Mix of obvious and slightly tricky placements + both not-on-form
+        // items so the discovery is forced rather than optional.
+        const visibleIds = ['stand', 'parts', 'drawer', 'wrenches', 'tires', 'workbench', 'space', 'cash'];
+
+        // The 6 Things the welcome screen displays. A subset of the sheet 1
+        // sidebar (without the not-on-form items, so the welcome doesn't
+        // pre-spoil the discovery). The remaining 25 are alluded to with a
+        // "+ 25 more…" indicator so the volume is visible.
+        const welcomeVisibleIds = ['stand', 'wrenches', 'parts', 'drawer', 'tires', 'workbench'];
+
+        const categoryDefs = [
+            { id: 'equipment', label: 'EQUIPMENT', sub: 'durable tools and gear',       targetSubtotal: 2200 },
+            { id: 'supplies',  label: 'SUPPLIES',  sub: 'parts and consumables',         targetSubtotal: 1400 },
+            { id: 'fixtures',  label: 'FIXTURES',  sub: 'drawers, storage, built-ins',   targetSubtotal: 750  },
+        ];
+
+        // Sheet 1 miscat nudges — per category-pair (item's correct → attempted)
+        const miscatNudge = (item, attemptedCategory) => {
+            if (item.id === 'stand' || item.id === 'wrenches' || item.id === 'truer' || item.id === 'compressor' ||
+                item.id === 'washer' || item.id === 'grinder' || item.id === 'headset' || item.id === 'torque' ||
+                item.id === 'hex' || item.id === 'cutters' || item.id === 'breaker' || item.id === 'levers' ||
+                item.id === 'vacuum' || item.id === 'pedalw' || item.id === 'laptop') {
+                return `${item.name} is Equipment — a durable tool, not parts you use up and not a storage piece.`;
+            }
+            if (item.id === 'parts' || item.id === 'tires' || item.id === 'chains' || item.id === 'pads' ||
+                item.id === 'saddles' || item.id === 'bbs' || item.id === 'cables' || item.id === 'firstaid') {
+                return `${item.name} is Supplies — something you go through on jobs, not a tool you keep.`;
+            }
+            return `${item.name} is Fixtures — storage or built-ins, not a tool and not parts.`;
+        };
+
+        // Sheet 1 rejection nudges
+        const rejectNudge = {
+            'not-owned':     "That one doesn’t belong on the form. The building isn’t yours — it’s your landlord’s. If something happens to the building, that’s his policy. Insurance is on what you could lose.",
+            'not-insurable': "Cash doesn’t go on this form either. Property policies don’t cover cash — if it gets stolen, that’s crime coverage, a separate conversation. It’s still yours; just not my kind of asset.",
+        };
+
+        // Receipts — visible only during sheet 2
+        const receipts = [
+            { id: 'r-stand',    forItem: 'stand',    vendor: 'ProBike Tools',        date: 'Mar 12, 2026', desc: 'Park Tool PRS-25 repair stand', amount: 250 },
+            { id: 'r-wrenches', forItem: 'wrenches', vendor: 'Park Tool Co.',        date: 'Apr 18, 2026', desc: 'Hex / Y wrench set',            amount: 180 },
+            { id: 'r-drawer',   forItem: 'drawer',   vendor: 'Lumber Yard Hardware', date: 'Mar  5, 2026', desc: 'Wooden box with dividers',      amount:  40 },
+        ];
+
+        const creditCard = {
+            issuer: 'Visa',
+            last4: '1234',
+            period: 'May 2026 statement',
+            lineItem: { desc: 'QBP Distributing — bike parts', date: 'May 21', amount: 500 },
+            balance: 500,
+            status: 'unpaid — due Jun 15',
+        };
+
+        // Promises (the 2 repair-related ones from 1.1 v3's promise list)
+        const promises = [
+            { id: 'smith', text: "Promised to build a custom frame for Smith. He paid me $220 up front for it.", expected: 220 },
+            { id: 'cc',    text: "Bought parts last week — put them on my credit card.",                    expected: 500 },
+        ];
+
+        const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
+
+        // ============================================================
+        // App
+        // ============================================================
+        const App = () => {
+            // Navigation
+            const [phase, setPhase] = useState('welcome');
+
+            // UI overlays
+            const [showGlossary, setShowGlossary] = useState(false);
+            const [devMode, setDevMode] = useState(false);
+            const [headerClickCount, setHeaderClickCount] = useState(0);
+
+            // Sheet 1 state — categorize
+            const [s1DraggedId, setS1DraggedId] = useState(null);
+            const [s1Placements, setS1Placements] = useState({});       // { itemId: categoryId } for items dropped correctly
+            const [s1Rejected, setS1Rejected] = useState({});           // { itemId: rejectType } for attempted not-on-form
+            const [s1Nudge, setS1Nudge] = useState(null);               // { type: 'miscat'|reject, itemId, message }
+            const [s1Sorting, setS1Sorting] = useState(false);
+            const [s1Done, setS1Done] = useState(false);
+            const [s1FlashFeedback, setS1FlashFeedback] = useState(null); // 'correct' | 'wrong' for the drop-zone border flash
+
+            // Sheet 2 state — value
+            const [s2Values, setS2Values] = useState({});               // { itemId: '250' }
+            const [s2Valuing, setS2Valuing] = useState(false);
+            const [s2Done, setS2Done] = useState(false);
+            const [s2EstimatesShown, setS2EstimatesShown] = useState(false); // toggles the "+X more (estimate)" rows after autocomplete
+
+            // Anna phase — extras + promises
+            const [extraValues, setExtraValues] = useState({});         // { 'cash': '50' }
+            const [promiseValues, setPromiseValues] = useState({});     // { 'smith': '220' }
+            const [liabilitiesNamed, setLiabilitiesNamed] = useState(false);
+
+            // Anna phase — spreadsheet beat (after values, before rename)
+            const [spreadsheetOpened, setSpreadsheetOpened] = useState(false);
+            const [activeTab, setActiveTab] = useState('things');
+            const [expandedCats, setExpandedCats] = useState({
+                equipment: false, supplies: false, fixtures: false,
+            });
+
+            // ============================================================
+            // Constants
+            // ============================================================
+            const phaseOrder = [
+                'welcome',
+                'sheet1-categorize',
+                'sheet2-value',
+                'maria-readback',
+                'anna-arrives',
+                'complete',
+            ];
+
+            // ============================================================
+            // Derived state
+            // ============================================================
+            const progress = Math.round(
+                (phaseOrder.indexOf(phase) / (phaseOrder.length - 1)) * 100
+            );
+
+            // Sheet 1 derived
+            const placeable = items.filter(i => i.category !== null);
+            const notOnForm = items.filter(i => i.category === null);
+            const correctPlacements = placeable.filter(i => s1Placements[i.id] === i.category);
+            const placedInEquip    = correctPlacements.some(i => i.category === 'equipment');
+            const placedInSupplies = correctPlacements.some(i => i.category === 'supplies');
+            const placedInFixtures = correctPlacements.some(i => i.category === 'fixtures');
+            const anyRejectedTried = Object.keys(s1Rejected).length > 0;
+            const s1TriggerMet =
+                correctPlacements.length >= 4 &&
+                placedInEquip && placedInSupplies && placedInFixtures &&
+                anyRejectedTried;
+            const s1Visible = visibleIds.map(id => items.find(i => i.id === id)).filter(Boolean);
+            const s1HiddenCount = items.length - s1Visible.length;
+            const s1SidebarRemaining = s1Visible.filter(i => !s1Placements[i.id] && !s1Rejected[i.id]);
+
+            // Sheet 2 derived
+            const documentedItems = placeable.filter(i => i.sourced === 'receipt' || i.sourced === 'credit-card');
+            const isS2Correct = (id) => {
+                const item = items.find(i => i.id === id);
+                return item && item.cost != null && Number(s2Values[id]) === item.cost;
+            };
+            const isS2Wrong = (id) => {
+                const v = Number(s2Values[id]);
+                return v > 0 && !isS2Correct(id);
+            };
+            const documentedCorrect = documentedItems.filter(i => isS2Correct(i.id));
+            const correctFromReceipt    = documentedCorrect.some(i => i.sourced === 'receipt');
+            const correctFromCreditCard = documentedCorrect.some(i => i.sourced === 'credit-card');
+            const s2TriggerMet =
+                documentedCorrect.length >= 3 &&
+                correctFromReceipt && correctFromCreditCard;
+
+            const subtotalForCat = (catId) => {
+                const docs = placeable
+                    .filter(i => i.category === catId && i.sourced !== 'estimate')
+                    .reduce((s, i) => s + (Number(s2Values[i.id]) || 0), 0);
+                const estimates = s2EstimatesShown
+                    ? placeable
+                        .filter(i => i.category === catId && i.sourced === 'estimate')
+                        .reduce((s, i) => s + i.cost, 0)
+                    : 0;
+                return docs + estimates;
+            };
+            const estimateRowFor = (catId) => {
+                const itemsInCat = placeable.filter(i => i.category === catId && i.sourced === 'estimate');
+                return {
+                    count: itemsInCat.length,
+                    amount: itemsInCat.reduce((s, i) => s + i.cost, 0),
+                };
+            };
+            const totalInsurable = categoryDefs.reduce((s, c) => s + subtotalForCat(c.id), 0);
+
+            // Anna phase derived
+            const isPromiseCorrect = (id) => {
+                const p = promises.find(x => x.id === id);
+                return p && Number(promiseValues[id]) === p.expected;
+            };
+            const isPromiseWrong = (id) => {
+                const v = Number(promiseValues[id]);
+                return v > 0 && !isPromiseCorrect(id);
+            };
+            const isExtraCorrect = (id) => {
+                const item = items.find(x => x.id === id);
+                return item && item.cost != null && Number(extraValues[id]) === item.cost;
+            };
+            const isExtraWrong = (id) => {
+                const v = Number(extraValues[id]);
+                return v > 0 && !isExtraCorrect(id);
+            };
+            const extras = notOnForm.filter(i => i.rejectType === 'not-insurable'); // cash only — space stays a learning moment
+            const allPromisesValued = promises.every(p => isPromiseCorrect(p.id));
+            const allExtrasValued = extras.every(i => isExtraCorrect(i.id));
+            const totalLiabilities = promises.reduce((s, p) => s + (Number(promiseValues[p.id]) || 0), 0);
+            const totalExtras = extras.reduce((s, i) => s + (Number(extraValues[i.id]) || 0), 0);
+            const totalAssets = totalInsurable + totalExtras;
+
+            // ============================================================
+            // Handlers
+            // ============================================================
+            const handleHeaderClick = () => {
+                const n = headerClickCount + 1;
+                setHeaderClickCount(n);
+                if (n >= 3) { setDevMode(!devMode); setHeaderClickCount(0); }
+            };
+
+            const handleRestart = () => {
+                playContinueClick();
+                setPhase('welcome');
+                setS1DraggedId(null); setS1Placements({}); setS1Rejected({});
+                setS1Nudge(null); setS1Sorting(false); setS1Done(false); setS1FlashFeedback(null);
+                setS2Values({}); setS2Valuing(false); setS2Done(false); setS2EstimatesShown(false);
+                setExtraValues({}); setPromiseValues({}); setLiabilitiesNamed(false);
+                setSpreadsheetOpened(false);
+                setActiveTab('things');
+                setExpandedCats({ equipment: false, supplies: false, fixtures: false });
+            };
+
+            const handleS1DragStart = (e, id) => {
+                setS1DraggedId(id);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', id);
+            };
+            const handleS1DragEnd = () => setS1DraggedId(null);
+            const handleDragOver = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
+
+            const handleS1Drop = (e, categoryId) => {
+                e.preventDefault();
+                const id = e.dataTransfer.getData('text/plain') || s1DraggedId;
+                if (!id) return;
+                const item = items.find(i => i.id === id);
+                if (!item) { setS1DraggedId(null); return; }
+
+                if (item.category === null) {
+                    setS1Rejected(prev => ({ ...prev, [item.id]: item.rejectType }));
+                    setS1Nudge({ type: 'reject', itemId: item.id, message: rejectNudge[item.rejectType] });
+                    setS1FlashFeedback('wrong');
+                    playSoftNope();
+                } else if (item.category !== categoryId) {
+                    setS1Nudge({ type: 'miscat', itemId: item.id, message: miscatNudge(item, categoryId) });
+                    setS1FlashFeedback('wrong');
+                    playSoftNope();
+                } else {
+                    setS1Placements(prev => ({ ...prev, [item.id]: categoryId }));
+                    setS1Nudge(null);
+                    setS1FlashFeedback('correct');
+                    playSuccessTone();
+                }
+                setS1DraggedId(null);
+                setTimeout(() => setS1FlashFeedback(null), 800);
+            };
+
+            const handleS1Autocomplete = () => {
+                if (s1Sorting || s1Done) return;
+                playContinueClick();
+                setS1Sorting(true);
+                const remaining = placeable.filter(i => !s1Placements[i.id]);
+                remaining.forEach((item, i) => {
+                    setTimeout(() => {
+                        setS1Placements(prev => ({ ...prev, [item.id]: item.category }));
+                        if (i === remaining.length - 1) {
+                            setTimeout(() => {
+                                setS1Sorting(false);
+                                setS1Done(true);
+                                playSuccessTone();
+                            }, 250);
+                        }
+                    }, i * 50);
+                });
+            };
+
+            const handleS2ValueChange = (id, v) => {
+                const clean = v.replace(/[^0-9]/g, '');
+                setS2Values({ ...s2Values, [id]: clean });
+            };
+
+            const handleS2Autocomplete = () => {
+                if (s2Valuing || s2Done) return;
+                playContinueClick();
+                setS2Valuing(true);
+                setTimeout(() => {
+                    setS2EstimatesShown(true);
+                    setTimeout(() => {
+                        setS2Valuing(false);
+                        setS2Done(true);
+                        playSuccessTone();
+                    }, 400);
+                }, 300);
+            };
+
+            const handlePromiseChange = (id, v) => {
+                const clean = v.replace(/[^0-9]/g, '');
+                setPromiseValues({ ...promiseValues, [id]: clean });
+            };
+            const handleExtraChange = (id, v) => {
+                const clean = v.replace(/[^0-9]/g, '');
+                setExtraValues({ ...extraValues, [id]: clean });
+            };
+
+            // ============================================================
+            // Reusable components
+            // ============================================================
+            const Header = () => (
+                <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.primary }}>
+                    <div className="flex justify-between items-start">
+                        <div onClick={handleHeaderClick} style={{ cursor: 'pointer' }}>
+                            <h1 className="text-lg font-bold text-white">Tutorial 1.2: Insurance and Anna</h1>
+                            <p className="text-sm mt-1" style={{ color: colors.earthLight }}>
+                                Bicycle repairs &middot; ~10 min
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <a href="../index.html"
+                               className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer no-underline inline-flex items-center justify-center"
+                               title="Return to Main" aria-label="Return to Main">🏠</a>
+                            <button onClick={() => setShowGlossary(true)}
+                                    className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                    title="Glossary" aria-label="Open glossary">📖</button>
+                            <button onClick={handleRestart}
+                                    className="p-2 rounded-lg hover:bg-white/10 text-white text-xl border-0 bg-transparent cursor-pointer"
+                                    title="Restart tutorial" aria-label="Restart tutorial">↺</button>
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <div className="flex justify-between text-xs mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                            <span>Progress</span><span>{progress}%</span>
+                        </div>
+                        <div className="h-2 rounded-full"
+                             style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                             role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+                            <div className="h-full rounded-full transition-all duration-500"
+                                 style={{ width: progress + '%', backgroundColor: colors.accent }} />
+                        </div>
+                    </div>
+                    {devMode && (
+                        <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                            <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>Dev: skip to phase</p>
+                            <div className="flex flex-wrap gap-1">
+                                {phaseOrder.map(p => (
+                                    <button key={p} onClick={() => setPhase(p)}
+                                            className="px-2 py-1 rounded text-xs border-0 cursor-pointer"
+                                            style={{
+                                                backgroundColor: phase === p ? 'white' : 'rgba(255,255,255,0.2)',
+                                                color: phase === p ? colors.primary : 'white',
+                                            }}>{p}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            const NarrativeBlock = ({ children }) => (
+                <div className="p-4 rounded-lg mb-4 italic"
+                     style={{ backgroundColor: colors.sand, borderLeft: `4px solid ${colors.accent}`, color: '#374151' }}>
+                    {children}
+                </div>
+            );
+
+            const MariaBox = ({ children, prefix }) => (
+                <div className="rounded-lg p-4 mb-3 border-2"
+                     style={{ borderColor: colors.primary, backgroundColor: 'white' }}>
+                    <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.primary }}>MARIA</p>
+                    <div className="text-sm italic" style={{ color: colors.earthDark }}>
+                        {prefix && <span style={{ fontStyle: 'normal', color: colors.earth }}>{prefix} </span>}
+                        {children}
+                    </div>
+                </div>
+            );
+
+            const AnnaBox = ({ children }) => (
+                <div className="rounded-lg p-4 mb-3 border-2"
+                     style={{ borderColor: colors.clayDark, backgroundColor: 'white' }}>
+                    <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.primary }}>ANNA</p>
+                    <div className="text-sm italic" style={{ color: colors.earthDark }}>{children}</div>
+                </div>
+            );
+
+            const YouBox = ({ children }) => (
+                <div className="rounded-lg p-3 mb-3"
+                     style={{ borderLeft: `4px solid ${colors.earth}`, backgroundColor: '#fafaf7' }}>
+                    <p className="text-xs font-bold mb-1 tracking-wide" style={{ color: colors.earth }}>YOU</p>
+                    <div className="text-sm italic" style={{ color: colors.earthDark }}>{children}</div>
+                </div>
+            );
+
+            const InsightPanel = ({ children }) => (
+                <div className="p-4 rounded-lg border-2 mb-4"
+                     style={{ backgroundColor: colors.successBg, borderColor: colors.success }}>
+                    <div className="flex items-start gap-2">
+                        <span className="text-lg mt-0.5 flex-shrink-0" style={{ color: colors.success }}>✓</span>
+                        <div style={{ color: '#166534' }}>{children}</div>
+                    </div>
+                </div>
+            );
+
+            const KeyInsightBox = ({ children }) => (
+                <div className="p-4 rounded-lg border-2 mb-4"
+                     style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}>
+                    <div className="flex items-start gap-3">
+                        <span className="text-lg flex-shrink-0 mt-0.5" style={{ color: colors.accent }}>💡</span>
+                        <div style={{ color: colors.earthDark }}>{children}</div>
+                    </div>
+                </div>
+            );
+
+            const ContinueButton = ({ onClick, children = 'Continue', disabled = false }) => (
+                <button onClick={() => { if (!disabled) { playContinueClick(); onClick(); } }}
+                        disabled={disabled}
+                        className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 border-0 cursor-pointer disabled:cursor-not-allowed mb-4"
+                        style={{ backgroundColor: disabled ? colors.earth : colors.primary, opacity: disabled ? 0.5 : 1 }}>
+                    {children} →
+                </button>
+            );
+
+            const GlossaryModal = () => (
+                <div className="fixed inset-0 flex items-center justify-center p-4 z-50"
+                     style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="bg-white rounded-xl max-w-md w-full" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+                        <div className="p-4 border-b flex justify-between items-center sticky top-0 bg-white"
+                             style={{ borderColor: colors.earthLight }}>
+                            <h3 className="font-bold" style={{ color: colors.primary }}>📖 Glossary</h3>
+                            <button onClick={() => setShowGlossary(false)}
+                                    className="text-gray-500 hover:text-gray-700 text-2xl font-light border-0 bg-transparent cursor-pointer"
+                                    aria-label="Close glossary">✕</button>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            {glossaryTerms.map((t, i) => (
+                                <div key={i}>
+                                    <p className="font-semibold text-sm" style={{ color: colors.primary }}>{t.term}</p>
+                                    <p className="text-xs mt-0.5" style={{ color: colors.earthDark }}>{t.definition}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // ============================================================
+            // Phase renderers
+            // ============================================================
+            const renderWelcome = () => (
+                <div className="p-4 max-w-2xl mx-auto">
+                    <Header />
+
+                    <NarrativeBlock>
+                        Your two lists are pinned to the workbench &mdash; about thirty repair-related Things,
+                        and a couple of Promises. Mostly plain words; the only dollar amount you wrote down so
+                        far was the $220 Smith paid up front for his frame.
+                        <br /><br />
+                        You called Citizens Mutual last week about insurance &mdash; you didn&rsquo;t want to be
+                        caught flat-footed if something happened. Maria, the agent, is coming by this
+                        afternoon to write a policy. She said she&rsquo;d need to know what&rsquo;s here.
+                    </NarrativeBlock>
+
+                    {/* The two lists from 1.1, pinned to the workbench */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        <div className="rounded-lg p-3"
+                             style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                            <p className="text-xs font-bold tracking-wide mb-1" style={{ color: colors.primary }}>
+                                📌 THINGS
+                            </p>
+                            <p className="text-xs italic mb-2" style={{ color: colors.earth }}>(repair-related)</p>
+                            <ul className="space-y-1 text-xs" style={{ color: colors.earthDark }}>
+                                {welcomeVisibleIds.map(id => {
+                                    const item = items.find(i => i.id === id);
+                                    if (!item) return null;
+                                    return (
+                                        <li key={item.id} className="flex gap-1">
+                                            <span style={{ color: colors.accent }}>·</span>
+                                            <span>{item.name}</span>
+                                        </li>
+                                    );
+                                })}
+                                <li className="flex gap-1 italic mt-2 pt-2"
+                                    style={{ color: colors.earth, borderTop: `1px dashed ${colors.earthLight}` }}>
+                                    <span>&hellip;</span>
+                                    <span>+ {items.length - welcomeVisibleIds.length} more on the list&hellip;</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div className="rounded-lg p-3"
+                             style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                            <p className="text-xs font-bold tracking-wide mb-1" style={{ color: colors.primary }}>
+                                📌 PROMISES
+                            </p>
+                            <p className="text-xs italic mb-2" style={{ color: colors.earth }}>(repair-related)</p>
+                            <ul className="space-y-1 text-xs" style={{ color: colors.earthDark }}>
+                                {promises.map(p => (
+                                    <li key={p.id} className="flex gap-1">
+                                        <span style={{ color: colors.accent }}>·</span>
+                                        <span className="italic">{p.text}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="rounded-lg p-4 border-2 mb-4"
+                         style={{ backgroundColor: 'white', borderColor: colors.earthLight }}>
+                        <h3 className="font-bold mb-3" style={{ color: colors.primary }}>What You&rsquo;ll Discover</h3>
+                        <ul className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                            <li className="flex gap-2"><span style={{ color: colors.accent }}>→</span>
+                                Not everything related to your repair work fits on Maria&rsquo;s form &mdash; and the line
+                                isn&rsquo;t the one you drew in 1.1.</li>
+                            <li className="flex gap-2"><span style={{ color: colors.accent }}>→</span>
+                                The things that do go on the form have a name. So does the other list.</li>
+                            <li className="flex gap-2"><span style={{ color: colors.accent }}>→</span>
+                                Both lists end the day with dollar amounts on every line.</li>
+                        </ul>
+                    </div>
+
+                    <NarrativeBlock>
+                        Thursday, 2pm. The doorbell jingles. Maria walks in with a clipboard.
+                    </NarrativeBlock>
+
+                    <MariaBox>
+                        &ldquo;Hi &mdash; Maria from Citizens Mutual. Good to meet you. I&rsquo;ll write you a property
+                        policy &mdash; I need an inventory of what you have first. Here&rsquo;s the form. Use your
+                        list. Drop each thing into the right category; we&rsquo;ll get to dollar amounts after.&rdquo;
+                    </MariaBox>
+
+                    <ContinueButton onClick={() => setPhase('sheet1-categorize')}>
+                        Start with the categories
+                    </ContinueButton>
+                </div>
+            );
+
+            const renderSheet1 = () => {
+                const interactionDisabled = s1Sorting || s1Done;
+                return (
+                    <div className="p-4 max-w-5xl mx-auto">
+                        <Header />
+
+                        <NarrativeBlock>
+                            Maria&rsquo;s form has three sections &mdash; Equipment, Supplies, Fixtures.
+                            Drag a few items from your list into the right one. <strong>Some items
+                            won&rsquo;t fit on the form at all</strong> &mdash; try them anyway; Maria
+                            will tell you why. Once the rule is clear, you can work through the rest
+                            on your own.
+                        </NarrativeBlock>
+
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+                            {/* Sidebar: visible Things list */}
+                            <div className="md:col-span-4">
+                                <div className="rounded-lg p-3"
+                                     style={{ border: `1px solid ${colors.earthLight}`, backgroundColor: 'white' }}>
+                                    <p className="text-xs font-bold mb-1 tracking-wide" style={{ color: colors.primary }}>
+                                        📌 YOUR THINGS LIST
+                                    </p>
+                                    <p className="text-xs italic mb-3" style={{ color: colors.earth }}>(repair-related, from 1.1)</p>
+
+                                    {s1Done ? (
+                                        <p className="text-xs italic" style={{ color: colors.earth }}>All placed.</p>
+                                    ) : (
+                                        <>
+                                            <div className="space-y-1">
+                                                {s1SidebarRemaining.map(item => {
+                                                    const rejected = s1Rejected[item.id];
+                                                    return (
+                                                        <div key={item.id}
+                                                             draggable={!interactionDisabled && !rejected}
+                                                             onDragStart={(e) => handleS1DragStart(e, item.id)}
+                                                             onDragEnd={handleS1DragEnd}
+                                                             className="px-2 py-1 rounded text-xs select-none"
+                                                             style={{
+                                                                 backgroundColor: rejected ? colors.warningBg : (s1DraggedId === item.id ? colors.sand : 'white'),
+                                                                 border: `1px solid ${rejected ? colors.warning : colors.primary}`,
+                                                                 color: rejected ? '#92400e' : colors.primary,
+                                                                 cursor: interactionDisabled || rejected ? 'default' : 'grab',
+                                                             }}>
+                                                            <span className="font-medium">{item.name}</span>
+                                                            {rejected && (
+                                                                <p className="text-xs mt-0.5 italic" style={{ color: '#92400e' }}>
+                                                                    {rejected === 'not-owned' ? 'skipped — rented, not yours' : 'skipped — not insurable'}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            {s1HiddenCount > 0 && (
+                                                <div className="mt-2 px-2 py-1 rounded text-xs italic"
+                                                     style={{ backgroundColor: colors.sand, color: colors.earth, border: `1px dashed ${colors.earthLight}` }}>
+                                                    + {s1HiddenCount} more on the full list
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Form: three category bins */}
+                            <div className="md:col-span-8">
+                                <div className="rounded-lg overflow-hidden"
+                                     style={{ border: `2px solid ${colors.earthDark}`, backgroundColor: 'white' }}>
+                                    <div className="px-4 py-2 border-b-2"
+                                         style={{ borderColor: colors.earthDark, backgroundColor: '#fafaf7' }}>
+                                        <p className="text-sm font-bold tracking-tight" style={{ color: colors.earthDark }}>
+                                            PROPERTY INVENTORY &mdash; ASSETS
+                                        </p>
+                                        <p className="text-xs mt-0.5" style={{ color: colors.earth }}>
+                                            Citizens Mutual Insurance &middot; Coverage Estimate
+                                        </p>
+                                    </div>
+                                    <div className="p-3">
+                                        {categoryDefs.map(cat => {
+                                            const itemsInCat = placeable.filter(i => s1Placements[i.id] === cat.id);
+                                            return (
+                                                <div key={cat.id} className="mb-3">
+                                                    <p className="text-xs font-bold tracking-wide" style={{ color: colors.earth }}>{cat.label}</p>
+                                                    <p className="text-xs italic mb-1" style={{ color: colors.earth }}>{cat.sub}</p>
+                                                    <div className="border-2 border-dashed rounded p-2"
+                                                         onDragOver={handleDragOver}
+                                                         onDrop={(e) => handleS1Drop(e, cat.id)}
+                                                         style={{
+                                                             borderColor: s1FlashFeedback === 'correct' ? colors.success
+                                                                        : s1FlashFeedback === 'wrong'   ? colors.error
+                                                                        : colors.earthLight,
+                                                             backgroundColor: itemsInCat.length === 0 ? colors.sand : 'white',
+                                                             minHeight: '52px',
+                                                         }}>
+                                                        {itemsInCat.length === 0 && (
+                                                            <p className="text-xs italic text-center py-2" style={{ color: colors.earth }}>
+                                                                drop here
+                                                            </p>
+                                                        )}
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {itemsInCat.map(item => (
+                                                                <div key={item.id}
+                                                                     className="px-2 py-1 rounded text-xs font-medium"
+                                                                     style={{
+                                                                         backgroundColor: colors.successBg,
+                                                                         color: '#166534',
+                                                                         border: `1px solid ${colors.success}`,
+                                                                     }}>
+                                                                    {item.name} ✓
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    {itemsInCat.length > 0 && (
+                                                        <div className="flex justify-end pt-1">
+                                                            <span className="text-xs mono" style={{ color: colors.earth }}>
+                                                                {itemsInCat.length} item{itemsInCat.length === 1 ? '' : 's'}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Maria's nudge for wrong drops */}
+                        {s1Nudge && (
+                            <MariaBox prefix="(glancing over)">&ldquo;{s1Nudge.message}&rdquo;</MariaBox>
+                        )}
+
+                        {/* "Time-skip" beat — the student works through the rest on their own */}
+                        {s1Sorting && (
+                            <div className="rounded-lg p-4 mb-3 system-sorting"
+                                 style={{ backgroundColor: colors.primary, color: 'white', textAlign: 'center' }}>
+                                <p className="text-base font-bold">⚙ A few hours later&hellip;</p>
+                                <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.8)' }}>
+                                    You worked through the rest of the list, applying the rule you set.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Trigger affordance */}
+                        {s1TriggerMet && !s1Sorting && !s1Done && (
+                            <div className="rounded-lg p-3 mb-3 border-2"
+                                 style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}>
+                                <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                                    <strong>The categories are clear.</strong> You&rsquo;ve placed examples in each section
+                                    and you&rsquo;ve hit at least one item that doesn&rsquo;t fit on the form at all.
+                                    You can finish the rest of the list on your own &mdash; should be a few hours of work.
+                                </p>
+                                <button onClick={handleS1Autocomplete}
+                                        className="w-full py-3 rounded-lg font-bold text-white border-0 cursor-pointer"
+                                        style={{ backgroundColor: colors.primary }}>
+                                    Work through the rest →
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Progress-toward-trigger hint */}
+                        {!s1TriggerMet && !s1Sorting && !s1Done && (
+                            <div className="rounded-lg p-3 mb-3 text-xs"
+                                 style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}`, color: colors.earthDark }}>
+                                <p className="font-bold mb-1" style={{ color: colors.primary }}>
+                                    To unlock the system sort:
+                                </p>
+                                <ul className="space-y-0.5">
+                                    <li className="flex gap-2">
+                                        <span>{correctPlacements.length >= 4 ? '✓' : '·'}</span>
+                                        <span>place at least 4 items in the right category ({correctPlacements.length}/4 so far)</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                        <span>{placedInEquip ? '✓' : '·'}</span>
+                                        <span>at least one in Equipment</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                        <span>{placedInSupplies ? '✓' : '·'}</span>
+                                        <span>at least one in Supplies</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                        <span>{placedInFixtures ? '✓' : '·'}</span>
+                                        <span>at least one in Fixtures</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                        <span>{anyRejectedTried ? '✓' : '·'}</span>
+                                        <span>try at least one item that doesn&rsquo;t seem to fit on the form</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        )}
+
+                        {s1Done && (
+                            <>
+                                <InsightPanel>
+                                    Thirty items, three categories. You placed a handful, then worked through the
+                                    rest over the next few hours. <em>Same move as last time &mdash; once the rule
+                                    is clear, the volume becomes tractable.</em>
+                                </InsightPanel>
+                                <ContinueButton onClick={() => setPhase('sheet2-value')}>
+                                    Now the dollar amounts
+                                </ContinueButton>
+                            </>
+                        )}
+                    </div>
+                );
+            };
+
+            const renderSheet2 = () => {
+                return (
+                    <div className="p-4 max-w-5xl mx-auto">
+                        <Header />
+
+                        <NarrativeBlock>
+                            Maria flips the form over. <strong>Replacement cost</strong> &mdash; what it would
+                            take to buy each thing again today. For the bigger purchases you have receipts and
+                            a credit card statement on the workbench. For consumables you&rsquo;ve been using on
+                            jobs, what&rsquo;s on the shelf <em>now</em>, not what you originally paid. For the
+                            rest, you&rsquo;ll round out category totals on your own. Put numbers on the
+                            documented ones first.
+                        </NarrativeBlock>
+
+                        {/* Documents on the workbench — visible only in sheet 2 */}
+                        <div className="rounded-lg p-3 mb-4"
+                             style={{ backgroundColor: '#f0ece0', border: `1px solid ${colors.earthLight}` }}>
+                            <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.earth }}>
+                                📋 ON THE WORKBENCH
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                                {receipts.map(r => (
+                                    <div key={r.id} className="rounded p-2"
+                                         style={{ backgroundColor: '#fffbe6', border: `1px solid ${colors.earthLight}` }}>
+                                        <p className="text-xs uppercase tracking-wide font-bold mb-1" style={{ color: colors.earth }}>
+                                            Receipt
+                                        </p>
+                                        <p className="text-xs font-semibold" style={{ color: colors.earthDark }}>{r.vendor}</p>
+                                        <p className="text-xs mono" style={{ color: colors.earth }}>{r.date}</p>
+                                        <p className="text-xs mt-1" style={{ color: colors.earthDark }}>{r.desc}</p>
+                                        <p className="text-sm font-bold mono text-right mt-1" style={{ color: colors.earthDark }}>
+                                            {fmt(r.amount)}
+                                        </p>
+                                    </div>
+                                ))}
+                                <div className="rounded p-2"
+                                     style={{ backgroundColor: 'white', border: `1px solid ${colors.primary}` }}>
+                                    <p className="text-xs uppercase tracking-wide font-bold mb-1" style={{ color: colors.primary }}>
+                                        Credit card statement
+                                    </p>
+                                    <p className="text-xs mono" style={{ color: colors.earth }}>
+                                        {creditCard.issuer} ****{creditCard.last4} &middot; {creditCard.period}
+                                    </p>
+                                    <p className="text-xs mt-1" style={{ color: colors.earthDark }}>
+                                        {creditCard.lineItem.date} &middot; {creditCard.lineItem.desc}
+                                    </p>
+                                    <p className="text-sm font-bold mono text-right mt-1" style={{ color: colors.earthDark }}>
+                                        {fmt(creditCard.lineItem.amount)}
+                                    </p>
+                                    <p className="text-xs italic mt-1" style={{ color: colors.error }}>
+                                        Balance: {fmt(creditCard.balance)} &middot; {creditCard.status}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* The categorized form, now with $ inputs and aggregate rows */}
+                        <div className="rounded-lg overflow-hidden mb-4"
+                             style={{ border: `2px solid ${colors.earthDark}`, backgroundColor: 'white' }}>
+                            <div className="px-4 py-2 border-b-2"
+                                 style={{ borderColor: colors.earthDark, backgroundColor: '#fafaf7' }}>
+                                <p className="text-sm font-bold tracking-tight" style={{ color: colors.earthDark }}>
+                                    PROPERTY INVENTORY &mdash; ASSETS
+                                </p>
+                            </div>
+                            <div className="p-3">
+                                {categoryDefs.map(cat => {
+                                    const docs = placeable.filter(i => i.category === cat.id && i.sourced !== 'estimate');
+                                    const estRow = estimateRowFor(cat.id);
+                                    return (
+                                        <div key={cat.id} className="mb-3">
+                                            <p className="text-xs font-bold tracking-wide" style={{ color: colors.earth }}>{cat.label}</p>
+                                            <div className="border rounded p-2"
+                                                 style={{ borderColor: colors.earthLight, backgroundColor: '#fafaf7' }}>
+                                                {docs.map(item => (
+                                                    <div key={item.id}
+                                                         className="flex items-center justify-between gap-3 py-1 px-2 rounded mb-1"
+                                                         style={{ backgroundColor: 'white' }}>
+                                                        <div className="flex-1 min-w-0">
+                                                            <span className="text-sm" style={{ color: colors.earthDark }}>{item.name}</span>
+                                                            <span className="text-xs ml-2 italic" style={{ color: colors.earth }}>
+                                                                ({item.valueLabel || (item.sourced === 'receipt' ? 'receipt' : 'credit card')})
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                                            <span className="text-sm mono" style={{ color: colors.earth }}>$</span>
+                                                            <input
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                value={s2Values[item.id] || ''}
+                                                                onChange={(e) => handleS2ValueChange(item.id, e.target.value)}
+                                                                onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+                                                                placeholder="0"
+                                                                className="w-20 px-2 py-1 rounded mono text-sm text-right"
+                                                                style={{
+                                                                    border: '2px solid ' + (isS2Correct(item.id) ? colors.success : isS2Wrong(item.id) ? colors.error : colors.earthLight),
+                                                                    backgroundColor: 'white',
+                                                                    color: colors.earthDark,
+                                                                    fontSize: '16px',
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {/* +X more (estimate) row */}
+                                                {estRow.count > 0 && (
+                                                    <div className="flex items-center justify-between gap-3 py-1 px-2 rounded"
+                                                         style={{ backgroundColor: s2EstimatesShown ? '#fef9e7' : '#fafaf7' }}>
+                                                        <div className="flex-1 min-w-0">
+                                                            <span className="text-sm italic" style={{ color: colors.earth }}>
+                                                                + {estRow.count} more item{estRow.count === 1 ? '' : 's'}
+                                                            </span>
+                                                            <span className="text-xs ml-2 italic" style={{ color: colors.earth }}>
+                                                                (your estimate)
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                                            <span className="text-sm mono" style={{ color: colors.earth }}>$</span>
+                                                            <div className="w-20 px-2 py-1 rounded mono text-sm text-right"
+                                                                 style={{
+                                                                     border: `2px solid ${s2EstimatesShown ? colors.accent : colors.earthLight}`,
+                                                                     backgroundColor: s2EstimatesShown ? '#fffbe6' : 'white',
+                                                                     color: s2EstimatesShown ? colors.earthDark : colors.earth,
+                                                                 }}>
+                                                                {s2EstimatesShown ? estRow.amount.toLocaleString('en-US') : '—'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex justify-end pt-1">
+                                                <span className="text-xs mono" style={{ color: colors.earth }}>
+                                                    subtotal: {fmt(subtotalForCat(cat.id))}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                <div className="flex justify-between pt-3 mt-3 border-t-2"
+                                     style={{ borderColor: colors.earthDark }}>
+                                    <span className="font-bold text-sm" style={{ color: colors.earthDark }}>TOTAL (insurable)</span>
+                                    <span className="font-bold text-sm mono" style={{ color: colors.earthDark }}>{fmt(totalInsurable)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Parts-on-shelf nudge — fires when student types $500 (the CC amount) */}
+                        {Number(s2Values['parts']) === 500 && (
+                            <MariaBox prefix="(looking up)">
+                                &ldquo;Five hundred is what you paid for the lot &mdash; that&rsquo;s what
+                                you still owe on the credit card. But you&rsquo;ve put some of those parts
+                                into jobs already over the past few months. Walk the shelf &mdash; about
+                                $300 worth left. That&rsquo;s the asset value for the form. The $500
+                                stays on the credit card as what you owe.&rdquo;
+                            </MariaBox>
+                        )}
+
+                        {s2Valuing && (
+                            <div className="rounded-lg p-4 mb-3 system-sorting"
+                                 style={{ backgroundColor: colors.primary, color: 'white', textAlign: 'center' }}>
+                                <p className="text-base font-bold">⚙ A few more hours&hellip;</p>
+                                <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.8)' }}>
+                                    You rounded out category totals from the rest of the inventory.
+                                </p>
+                            </div>
+                        )}
+
+                        {s2TriggerMet && !s2Valuing && !s2Done && (
+                            <div className="rounded-lg p-3 mb-3 border-2"
+                                 style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}>
+                                <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                                    <strong>The move is clear.</strong> You priced what the documents covered &mdash;
+                                    receipts and the credit card statement. For the rest, you can round out a
+                                    category-level estimate yourself.
+                                </p>
+                                <button onClick={handleS2Autocomplete}
+                                        className="w-full py-3 rounded-lg font-bold text-white border-0 cursor-pointer"
+                                        style={{ backgroundColor: colors.primary }}>
+                                    Estimate the rest →
+                                </button>
+                            </div>
+                        )}
+
+                        {!s2TriggerMet && !s2Valuing && !s2Done && (
+                            <div className="rounded-lg p-3 mb-3 text-xs"
+                                 style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}`, color: colors.earthDark }}>
+                                <p className="font-bold mb-1" style={{ color: colors.primary }}>
+                                    To unlock the category estimates:
+                                </p>
+                                <ul className="space-y-0.5">
+                                    <li className="flex gap-2">
+                                        <span>{documentedCorrect.length >= 3 ? '✓' : '·'}</span>
+                                        <span>price at least 3 documented items correctly ({documentedCorrect.length}/3 so far)</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                        <span>{correctFromReceipt ? '✓' : '·'}</span>
+                                        <span>at least one from a receipt</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                        <span>{correctFromCreditCard ? '✓' : '·'}</span>
+                                        <span>at least one from the credit card statement</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        )}
+
+                        {s2Done && (
+                            <>
+                                <InsightPanel>
+                                    Third time you&rsquo;ve felt it. <em>Once the rule is clear, the volume becomes
+                                    tractable.</em> A few documented prices, then your own category-level estimates
+                                    for the rest.
+                                </InsightPanel>
+                                <ContinueButton onClick={() => setPhase('maria-readback')}>
+                                    Maria reads it back
+                                </ContinueButton>
+                            </>
+                        )}
+                    </div>
+                );
+            };
+
+            const renderMariaReadback = () => (
+                <div className="p-4 max-w-2xl mx-auto">
+                    <Header />
+
+                    <NarrativeBlock>
+                        By late afternoon the form is done. Maria runs her finger down each column.
+                    </NarrativeBlock>
+
+                    <div className="rounded-lg p-4 mb-4"
+                         style={{ border: `1px solid ${colors.earthLight}`, backgroundColor: 'white' }}>
+                        <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.primary }}>INSURABLE TOTALS</p>
+                        <div className="space-y-1 mono text-sm" style={{ color: colors.earthDark }}>
+                            {categoryDefs.map(cat => (
+                                <div key={cat.id} className="flex justify-between">
+                                    <span>{cat.label}</span>
+                                    <span>{fmt(subtotalForCat(cat.id))}</span>
+                                </div>
+                            ))}
+                            <div className="flex justify-between pt-2 mt-2 border-t-2 font-bold"
+                                 style={{ borderColor: colors.earthDark }}>
+                                <span>TOTAL (insurable)</span>
+                                <span>{fmt(totalInsurable)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <MariaBox>
+                        &ldquo;OK. Equipment {fmt(subtotalForCat('equipment'))}. Supplies {fmt(subtotalForCat('supplies'))}.
+                        Fixtures {fmt(subtotalForCat('fixtures'))}. Total of {fmt(totalInsurable)} &mdash; what you have
+                        on hand now. Property policy goes on that. Paperwork in the mail.&rdquo;
+                    </MariaBox>
+
+                    <NarrativeBlock>
+                        Maria packs up, hands you a copy of the form, and heads out. The doorbell jingles closed
+                        behind her.
+                    </NarrativeBlock>
+
+                    <ContinueButton onClick={() => setPhase('anna-arrives')}>
+                        What about the other list?
+                    </ContinueButton>
+                </div>
+            );
+
+            const renderAnnaArrives = () => {
+                // Workbook renderer — single Excel-style container with tabs.
+                // Style adapted from 1.4 (keeping-reasons-mockup.html): toolbar
+                // bar at top (Excel green) with the .xlsx filename, active sheet
+                // area, tab strip at the bottom. Active tab is white with a 2px
+                // colored top border.
+                //
+                // Naming arc: Maria already used "Assets" on her form in sheet 1,
+                // so the first tab is "Assets" from the start. Only the second
+                // tab ("Promises") gets renamed when Anna names "Liabilities."
+                const toggleCat = (catId) => setExpandedCats(prev => ({ ...prev, [catId]: !prev[catId] }));
+                const cashAmount = Number(extraValues['cash']) || 0;
+
+                // Canonical totals for the spreadsheet view — independent of
+                // sheet-2 staged display state. Once we're in the Anna phase,
+                // the categorization + valuation is "done" and we display the
+                // full canonical cost-by-category. (The staged subtotalForCat
+                // used in sheet 2 + Maria readback would compute $0 if the
+                // student reached Anna via dev mode without completing the
+                // estimate-the-rest beat — producing a $50 grand total.)
+                const sheetSubtotal = (catId) =>
+                    placeable.filter(i => i.category === catId).reduce((s, i) => s + (i.cost || 0), 0);
+                const sheetInsurable = categoryDefs.reduce((s, c) => s + sheetSubtotal(c.id), 0);
+                const sheetTotalAssets = sheetInsurable + cashAmount;
+
+                const tabConfig = [
+                    { id: 'things',   label: 'Assets',                                       color: colors.primary   },
+                    { id: 'promises', label: liabilitiesNamed ? 'Liabilities' : 'Promises', color: colors.earthDark },
+                ];
+
+                const renderThingsBody = () => (
+                    <div className="p-1">
+                        {categoryDefs.map(cat => {
+                            const expanded = expandedCats[cat.id];
+                            const itemsInCat = placeable.filter(i => i.category === cat.id);
+                            const subtotal = itemsInCat.reduce((s, i) => s + (i.cost || 0), 0);
+                            return (
+                                <React.Fragment key={cat.id}>
+                                    <div onClick={() => { playContinueClick(); toggleCat(cat.id); }}
+                                         className="flex justify-between items-center py-2 px-3 cursor-pointer"
+                                         style={{
+                                             borderBottom: `1px solid ${colors.earthLight}`,
+                                             backgroundColor: expanded ? '#fafaf7' : 'white',
+                                         }}
+                                         aria-expanded={expanded}>
+                                        <span className="font-bold text-sm" style={{ color: colors.earthDark }}>
+                                            <span className="inline-block w-4 mr-2 text-center" style={{ color: colors.earth }}>
+                                                {expanded ? '▼' : '▶'}
+                                            </span>
+                                            {cat.label}
+                                        </span>
+                                        <span className="mono text-sm font-bold" style={{ color: colors.earthDark }}>
+                                            {fmt(subtotal)}
+                                        </span>
+                                    </div>
+                                    {expanded && itemsInCat.map(item => (
+                                        <div key={item.id}
+                                             className="flex justify-between items-center py-1 px-3"
+                                             style={{
+                                                 borderBottom: `1px dashed ${colors.earthLight}`,
+                                                 backgroundColor: '#fdfaf2',
+                                             }}>
+                                            <span className="text-xs pl-6" style={{ color: colors.earthDark }}>
+                                                {item.name}
+                                            </span>
+                                            <span className="mono text-xs" style={{ color: colors.earth }}>
+                                                {fmt(item.cost)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </React.Fragment>
+                            );
+                        })}
+                        {/* Cash row — single item, no chevron */}
+                        <div className="flex justify-between items-center py-2 px-3"
+                             style={{ borderBottom: `1px solid ${colors.earthLight}` }}>
+                            <span className="text-sm" style={{ color: colors.earthDark }}>
+                                <span className="inline-block w-4 mr-2"></span>
+                                Cash in cash drawer
+                            </span>
+                            <span className="mono text-sm font-bold" style={{ color: colors.earthDark }}>
+                                {fmt(cashAmount)}
+                            </span>
+                        </div>
+                        {/* Total */}
+                        <div className="flex justify-between items-center py-2 px-3"
+                             style={{
+                                 borderTop: `2px solid ${colors.earthDark}`,
+                                 backgroundColor: colors.sand,
+                             }}>
+                            <span className="font-bold text-sm" style={{ color: colors.primary }}>
+                                <span className="inline-block w-4 mr-2"></span>
+                                TOTAL
+                            </span>
+                            <span className="mono text-sm font-bold" style={{ color: colors.primary }}>
+                                {fmt(sheetTotalAssets)}
+                            </span>
+                        </div>
+                    </div>
+                );
+
+                const renderPromisesBody = () => (
+                    <div className="p-1">
+                        {promises.map(p => (
+                            <div key={p.id}
+                                 className="flex justify-between items-start py-2 px-3 gap-3"
+                                 style={{ borderBottom: `1px solid ${colors.earthLight}` }}>
+                                <span className="text-xs italic flex-1" style={{ color: colors.earthDark }}>
+                                    {p.text}
+                                </span>
+                                <span className="mono text-sm font-bold flex-shrink-0" style={{ color: colors.earthDark }}>
+                                    {fmt(Number(promiseValues[p.id]) || 0)}
+                                </span>
+                            </div>
+                        ))}
+                        <div className="flex justify-between items-center py-2 px-3"
+                             style={{
+                                 borderTop: `2px solid ${colors.earthDark}`,
+                                 backgroundColor: colors.sand,
+                             }}>
+                            <span className="font-bold text-sm" style={{ color: colors.primary }}>
+                                TOTAL
+                            </span>
+                            <span className="mono text-sm font-bold" style={{ color: colors.primary }}>
+                                {fmt(totalLiabilities)}
+                            </span>
+                        </div>
+                    </div>
+                );
+
+                const renderWorkbook = () => (
+                    <div className="rounded-lg overflow-hidden mb-4"
+                         style={{
+                             border: `2px solid #0e6b3a`,
+                             backgroundColor: 'white',
+                             boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
+                         }}>
+                        {/* Excel-style title bar (green) */}
+                        <div className="px-4 py-2 flex items-center justify-between"
+                             style={{
+                                 background: 'linear-gradient(180deg, #138a4b 0%, #107C41 100%)',
+                                 borderBottom: `1px solid #0e6b3a`,
+                                 color: 'white',
+                             }}>
+                            <span className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                                <span style={{ fontSize: '15px' }}>▦</span>
+                                <span className="mono">repair-lists.xlsx</span>
+                                <span className="text-xs font-normal opacity-75">— Excel</span>
+                            </span>
+                            <span className="text-xs mono opacity-75">
+                                {tabConfig.find(t => t.id === activeTab).label} sheet
+                            </span>
+                        </div>
+
+                        {/* Active sheet area */}
+                        <div style={{ minHeight: '180px', backgroundColor: 'white' }}>
+                            {activeTab === 'things' ? renderThingsBody() : renderPromisesBody()}
+                        </div>
+
+                        {/* Tab strip — bottom of the workbook */}
+                        <div className="flex"
+                             style={{
+                                 backgroundColor: '#e8e8e8',
+                                 borderTop: `1px solid #c8c8c8`,
+                             }}>
+                            {tabConfig.map(t => {
+                                const isActive = activeTab === t.id;
+                                return (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => { playContinueClick(); setActiveTab(t.id); }}
+                                        className="px-4 py-2 text-sm font-medium border-0 cursor-pointer"
+                                        style={{
+                                            backgroundColor: isActive ? 'white' : 'transparent',
+                                            color: isActive ? t.color : colors.earth,
+                                            borderTop: isActive ? `2px solid ${t.color}` : '2px solid transparent',
+                                            borderRight: `1px solid #c8c8c8`,
+                                            borderBottom: isActive ? '1px solid white' : 'none',
+                                            marginBottom: isActive ? '-1px' : '0',
+                                            position: 'relative',
+                                        }}>
+                                        {t.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+
+                return (
+                <div className="p-4 max-w-2xl mx-auto">
+                    <Header />
+
+                    <NarrativeBlock>
+                        A few minutes later the doorbell jingles again. Anna walks in &mdash; your friend who
+                        used to work at City Cycle, twelve years before her kid. She still does her own brake
+                        jobs and stops by most weeks.
+                    </NarrativeBlock>
+
+                    <AnnaBox>&ldquo;Was that Maria pulling out? Insurance done?&rdquo;</AnnaBox>
+                    <YouBox>&ldquo;Yeah, just finished.&rdquo;</YouBox>
+                    <AnnaBox>&ldquo;About time.&rdquo;</AnnaBox>
+
+                    <NarrativeBlock>
+                        She glances at the completed form, then at the {liabilitiesNamed ? <strong>Liabilities</strong> : <span>Promises</span>} list pinned next to it.
+                    </NarrativeBlock>
+
+                    <AnnaBox>
+                        &ldquo;She left a couple things off too &mdash; the rented space (not yours, she said), and
+                        the cash in the drawer. How much&rsquo;s in there now &mdash; fifty bucks, from when you
+                        seeded it a couple weeks back? Put it on the broader list. And the promises &mdash; those
+                        aren&rsquo;t her side at all, but they&rsquo;re still on the wall. The credit card bill&rsquo;s
+                        right there. Let&rsquo;s get numbers on what&rsquo;s missing.&rdquo;
+                    </AnnaBox>
+
+                    {!spreadsheetOpened && (
+                        <>
+                    {/* Extras (cash) */}
+                    <div className="rounded-lg overflow-hidden mb-4"
+                         style={{ border: `2px solid ${colors.earthDark}`, backgroundColor: 'white' }}>
+                        <div className="px-4 py-2 border-b-2"
+                             style={{ borderColor: colors.earthDark, backgroundColor: '#fafaf7' }}>
+                            <p className="text-sm font-bold tracking-tight" style={{ color: colors.earthDark }}>
+                                NOT ON MARIA&rsquo;S FORM &mdash; STILL YOURS
+                            </p>
+                        </div>
+                        <div className="p-3">
+                            {extras.map(item => (
+                                <div key={item.id}
+                                     className="flex items-center justify-between gap-3 py-2 px-2 rounded mb-1"
+                                     style={{ backgroundColor: '#fafaf7' }}>
+                                    <span className="text-sm" style={{ color: colors.earthDark }}>{item.name}</span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-sm mono" style={{ color: colors.earth }}>$</span>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={extraValues[item.id] || ''}
+                                            onChange={(e) => handleExtraChange(item.id, e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+                                            placeholder="0"
+                                            className="w-20 px-2 py-1 rounded mono text-sm text-right"
+                                            style={{
+                                                border: '2px solid ' + (isExtraCorrect(item.id) ? colors.success : isExtraWrong(item.id) ? colors.error : colors.earthLight),
+                                                backgroundColor: 'white',
+                                                color: colors.earthDark,
+                                                fontSize: '16px',
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Still on the workbench: credit card statement */}
+                    <div className="rounded-lg p-3 mb-3"
+                         style={{ backgroundColor: '#f0ece0', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.earth }}>
+                            📋 STILL ON THE WORKBENCH
+                        </p>
+                        <div className="rounded p-2 inline-block"
+                             style={{ backgroundColor: 'white', border: `1px solid ${colors.primary}` }}>
+                            <p className="text-xs uppercase tracking-wide font-bold mb-1" style={{ color: colors.primary }}>
+                                Credit card statement
+                            </p>
+                            <p className="text-xs mono" style={{ color: colors.earth }}>
+                                {creditCard.issuer} ****{creditCard.last4} &middot; {creditCard.period}
+                            </p>
+                            <p className="text-xs mt-1" style={{ color: colors.earthDark }}>
+                                {creditCard.lineItem.date} &middot; {creditCard.lineItem.desc}
+                            </p>
+                            <p className="text-sm font-bold mono text-right mt-1" style={{ color: colors.earthDark }}>
+                                {fmt(creditCard.lineItem.amount)}
+                            </p>
+                            <p className="text-xs italic mt-1" style={{ color: colors.error }}>
+                                Balance: {fmt(creditCard.balance)} &middot; {creditCard.status}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Promises with $ inputs */}
+                    <div className="rounded-lg overflow-hidden mb-4"
+                         style={{ border: `2px solid ${colors.earthDark}`, backgroundColor: 'white' }}>
+                        <div className="px-4 py-2 border-b-2"
+                             style={{ borderColor: colors.earthDark, backgroundColor: '#fafaf7' }}>
+                            <p className="text-sm font-bold tracking-tight" style={{ color: colors.earthDark }}>
+                                {liabilitiesNamed ? 'YOUR LIABILITIES LIST' : 'YOUR PROMISES LIST'}
+                            </p>
+                            <p className="text-xs italic" style={{ color: colors.earth }}>(repair-related, from 1.1)</p>
+                        </div>
+                        <div className="p-3">
+                            {promises.map(p => (
+                                <div key={p.id} className="flex items-start justify-between gap-3 py-2 px-2 rounded mb-1"
+                                     style={{ backgroundColor: '#fafaf7' }}>
+                                    <span className="text-sm italic flex-1" style={{ color: colors.earthDark }}>{p.text}</span>
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                        <span className="text-sm mono" style={{ color: colors.earth }}>$</span>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={promiseValues[p.id] || ''}
+                                            onChange={(e) => handlePromiseChange(p.id, e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+                                            placeholder="0"
+                                            className="w-20 px-2 py-1 rounded mono text-sm text-right"
+                                            style={{
+                                                border: '2px solid ' + (isPromiseCorrect(p.id) ? colors.success : isPromiseWrong(p.id) ? colors.error : colors.earthLight),
+                                                backgroundColor: 'white',
+                                                color: colors.earthDark,
+                                                fontSize: '16px',
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="flex justify-between pt-3 mt-3 border-t-2"
+                                 style={{ borderColor: colors.earthDark }}>
+                                <span className="font-bold text-sm" style={{ color: colors.earthDark }}>TOTAL</span>
+                                <span className="font-bold text-sm mono" style={{ color: colors.earthDark }}>{fmt(totalLiabilities)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {allPromisesValued && allExtrasValued && (
+                        <>
+                            <AnnaBox>
+                                &ldquo;Fifty in the drawer. Two-twenty for Smith. Five hundred on the card. That&rsquo;s the picture.&rdquo;
+                            </AnnaBox>
+
+                            <NarrativeBlock>
+                                You look at the form, the cash on the bench, the promises pinned on the wall.
+                                If this is going to keep going week to week, paper isn&rsquo;t the right place for it.
+                                <br /><br />
+                                You picture it in Excel. <strong>One workbook, two tabs.</strong> One tab
+                                for the <strong>Assets</strong> &mdash; that&rsquo;s the word Maria used on her form,
+                                and her three categories organized everything better than your original list did.
+                                Borrow them, and add the cash back in too &mdash; she didn&rsquo;t want it, but
+                                you still have it. The second tab for the <strong>Promises</strong> &mdash; a
+                                simple list there, just the two of them.
+                            </NarrativeBlock>
+
+                            <button onClick={() => { playContinueClick(); setSpreadsheetOpened(true); }}
+                                    className="w-full py-3 rounded-lg font-bold text-white border-0 cursor-pointer mb-4"
+                                    style={{ backgroundColor: colors.primary }}>
+                                Open the laptop →
+                            </button>
+                        </>
+                    )}
+                        </>
+                    )}
+
+                    {spreadsheetOpened && renderWorkbook()}
+
+                    {spreadsheetOpened && !liabilitiesNamed && (
+                        <>
+                            <AnnaBox>
+                                &ldquo;Nice. Assets &mdash; Maria&rsquo;s word &mdash; on one tab. Promises on the
+                                other. One small thing: the accountants have a word for that second tab. They call
+                                those <strong>liabilities</strong>. Same idea &mdash; promises to pay or do, where
+                                the paying comes later. You can keep calling it Promises if you want; but if you
+                                want this workbook to talk to people the way accountants talk, rename it.&rdquo;
+                            </AnnaBox>
+                            <button onClick={() => { playContinueClick(); setLiabilitiesNamed(true); }}
+                                    className="w-full py-3 rounded-lg font-bold border-2 cursor-pointer mb-4"
+                                    style={{ backgroundColor: 'white', borderColor: colors.primary, color: colors.primary }}>
+                                Rename the Promises tab →
+                            </button>
+                        </>
+                    )}
+
+                    {spreadsheetOpened && liabilitiesNamed && (
+                        <>
+                            <InsightPanel>
+                                Your Promises tab is now your <strong>Liabilities</strong> tab. Same list &mdash;
+                                accountants&rsquo; word. The Assets tab stays as it is.
+                            </InsightPanel>
+                            <AnnaBox>
+                                &ldquo;One more thing before you turn the page. That Parts entry &mdash; $300 on the
+                                shelves, but $500 you paid for the lot on the credit card. The $200 between them is
+                                parts that went into customer jobs over the past few months. Real cost.
+                                Next time we&rsquo;ll look at what those jobs brought in. See if you came out
+                                ahead.&rdquo;
+                            </AnnaBox>
+                            <ContinueButton onClick={() => setPhase('complete')}>Finish up</ContinueButton>
+                        </>
+                    )}
+                </div>
+                );
+            };
+
+            const renderComplete = () => {
+                const onFormItems = placeable
+                    .filter(i => i.sourced !== 'estimate')
+                    .map(i => ({ name: i.name, amount: Number(s2Values[i.id]) || 0, label: i.sourced === 'receipt' ? 'receipt' : 'credit card' }));
+                const estByCat = categoryDefs.map(c => {
+                    const r = estimateRowFor(c.id);
+                    return { name: `+ ${r.count} more ${c.label.toLowerCase()} items`, amount: r.amount, label: 'estimate' };
+                });
+                const cashExtras = extras.map(i => ({ name: i.name, amount: Number(extraValues[i.id]) || 0, label: 'cash' }));
+                const allAssets = [...onFormItems, ...estByCat, ...cashExtras];
+                const allLiabilities = promises.map(p => ({ text: p.text, amount: Number(promiseValues[p.id]) || 0 }));
+
+                return (
+                    <div className="p-4 max-w-2xl mx-auto">
+                        <Header />
+
+                        <div className="text-center mb-6">
+                            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
+                                 style={{ backgroundColor: colors.accent }}>
+                                <span className="text-4xl">🏆</span>
+                            </div>
+                            <h2 className="text-2xl font-bold" style={{ color: colors.primary }}>
+                                Tutorial Complete!
+                            </h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                            <div className="rounded-lg p-3"
+                                 style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                                <p className="text-xs font-bold tracking-wide mb-2" style={{ color: colors.primary }}>📌 ASSETS</p>
+                                <p className="text-xs italic mb-2" style={{ color: colors.earth }}>(was: Things)</p>
+                                <ul className="space-y-1 text-xs" style={{ color: colors.earthDark }}>
+                                    {allAssets.map((a, i) => (
+                                        <li key={i} className="flex justify-between gap-2">
+                                            <span className="truncate">{a.name}</span>
+                                            <span className="mono flex-shrink-0">{fmt(a.amount)}</span>
+                                        </li>
+                                    ))}
+                                    <li className="flex justify-between gap-2 pt-1 mt-1 font-bold border-t"
+                                        style={{ borderColor: colors.earthLight }}>
+                                        <span>Total</span>
+                                        <span className="mono">{fmt(totalAssets)}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div className="rounded-lg p-3"
+                                 style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                                <p className="text-xs font-bold tracking-wide mb-2" style={{ color: colors.primary }}>📌 LIABILITIES</p>
+                                <p className="text-xs italic mb-2" style={{ color: colors.earth }}>(was: Promises)</p>
+                                <ul className="space-y-1 text-xs" style={{ color: colors.earthDark }}>
+                                    {allLiabilities.map((l, i) => (
+                                        <li key={i} className="flex justify-between gap-2">
+                                            <span className="italic flex-1">{l.text}</span>
+                                            <span className="mono flex-shrink-0">{fmt(l.amount)}</span>
+                                        </li>
+                                    ))}
+                                    <li className="flex justify-between gap-2 pt-1 mt-1 font-bold border-t"
+                                        style={{ borderColor: colors.earthLight }}>
+                                        <span>Total</span>
+                                        <span className="mono">{fmt(totalLiabilities)}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg p-4 mb-4 border-2"
+                             style={{ backgroundColor: 'white', borderColor: colors.success }}>
+                            <h3 className="font-bold mb-3" style={{ color: colors.primary }}>What You Discovered</h3>
+                            <ul className="space-y-2 text-sm" style={{ color: colors.earthDark }}>
+                                <li className="flex gap-2"><span style={{ color: colors.success }}>✓</span>
+                                    Not everything related to your repair work is an Asset on Maria&rsquo;s form. The
+                                    space is rented; cash isn&rsquo;t insurable through a property policy.</li>
+                                <li className="flex gap-2"><span style={{ color: colors.success }}>✓</span>
+                                    Once you showed how a few items fit, Maria filled in the categories and put estimates
+                                    on the rest. <em>Same move as last time</em> &mdash; twice today.</li>
+                                <li className="flex gap-2"><span style={{ color: colors.success }}>✓</span>
+                                    Your two lists have names now &mdash; <strong>Assets</strong> and
+                                    <strong> Liabilities</strong> &mdash; with dollar amounts on every line.</li>
+                            </ul>
+                        </div>
+
+                        <KeyInsightBox>
+                            <p className="font-semibold mb-2">The deeper point</p>
+                            <p>
+                                Two new names today: <strong>Assets</strong> and <strong>Liabilities</strong>. Your lists
+                                from 1.1 are more formal now &mdash; names on them, numbers on every line. But the bigger
+                                picture they form together &mdash; the one your line first marked off &mdash; is still
+                                being built. It&rsquo;ll have a name by the end of the module.
+                            </p>
+                        </KeyInsightBox>
+
+                        <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.clayLight }}>
+                            <h3 className="font-bold mb-2" style={{ color: colors.primary }}>Coming Next</h3>
+                            <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                                Anna&rsquo;s back next week. She wants to look at last month&rsquo;s bank statement &mdash;
+                                to see how the repair work has been going.
+                            </p>
+                            <p className="font-bold" style={{ color: colors.primary }}>
+                                Next: Tutorial 1.3 &mdash; Anna and the Bank Statement
+                            </p>
+                        </div>
+
+                        <a href="1.3-anna-and-the-bank-statement.html"
+                           className="block w-full py-3 rounded-lg font-bold text-white text-center no-underline mb-3"
+                           style={{ backgroundColor: colors.primary }}>
+                            Next Tutorial →
+                        </a>
+                        <button onClick={handleRestart}
+                                className="w-full py-3 rounded-lg font-bold cursor-pointer"
+                                style={{ border: `2px solid ${colors.primary}`, color: colors.primary, backgroundColor: 'transparent' }}>
+                            ↺ Restart
+                        </button>
+                    </div>
+                );
+            };
+
+            // ============================================================
+            // Phase router
+            // ============================================================
+            const renderPhase = () => {
+                if (phase === 'welcome')            return renderWelcome();
+                if (phase === 'sheet1-categorize')  return renderSheet1();
+                if (phase === 'sheet2-value')       return renderSheet2();
+                if (phase === 'maria-readback')     return renderMariaReadback();
+                if (phase === 'anna-arrives')       return renderAnnaArrives();
+                if (phase === 'complete')           return renderComplete();
+                return null;
+            };
+
+            return (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    {renderPhase()}
+                    {showGlossary && <GlossaryModal />}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
