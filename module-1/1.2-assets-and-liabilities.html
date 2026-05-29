@@ -186,8 +186,8 @@
         // name in sheet 2's form; everything else is aggregated.
         const items = [
             // EQUIPMENT — 15 items, subtotal $2,200
-            { id: 'stand',     name: 'Bicycle repair stand',     category: 'equipment', cost: 250, sourced: 'receipt'      },
-            { id: 'wrenches',  name: 'Set of wrenches',          category: 'equipment', cost: 180, sourced: 'receipt'      },
+            { id: 'stand',     name: 'Park Tool repair stand',   category: 'equipment', cost: 200, sourced: 'receipt'      },
+            { id: 'wrenches',  name: 'Cone wrench set',          category: 'equipment', cost: 65,  sourced: 'receipt'      },
             { id: 'truer',     name: 'Wheel truing stand',       category: 'equipment', cost: 130, sourced: 'estimate'     },
             { id: 'compressor',name: 'Air compressor',           category: 'equipment', cost: 320, sourced: 'estimate'     },
             { id: 'vacuum',    name: 'Shop vacuum',              category: 'equipment', cost: 80,  sourced: 'estimate'     },
@@ -202,45 +202,43 @@
             { id: 'pedalw',    name: 'Pedal wrench',             category: 'equipment', cost: 20,  sourced: 'estimate'     },
             { id: 'laptop',    name: 'Laptop',                   category: 'equipment', cost: 610, sourced: 'estimate'     },
 
-            // SUPPLIES — 8 items, subtotal $1,200
-            // Parts is the only consumable with a documented purchase cost AND a
-            // distinct on-hand value. The $500 credit-card purchase (still a
-            // liability) went toward parts that were partly consumed in customer
-            // jobs over the past few months. Asset value = what's on the shelf
-            // now ($300), not what was paid ($500). The $200 gap is a setup for
-            // 1.3 (cost-of-jobs-done vs. customer payments).
-            { id: 'parts',     name: 'Boxes of spare parts',     category: 'supplies',  cost: 300, sourced: 'credit-card', valueLabel: 'on shelf' },
+            // SUPPLIES — consumables. Chains and Derailleur cables are documented
+            // on the QBP receipt (purchase prices: $130 and $45). The asset value
+            // on Maria's form is what's on the shelf NOW — chains $50, cables $25
+            // — not what was originally paid. The gap is consumed in customer
+            // jobs (setup for 1.3's cost-of-jobs-done vs. customer payments).
+            // `paidAmount` is what the receipt shows; `cost` is what's left.
+            { id: 'cables',    name: 'Box of derailleur cables', category: 'supplies',  cost: 25,  sourced: 'receipt', valueLabel: 'on shelf', paidAmount: 45  },
+            { id: 'chains',    name: 'Box of chains',            category: 'supplies',  cost: 50,  sourced: 'receipt', valueLabel: 'on shelf', paidAmount: 130 },
             { id: 'tires',     name: 'Crate of tires',           category: 'supplies',  cost: 240, sourced: 'estimate'     },
-            { id: 'chains',    name: 'Box of chains',            category: 'supplies',  cost: 180, sourced: 'estimate'     },
             { id: 'pads',      name: 'Box of brake pads',        category: 'supplies',  cost: 140, sourced: 'estimate'     },
             { id: 'saddles',   name: 'Stack of saddles',         category: 'supplies',  cost: 120, sourced: 'estimate'     },
             { id: 'bbs',       name: 'Box of bottom brackets',   category: 'supplies',  cost: 90,  sourced: 'estimate'     },
-            { id: 'cables',    name: 'Box of derailleur cables', category: 'supplies',  cost: 80,  sourced: 'estimate'     },
             { id: 'firstaid',  name: 'First-aid kit',            category: 'supplies',  cost: 50,  sourced: 'estimate'     },
 
             // FIXTURES — 6 items, subtotal $750
-            { id: 'drawer',    name: 'Cash drawer',              category: 'fixtures',  cost: 40,  sourced: 'receipt'      },
+            { id: 'pegboard',  name: 'Pegboard panel + hook set',category: 'fixtures',  cost: 120, sourced: 'receipt'      },
             { id: 'workbench', name: 'Workbench',                category: 'fixtures',  cost: 80,  sourced: 'estimate'     },
             { id: 'shelves',   name: 'Shelving units',           category: 'fixtures',  cost: 180, sourced: 'estimate'     },
             { id: 'display',   name: 'Display rack',             category: 'fixtures',  cost: 100, sourced: 'estimate'     },
             { id: 'sign',      name: 'Painted sign',             category: 'fixtures',  cost: 150, sourced: 'estimate'     },
             { id: 'desk',      name: 'Desk',                     category: 'fixtures',  cost: 200, sourced: 'estimate'     },
 
-            // NOT ON MARIA'S FORM
-            { id: 'space',     name: 'The space you rent',       category: null, cost: null, rejectType: 'not-owned'    },
+            // NOT ON MARIA'S FORM — still a 1.1 list item, but doesn't fit the
+            // insurance form. Trying it is optional, not required.
             { id: 'cash',      name: 'Cash in the cash drawer',  category: null, cost: 50,   rejectType: 'not-insurable' },
         ];
 
-        // First ~8 items the student sees in the sidebar during sheet 1.
-        // Mix of obvious and slightly tricky placements + both not-on-form
-        // items so the discovery is forced rather than optional.
-        const visibleIds = ['stand', 'parts', 'drawer', 'wrenches', 'tires', 'workbench', 'space', 'cash'];
+        // Items the student sees in the sidebar during sheet 1 — all from the
+        // 1.1 Things list. Cash is included (it's on that list) but doesn't fit
+        // the insurance form; trying it is optional, not a required step.
+        const visibleIds = ['stand', 'chains', 'pegboard', 'wrenches', 'tires', 'workbench', 'cash'];
 
         // The 6 Things the welcome screen displays. A subset of the sheet 1
         // sidebar (without the not-on-form items, so the welcome doesn't
         // pre-spoil the discovery). The remaining 25 are alluded to with a
         // "+ 25 more…" indicator so the volume is visible.
-        const welcomeVisibleIds = ['stand', 'wrenches', 'parts', 'drawer', 'tires', 'workbench'];
+        const welcomeVisibleIds = ['stand', 'wrenches', 'chains', 'pegboard', 'tires', 'workbench'];
 
         const categoryDefs = [
             { id: 'equipment', label: 'EQUIPMENT', sub: 'durable tools and gear',       targetSubtotal: 2200 },
@@ -256,7 +254,7 @@
                 item.id === 'vacuum' || item.id === 'pedalw' || item.id === 'laptop') {
                 return `${item.name} is Equipment — a durable tool, not parts you use up and not a storage piece.`;
             }
-            if (item.id === 'parts' || item.id === 'tires' || item.id === 'chains' || item.id === 'pads' ||
+            if (item.id === 'chains' || item.id === 'tires' || item.id === 'pads' ||
                 item.id === 'saddles' || item.id === 'bbs' || item.id === 'cables' || item.id === 'firstaid') {
                 return `${item.name} is Supplies — something you go through on jobs, not a tool you keep.`;
             }
@@ -269,26 +267,106 @@
             'not-insurable': "Cash doesn’t go on this form either. Property policies don’t cover cash — if it gets stolen, that’s crime coverage, a separate conversation. It’s still yours; just not my kind of asset.",
         };
 
-        // Receipts — visible only during sheet 2
+        // Receipts — sourced from Source-Documents/source-documents.html (the canonical facsimiles).
+        // Each receipt is multi-line; `forItem` is the tutorial-form item this receipt is the document for.
         const receipts = [
-            { id: 'r-stand',    forItem: 'stand',    vendor: 'ProBike Tools',        date: 'Mar 12, 2026', desc: 'Park Tool PRS-25 repair stand', amount: 250 },
-            { id: 'r-wrenches', forItem: 'wrenches', vendor: 'Park Tool Co.',        date: 'Apr 18, 2026', desc: 'Hex / Y wrench set',            amount: 180 },
-            { id: 'r-drawer',   forItem: 'drawer',   vendor: 'Lumber Yard Hardware', date: 'Mar  5, 2026', desc: 'Wooden box with dividers',      amount:  40 },
+            {
+                id: 'parktool',
+                forItem: 'stand',
+                vendor: 'Cyclesport Supply',
+                vendorSub: 'professional bike tools & equipment',
+                receiptNum: 'Sales Receipt  #SR-4471',
+                date: 'May 3, 2026',
+                paidWith: 'Personal debit card',
+                paidLast4: '•••• 6620',
+                paidNote: 'Not charged to the bike-repair credit card — paid from personal funds.',
+                lineItems: [
+                    { name: 'Park Tool PRS-25 Team Issue Repair Stand', amount: 200 },
+                ],
+                total: 200,
+            },
+            {
+                id: 'tools',
+                forItem: 'wrenches',
+                vendor: 'Cyclesport Supply',
+                vendorSub: 'professional bike tools & equipment',
+                receiptNum: 'Sales Receipt  #SR-4488',
+                date: 'May 5, 2026',
+                paidWith: 'Bike-Repair Visa',
+                paidLast4: '•••• 3902',
+                lineItems: [
+                    { name: 'Cone wrench set', amount: 65 },
+                    { name: 'Torque wrench', amount: 95 },
+                    { name: 'Hex / Allen key set', amount: 45 },
+                    { name: 'Cable cutters', amount: 40 },
+                    { name: 'Chain breaker', amount: 35 },
+                    { name: 'Tire levers (set)', amount: 20 },
+                ],
+                total: 300,
+            },
+            {
+                id: 'fixtures',
+                forItem: 'pegboard',
+                vendor: 'Workspace Outfitters',
+                vendorSub: 'store fixtures & furnishings',
+                receiptNum: 'Invoice  #WO-20518',
+                date: 'May 5, 2026',
+                paidWith: 'Bike-Repair Visa',
+                paidLast4: '•••• 3902',
+                lineItems: [
+                    { name: 'Work desk', amount: 250 },
+                    { name: 'Shelving units (×2)', amount: 200 },
+                    { name: 'Display rack', amount: 180 },
+                    { name: 'Pegboard panel + hook set', amount: 120 },
+                ],
+                total: 750,
+            },
+            {
+                id: 'qbp',
+                forItem: ['chains', 'cables'],
+                vendor: 'QBP',
+                vendorSub: 'Quality Bicycle Products — wholesale parts distributor',
+                receiptNum: 'Invoice  #QBP-887341  ·  Ship: UPS Ground',
+                date: 'May 15, 2026',
+                paidWith: 'Bike-Repair Visa',
+                paidLast4: '•••• 3902',
+                lineItems: [
+                    { name: 'Derailleur cables (box)', amount: 45 },
+                    { name: 'Chains (box)', amount: 130 },
+                    { name: 'Brake pads (box)', amount: 80 },
+                    { name: 'Cassettes (×4)', amount: 100 },
+                    { name: 'Bottom brackets (assorted)', amount: 70 },
+                    { name: 'Spokes (bundle)', amount: 35 },
+                    { name: 'Tubes (box)', amount: 40 },
+                ],
+                total: 500,
+            },
         ];
 
+        // Credit card statement — sourced from Source-Documents/source-documents.html (Doc 6).
         const creditCard = {
-            issuer: 'Visa',
-            last4: '1234',
-            period: 'May 2026 statement',
-            lineItem: { desc: 'QBP Distributing — bike parts', date: 'May 21', amount: 500 },
-            balance: 500,
-            status: 'unpaid — due Jun 15',
+            issuer: 'Harborline Visa',
+            sub: 'Bike-Repair Card · account dedicated to repair activity',
+            last4: '•••• 3902',
+            period: 'May 1 – May 31, 2026',
+            opened: 'Opened May 1, 2026',
+            previousBalance: 0,
+            chargesTotal: 1550,
+            paymentsTotal: 800,
+            newBalance: 750,
+            transactions: [
+                { date: '05/05', desc: 'Workspace Outfitters — fixtures', charge: 750, payment: null },
+                { date: '05/05', desc: 'Cyclesport Supply — tools', charge: 300, payment: null },
+                { date: '05/15', desc: 'QBP — parts order', charge: 500, payment: null },
+                { date: '05/16', desc: 'ACH payment received — thank you', charge: null, payment: 400 },
+                { date: '05/28', desc: 'ACH payment received — thank you', charge: null, payment: 400 },
+            ],
         };
 
         // Promises (the 2 repair-related ones from 1.1 v3's promise list)
         const promises = [
             { id: 'smith', text: "Promised to build a custom frame for Smith. He paid me $220 up front for it.", expected: 220 },
-            { id: 'cc',    text: "Bought parts last week — put them on my credit card.",                    expected: 500 },
+            { id: 'cc',    text: "What you owe on the bike-repair credit card.",                                  expected: 750 },
         ];
 
         const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
@@ -318,7 +396,26 @@
             const [s2Values, setS2Values] = useState({});               // { itemId: '250' }
             const [s2Valuing, setS2Valuing] = useState(false);
             const [s2Done, setS2Done] = useState(false);
-            const [s2EstimatesShown, setS2EstimatesShown] = useState(false); // toggles the "+X more (estimate)" rows after autocomplete
+            const [s2EstimatesShown, setS2EstimatesShown] = useState(false); // legacy global flag (unused after per-category change)
+            const [openReceipt, setOpenReceipt] = useState(null);        // { type: 'receipt'|'creditCard', data } when popup is open
+
+            // Per-category autocomplete state — fires when all documented boxes in a category are correctly filled
+            const [s2CategoryEstimates, setS2CategoryEstimates] = useState({}); // { equipment: true, fixtures: true, supplies: true } once revealed
+            const [s2CategoryAnimating, setS2CategoryAnimating] = useState({}); // { equipment: true } while the autocomplete animation plays
+
+            // Locked category totals (target value displayed once the rest is autocompleted)
+            const CATEGORY_TARGETS = { equipment: 685, fixtures: 1265, supplies: 200 };
+
+            const openDocFor = (item) => {
+                if (item.sourced === 'receipt') {
+                    const r = receipts.find(rr =>
+                        Array.isArray(rr.forItem) ? rr.forItem.includes(item.id) : rr.forItem === item.id
+                    );
+                    if (r) setOpenReceipt({ type: 'receipt', data: r, item });
+                } else if (item.sourced === 'credit-card') {
+                    setOpenReceipt({ type: 'creditCard', data: creditCard, item });
+                }
+            };
 
             // Anna phase — extras + promises
             const [extraValues, setExtraValues] = useState({});         // { 'cash': '50' }
@@ -358,11 +455,9 @@
             const placedInEquip    = correctPlacements.some(i => i.category === 'equipment');
             const placedInSupplies = correctPlacements.some(i => i.category === 'supplies');
             const placedInFixtures = correctPlacements.some(i => i.category === 'fixtures');
-            const anyRejectedTried = Object.keys(s1Rejected).length > 0;
             const s1TriggerMet =
                 correctPlacements.length >= 4 &&
-                placedInEquip && placedInSupplies && placedInFixtures &&
-                anyRejectedTried;
+                placedInEquip && placedInSupplies && placedInFixtures;
             const s1Visible = visibleIds.map(id => items.find(i => i.id === id)).filter(Boolean);
             const s1HiddenCount = items.length - s1Visible.length;
             const s1SidebarRemaining = s1Visible.filter(i => !s1Placements[i.id] && !s1Rejected[i.id]);
@@ -384,24 +479,65 @@
                 documentedCorrect.length >= 3 &&
                 correctFromReceipt && correctFromCreditCard;
 
+            // Per-category: are all documented (non-estimate) boxes correctly filled?
+            const categoryDocsAllCorrect = (catId) => {
+                const docs = placeable.filter(i => i.category === catId && i.sourced !== 'estimate');
+                return docs.length > 0 && docs.every(i => isS2Correct(i.id));
+            };
+            // Estimate row amount = locked category total − sum of documented item expected costs
+            const estimateRowFor = (catId) => {
+                const itemsInCat = placeable.filter(i => i.category === catId && i.sourced === 'estimate');
+                const docExpectedSum = placeable
+                    .filter(i => i.category === catId && i.sourced !== 'estimate')
+                    .reduce((s, i) => s + (i.cost || 0), 0);
+                return {
+                    count: itemsInCat.length,
+                    amount: (CATEGORY_TARGETS[catId] || 0) - docExpectedSum,
+                };
+            };
             const subtotalForCat = (catId) => {
                 const docs = placeable
                     .filter(i => i.category === catId && i.sourced !== 'estimate')
                     .reduce((s, i) => s + (Number(s2Values[i.id]) || 0), 0);
-                const estimates = s2EstimatesShown
-                    ? placeable
-                        .filter(i => i.category === catId && i.sourced === 'estimate')
-                        .reduce((s, i) => s + i.cost, 0)
-                    : 0;
+                const estimates = s2CategoryEstimates[catId] ? estimateRowFor(catId).amount : 0;
                 return docs + estimates;
             };
-            const estimateRowFor = (catId) => {
-                const itemsInCat = placeable.filter(i => i.category === catId && i.sourced === 'estimate');
-                return {
-                    count: itemsInCat.length,
-                    amount: itemsInCat.reduce((s, i) => s + i.cost, 0),
-                };
-            };
+
+            // Per-category autocomplete trigger: when all documented boxes in a category are correct,
+            // start the animation; after a beat, reveal the estimate row + category total.
+            useEffect(() => {
+                categoryDefs.forEach(cat => {
+                    if (
+                        categoryDocsAllCorrect(cat.id) &&
+                        !s2CategoryEstimates[cat.id] &&
+                        !s2CategoryAnimating[cat.id]
+                    ) {
+                        setS2CategoryAnimating(prev => ({ ...prev, [cat.id]: true }));
+                        setTimeout(() => {
+                            setS2CategoryEstimates(prev => ({ ...prev, [cat.id]: true }));
+                            setS2CategoryAnimating(prev => ({ ...prev, [cat.id]: false }));
+                        }, 1500);
+                    }
+                });
+            }, [s2Values]);
+
+            // When all categories have been autocompleted, mark sheet 2 done
+            useEffect(() => {
+                if (
+                    categoryDefs.every(c => s2CategoryEstimates[c.id]) &&
+                    !s2Done
+                ) {
+                    setS2Done(true);
+                }
+            }, [s2CategoryEstimates]);
+
+            // When entering the Anna phase, pre-fill Smith's $220 — it carried over from 1.1
+            // (his promise text says he paid $220 up front). Anna's focus here is just the card.
+            useEffect(() => {
+                if (phase === 'anna-arrives' && !promiseValues['smith']) {
+                    setPromiseValues(prev => ({ ...prev, smith: '220' }));
+                }
+            }, [phase]);
             const totalInsurable = categoryDefs.reduce((s, c) => s + subtotalForCat(c.id), 0);
 
             // Anna phase derived
@@ -421,7 +557,7 @@
                 const v = Number(extraValues[id]);
                 return v > 0 && !isExtraCorrect(id);
             };
-            const extras = notOnForm.filter(i => i.rejectType === 'not-insurable'); // cash only — space stays a learning moment
+            const extras = notOnForm.filter(i => i.rejectType === 'not-insurable'); // cash only
             const allPromisesValued = promises.every(p => isPromiseCorrect(p.id));
             const allExtrasValued = extras.every(i => isExtraCorrect(i.id));
             const totalLiabilities = promises.reduce((s, p) => s + (Number(promiseValues[p.id]) || 0), 0);
@@ -944,11 +1080,12 @@
                                         <span>{placedInFixtures ? '✓' : '·'}</span>
                                         <span>at least one in Fixtures</span>
                                     </li>
-                                    <li className="flex gap-2">
-                                        <span>{anyRejectedTried ? '✓' : '·'}</span>
-                                        <span>try at least one item that doesn&rsquo;t seem to fit on the form</span>
-                                    </li>
                                 </ul>
+                                <button disabled
+                                        className="w-full py-3 mt-3 rounded-lg font-bold text-white text-base border-0"
+                                        style={{ backgroundColor: colors.primary, opacity: 0.35, cursor: 'not-allowed' }}>
+                                    Work through the rest →
+                                </button>
                             </div>
                         )}
 
@@ -982,48 +1119,6 @@
                             documented ones first.
                         </NarrativeBlock>
 
-                        {/* Documents on the workbench — visible only in sheet 2 */}
-                        <div className="rounded-lg p-3 mb-4"
-                             style={{ backgroundColor: '#f0ece0', border: `1px solid ${colors.earthLight}` }}>
-                            <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.earth }}>
-                                📋 ON THE WORKBENCH
-                            </p>
-                            <div className="grid grid-cols-2 gap-2">
-                                {receipts.map(r => (
-                                    <div key={r.id} className="rounded p-2"
-                                         style={{ backgroundColor: '#fffbe6', border: `1px solid ${colors.earthLight}` }}>
-                                        <p className="text-xs uppercase tracking-wide font-bold mb-1" style={{ color: colors.earth }}>
-                                            Receipt
-                                        </p>
-                                        <p className="text-xs font-semibold" style={{ color: colors.earthDark }}>{r.vendor}</p>
-                                        <p className="text-xs mono" style={{ color: colors.earth }}>{r.date}</p>
-                                        <p className="text-xs mt-1" style={{ color: colors.earthDark }}>{r.desc}</p>
-                                        <p className="text-sm font-bold mono text-right mt-1" style={{ color: colors.earthDark }}>
-                                            {fmt(r.amount)}
-                                        </p>
-                                    </div>
-                                ))}
-                                <div className="rounded p-2"
-                                     style={{ backgroundColor: 'white', border: `1px solid ${colors.primary}` }}>
-                                    <p className="text-xs uppercase tracking-wide font-bold mb-1" style={{ color: colors.primary }}>
-                                        Credit card statement
-                                    </p>
-                                    <p className="text-xs mono" style={{ color: colors.earth }}>
-                                        {creditCard.issuer} ****{creditCard.last4} &middot; {creditCard.period}
-                                    </p>
-                                    <p className="text-xs mt-1" style={{ color: colors.earthDark }}>
-                                        {creditCard.lineItem.date} &middot; {creditCard.lineItem.desc}
-                                    </p>
-                                    <p className="text-sm font-bold mono text-right mt-1" style={{ color: colors.earthDark }}>
-                                        {fmt(creditCard.lineItem.amount)}
-                                    </p>
-                                    <p className="text-xs italic mt-1" style={{ color: colors.error }}>
-                                        Balance: {fmt(creditCard.balance)} &middot; {creditCard.status}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
                         {/* The categorized form, now with $ inputs and aggregate rows */}
                         <div className="rounded-lg overflow-hidden mb-4"
                              style={{ border: `2px solid ${colors.earthDark}`, backgroundColor: 'white' }}>
@@ -1048,9 +1143,13 @@
                                                          style={{ backgroundColor: 'white' }}>
                                                         <div className="flex-1 min-w-0">
                                                             <span className="text-sm" style={{ color: colors.earthDark }}>{item.name}</span>
-                                                            <span className="text-xs ml-2 italic" style={{ color: colors.earth }}>
+                                                            <button
+                                                                onClick={() => openDocFor(item)}
+                                                                className="text-xs ml-2 italic underline border-0 bg-transparent cursor-pointer"
+                                                                style={{ color: colors.primary, padding: 0 }}
+                                                                title="Show the document">
                                                                 ({item.valueLabel || (item.sourced === 'receipt' ? 'receipt' : 'credit card')})
-                                                            </span>
+                                                            </button>
                                                         </div>
                                                         <div className="flex items-center gap-1 flex-shrink-0">
                                                             <span className="text-sm mono" style={{ color: colors.earth }}>$</span>
@@ -1072,10 +1171,19 @@
                                                         </div>
                                                     </div>
                                                 ))}
-                                                {/* +X more (estimate) row */}
-                                                {estRow.count > 0 && (
+                                                {/* "Working through the rest..." animation for this category */}
+                                                {s2CategoryAnimating[cat.id] && (
+                                                    <div className="rounded p-2 mt-1 system-sorting"
+                                                         style={{ backgroundColor: colors.primary, color: 'white', textAlign: 'center' }}>
+                                                        <p className="text-xs font-bold">
+                                                            ⚙ Working through the rest of {cat.label.toLowerCase()}&hellip;
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {/* +X more (estimate) row — only after the category's autocomplete has fired */}
+                                                {s2CategoryEstimates[cat.id] && estRow.count > 0 && estRow.amount > 0 && (
                                                     <div className="flex items-center justify-between gap-3 py-1 px-2 rounded"
-                                                         style={{ backgroundColor: s2EstimatesShown ? '#fef9e7' : '#fafaf7' }}>
+                                                         style={{ backgroundColor: '#fef9e7' }}>
                                                         <div className="flex-1 min-w-0">
                                                             <span className="text-sm italic" style={{ color: colors.earth }}>
                                                                 + {estRow.count} more item{estRow.count === 1 ? '' : 's'}
@@ -1088,19 +1196,28 @@
                                                             <span className="text-sm mono" style={{ color: colors.earth }}>$</span>
                                                             <div className="w-20 px-2 py-1 rounded mono text-sm text-right"
                                                                  style={{
-                                                                     border: `2px solid ${s2EstimatesShown ? colors.accent : colors.earthLight}`,
-                                                                     backgroundColor: s2EstimatesShown ? '#fffbe6' : 'white',
-                                                                     color: s2EstimatesShown ? colors.earthDark : colors.earth,
+                                                                     border: `2px solid ${colors.accent}`,
+                                                                     backgroundColor: '#fffbe6',
+                                                                     color: colors.earthDark,
                                                                  }}>
-                                                                {s2EstimatesShown ? estRow.amount.toLocaleString('en-US') : '—'}
+                                                                {estRow.amount.toLocaleString('en-US')}
                                                             </div>
                                                         </div>
                                                     </div>
                                                 )}
+                                                {/* Category is fully covered by the documented item(s) alone — no estimate needed */}
+                                                {s2CategoryEstimates[cat.id] && estRow.amount === 0 && (
+                                                    <p className="text-xs italic px-2 pt-1" style={{ color: colors.earth }}>
+                                                        Nothing else to add &mdash; the receipt covers this category.
+                                                    </p>
+                                                )}
                                             </div>
-                                            <div className="flex justify-end pt-1">
-                                                <span className="text-xs mono" style={{ color: colors.earth }}>
-                                                    subtotal: {fmt(subtotalForCat(cat.id))}
+                                            <div className="flex justify-between items-center pt-1 px-1">
+                                                <span className="text-xs" style={{ color: colors.earth }}>
+                                                    {s2CategoryEstimates[cat.id] ? `${cat.label} total` : ''}
+                                                </span>
+                                                <span className="text-xs mono font-bold" style={{ color: s2CategoryEstimates[cat.id] ? colors.earthDark : colors.earth }}>
+                                                    {s2CategoryEstimates[cat.id] ? fmt(CATEGORY_TARGETS[cat.id]) : `subtotal: ${fmt(subtotalForCat(cat.id))}`}
                                                 </span>
                                             </div>
                                         </div>
@@ -1114,65 +1231,36 @@
                             </div>
                         </div>
 
-                        {/* Parts-on-shelf nudge — fires when student types $500 (the CC amount) */}
-                        {Number(s2Values['parts']) === 500 && (
+                        {/* Chains-on-shelf nudge — fires when student types $130 (the receipt amount) */}
+                        {Number(s2Values['chains']) === 130 && (
                             <MariaBox prefix="(looking up)">
-                                &ldquo;Five hundred is what you paid for the lot &mdash; that&rsquo;s what
-                                you still owe on the credit card. But you&rsquo;ve put some of those parts
-                                into jobs already over the past few months. Walk the shelf &mdash; about
-                                $300 worth left. That&rsquo;s the asset value for the form. The $500
-                                stays on the credit card as what you owe.&rdquo;
+                                &ldquo;That&rsquo;s what you paid for the box. But you&rsquo;ve put
+                                chains into jobs over the past few months &mdash; walk the shelf, and
+                                there&rsquo;s about <strong>$50</strong> left. That&rsquo;s the asset
+                                value for the form. The $130 stays on the credit card as what you owe.&rdquo;
                             </MariaBox>
                         )}
 
-                        {s2Valuing && (
-                            <div className="rounded-lg p-4 mb-3 system-sorting"
-                                 style={{ backgroundColor: colors.primary, color: 'white', textAlign: 'center' }}>
-                                <p className="text-base font-bold">⚙ A few more hours&hellip;</p>
-                                <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.8)' }}>
-                                    You rounded out category totals from the rest of the inventory.
-                                </p>
-                            </div>
+                        {/* Cables-on-shelf nudge — fires when student types $45 (the receipt amount) */}
+                        {Number(s2Values['cables']) === 45 && (
+                            <MariaBox prefix="(looking up)">
+                                &ldquo;That&rsquo;s the receipt amount. Same story &mdash; you&rsquo;ve
+                                cut cables into jobs over the past few months. Walk the shelf,
+                                there&rsquo;s about <strong>$25</strong> left.&rdquo;
+                            </MariaBox>
                         )}
 
-                        {s2TriggerMet && !s2Valuing && !s2Done && (
-                            <div className="rounded-lg p-3 mb-3 border-2"
-                                 style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}>
-                                <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
-                                    <strong>The move is clear.</strong> You priced what the documents covered &mdash;
-                                    receipts and the credit card statement. For the rest, you can round out a
-                                    category-level estimate yourself.
-                                </p>
-                                <button onClick={handleS2Autocomplete}
-                                        className="w-full py-3 rounded-lg font-bold text-white border-0 cursor-pointer"
-                                        style={{ backgroundColor: colors.primary }}>
-                                    Estimate the rest →
-                                </button>
-                            </div>
+                        {/* Supplies-remaining callout — fires once Supplies category autocompletes */}
+                        {s2CategoryEstimates['supplies'] && (
+                            <MariaBox prefix="(quietly)">
+                                &ldquo;That total &mdash; <strong>{fmt(CATEGORY_TARGETS['supplies'])}</strong>
+                                &mdash; is what&rsquo;s on the shelf right now, not what you paid for it.
+                                The supplies you put into jobs over the past few months are gone from
+                                the shelf, and their cost stays where it lives on the credit card.&rdquo;
+                            </MariaBox>
                         )}
 
-                        {!s2TriggerMet && !s2Valuing && !s2Done && (
-                            <div className="rounded-lg p-3 mb-3 text-xs"
-                                 style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}`, color: colors.earthDark }}>
-                                <p className="font-bold mb-1" style={{ color: colors.primary }}>
-                                    To unlock the category estimates:
-                                </p>
-                                <ul className="space-y-0.5">
-                                    <li className="flex gap-2">
-                                        <span>{documentedCorrect.length >= 3 ? '✓' : '·'}</span>
-                                        <span>price at least 3 documented items correctly ({documentedCorrect.length}/3 so far)</span>
-                                    </li>
-                                    <li className="flex gap-2">
-                                        <span>{correctFromReceipt ? '✓' : '·'}</span>
-                                        <span>at least one from a receipt</span>
-                                    </li>
-                                    <li className="flex gap-2">
-                                        <span>{correctFromCreditCard ? '✓' : '·'}</span>
-                                        <span>at least one from the credit card statement</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        )}
+                        {/* Per-category autocomplete now fires inside each category section above; the old global trigger/unlock boxes have been removed. */}
 
                         {s2Done && (
                             <>
@@ -1185,6 +1273,165 @@
                                     Maria reads it back
                                 </ContinueButton>
                             </>
+                        )}
+
+                        {/* Receipt / credit-card popup — facsimile drawn from Source-Documents */}
+                        {openReceipt && (
+                            <div
+                                onClick={() => setOpenReceipt(null)}
+                                style={{
+                                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                                    backgroundColor: 'rgba(0,0,0,0.55)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    zIndex: 50, padding: '1rem', overflow: 'auto',
+                                }}>
+                                <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="rounded-md w-full"
+                                    style={{
+                                        backgroundColor: 'white',
+                                        border: '1px solid #d8d8d8',
+                                        boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+                                        maxWidth: '36rem',
+                                        padding: '2rem 2.25rem',
+                                        position: 'relative',
+                                        color: '#1a1a1a',
+                                    }}>
+                                    {/* Document tag (matches source-documents.html) */}
+                                    <span style={{
+                                        position: 'absolute', top: '-11px', left: '18px',
+                                        backgroundColor: colors.primary, color: 'white',
+                                        fontSize: '11px', letterSpacing: '0.04em', textTransform: 'uppercase',
+                                        padding: '3px 9px', borderRadius: '11px',
+                                    }}>
+                                        {openReceipt.type === 'creditCard' ? 'Credit card statement' : 'Receipt'}
+                                    </span>
+                                    {/* Close button */}
+                                    <button
+                                        onClick={() => setOpenReceipt(null)}
+                                        className="border-0 bg-transparent cursor-pointer leading-none"
+                                        style={{
+                                            position: 'absolute', top: '8px', right: '12px',
+                                            fontSize: '18px', color: '#6b6b6b', padding: 0,
+                                        }}
+                                        aria-label="Close">
+                                        ✕
+                                    </button>
+
+                                    {openReceipt.type === 'receipt' && (() => {
+                                        const r = openReceipt.data;
+                                        return (
+                                            <>
+                                                <div style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '0.01em' }}>
+                                                    {r.vendor}
+                                                    {r.vendorSub && (
+                                                        <span style={{ fontSize: '12px', fontWeight: 400, color: '#6b6b6b', marginLeft: '6px' }}>
+                                                            · {r.vendorSub}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: '#6b6b6b', marginTop: '4px', marginBottom: '14px' }}>
+                                                    <span>{r.receiptNum}</span>
+                                                    <span>{r.date}</span>
+                                                </div>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                                                    <thead>
+                                                        <tr style={{ borderBottom: '1px solid #d8d8d8' }}>
+                                                            <th style={{ textAlign: 'left', padding: '7px 8px', fontWeight: 600 }}>Item</th>
+                                                            <th style={{ textAlign: 'right', padding: '7px 8px', fontWeight: 600, fontFamily: 'Consolas, Menlo, monospace' }}>Amount</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {r.lineItems.map((li, i) => (
+                                                            <tr key={i} style={{ borderBottom: '1px solid #d8d8d8' }}>
+                                                                <td style={{ padding: '7px 8px' }}>{li.name}</td>
+                                                                <td style={{ padding: '7px 8px', textAlign: 'right', fontFamily: 'Consolas, Menlo, monospace' }}>{fmt(li.amount)}</td>
+                                                            </tr>
+                                                        ))}
+                                                        <tr style={{ borderTop: '2px solid #1a1a1a', fontWeight: 700 }}>
+                                                            <td style={{ padding: '7px 8px' }}>Total</td>
+                                                            <td style={{ padding: '7px 8px', textAlign: 'right', fontFamily: 'Consolas, Menlo, monospace' }}>{fmt(r.total)}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginTop: '14px', paddingTop: '10px', borderTop: '1px dashed #d8d8d8' }}>
+                                                    <span><strong>Paid:</strong> {r.paidWith}</span>
+                                                    <span style={{ color: '#6b6b6b' }}>{r.paidLast4}</span>
+                                                </div>
+                                                {r.paidNote && (
+                                                    <p style={{ fontSize: '12.5px', color: '#6b6b6b', marginTop: '8px', fontStyle: 'italic' }}>
+                                                        {r.paidNote}
+                                                    </p>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+
+                                    {openReceipt.type === 'creditCard' && (() => {
+                                        const c = openReceipt.data;
+                                        return (
+                                            <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '14px' }}>
+                                                    <div>
+                                                        <div style={{ fontSize: '18px', fontWeight: 700 }}>{c.issuer}</div>
+                                                        <div style={{ fontSize: '12.5px', color: '#6b6b6b' }}>{c.sub}</div>
+                                                    </div>
+                                                    <div style={{ fontSize: '12.5px', textAlign: 'right' }}>
+                                                        <div><strong>Statement period:</strong></div>
+                                                        <div>{c.period}</div>
+                                                        <div style={{ color: '#6b6b6b' }}>Account {c.last4}</div>
+                                                        <div style={{ color: '#6b6b6b' }}>{c.opened}</div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '14px' }}>
+                                                    {[
+                                                        { k: 'Previous balance', v: fmt(c.previousBalance) },
+                                                        { k: 'Charges', v: fmt(c.chargesTotal) },
+                                                        { k: 'Payments', v: fmt(c.paymentsTotal) },
+                                                        { k: 'New balance', v: fmt(c.newBalance), highlight: true },
+                                                    ].map((cell, i) => (
+                                                        <div key={i} style={{
+                                                            padding: '8px 10px',
+                                                            backgroundColor: cell.highlight ? '#fffbe6' : '#f7f7f4',
+                                                            border: cell.highlight ? `1px solid ${colors.accent}` : '1px solid #e5e5e0',
+                                                            borderRadius: '4px',
+                                                        }}>
+                                                            <div style={{ fontSize: '11px', color: '#6b6b6b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{cell.k}</div>
+                                                            <div style={{ fontSize: '14px', fontWeight: 700, fontFamily: 'Consolas, Menlo, monospace' }}>{cell.v}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+                                                    <thead>
+                                                        <tr style={{ borderBottom: '1px solid #d8d8d8' }}>
+                                                            <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 600 }}>Date</th>
+                                                            <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 600 }}>Description</th>
+                                                            <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 600 }}>Charges</th>
+                                                            <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 600 }}>Payments</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {c.transactions.map((t, i) => (
+                                                            <tr key={i} style={{ borderBottom: '1px solid #d8d8d8' }}>
+                                                                <td style={{ padding: '6px 8px', fontFamily: 'Consolas, Menlo, monospace' }}>{t.date}</td>
+                                                                <td style={{ padding: '6px 8px' }}>{t.desc}</td>
+                                                                <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'Consolas, Menlo, monospace' }}>{t.charge != null ? fmt(t.charge) : '—'}</td>
+                                                                <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'Consolas, Menlo, monospace' }}>{t.payment != null ? fmt(t.payment) : '—'}</td>
+                                                            </tr>
+                                                        ))}
+                                                        <tr style={{ borderTop: '2px solid #1a1a1a', fontWeight: 700 }}>
+                                                            <td style={{ padding: '6px 8px' }}></td>
+                                                            <td style={{ padding: '6px 8px' }}>Totals</td>
+                                                            <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'Consolas, Menlo, monospace' }}>{fmt(c.chargesTotal)}</td>
+                                                            <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'Consolas, Menlo, monospace' }}>{fmt(c.paymentsTotal)}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
                         )}
                     </div>
                 );
@@ -1441,11 +1688,11 @@
                     </NarrativeBlock>
 
                     <AnnaBox>
-                        &ldquo;She left a couple things off too &mdash; the rented space (not yours, she said), and
-                        the cash in the drawer. How much&rsquo;s in there now &mdash; fifty bucks, from when you
-                        seeded it a couple weeks back? Put it on the broader list. And the promises &mdash; those
-                        aren&rsquo;t her side at all, but they&rsquo;re still on the wall. The credit card bill&rsquo;s
-                        right there. Let&rsquo;s get numbers on what&rsquo;s missing.&rdquo;
+                        &ldquo;She left the cash in the drawer off her form. How much&rsquo;s in there now
+                        &mdash; fifty bucks, from when you seeded it a couple weeks back? Put it on the
+                        broader list. And the promises &mdash; those aren&rsquo;t her side at all, but
+                        they&rsquo;re still on the wall. The credit card bill&rsquo;s right there. Let&rsquo;s
+                        get numbers on what&rsquo;s missing.&rdquo;
                     </AnnaBox>
 
                     {!spreadsheetOpened && (
@@ -1488,7 +1735,7 @@
                         </div>
                     </div>
 
-                    {/* Still on the workbench: credit card statement */}
+                    {/* Still on the workbench: credit card statement (summary card) */}
                     <div className="rounded-lg p-3 mb-3"
                          style={{ backgroundColor: '#f0ece0', border: `1px solid ${colors.earthLight}` }}>
                         <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.earth }}>
@@ -1500,67 +1747,63 @@
                                 Credit card statement
                             </p>
                             <p className="text-xs mono" style={{ color: colors.earth }}>
-                                {creditCard.issuer} ****{creditCard.last4} &middot; {creditCard.period}
+                                {creditCard.issuer} {creditCard.last4} &middot; {creditCard.period}
                             </p>
                             <p className="text-xs mt-1" style={{ color: colors.earthDark }}>
-                                {creditCard.lineItem.date} &middot; {creditCard.lineItem.desc}
+                                Charges {fmt(creditCard.chargesTotal)} &middot; Payments {fmt(creditCard.paymentsTotal)}
                             </p>
-                            <p className="text-sm font-bold mono text-right mt-1" style={{ color: colors.earthDark }}>
-                                {fmt(creditCard.lineItem.amount)}
-                            </p>
-                            <p className="text-xs italic mt-1" style={{ color: colors.error }}>
-                                Balance: {fmt(creditCard.balance)} &middot; {creditCard.status}
+                            <p className="text-sm font-bold mono text-right mt-1" style={{ color: colors.error }}>
+                                Balance: {fmt(creditCard.newBalance)}
                             </p>
                         </div>
                     </div>
 
-                    {/* Promises with $ inputs */}
-                    <div className="rounded-lg overflow-hidden mb-4"
-                         style={{ border: `2px solid ${colors.earthDark}`, backgroundColor: 'white' }}>
-                        <div className="px-4 py-2 border-b-2"
-                             style={{ borderColor: colors.earthDark, backgroundColor: '#fafaf7' }}>
-                            <p className="text-sm font-bold tracking-tight" style={{ color: colors.earthDark }}>
-                                {liabilitiesNamed ? 'YOUR LIABILITIES LIST' : 'YOUR PROMISES LIST'}
-                            </p>
-                            <p className="text-xs italic" style={{ color: colors.earth }}>(repair-related, from 1.1)</p>
-                        </div>
-                        <div className="p-3">
-                            {promises.map(p => (
-                                <div key={p.id} className="flex items-start justify-between gap-3 py-2 px-2 rounded mb-1"
-                                     style={{ backgroundColor: '#fafaf7' }}>
-                                    <span className="text-sm italic flex-1" style={{ color: colors.earthDark }}>{p.text}</span>
-                                    <div className="flex items-center gap-1 flex-shrink-0">
-                                        <span className="text-sm mono" style={{ color: colors.earth }}>$</span>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            value={promiseValues[p.id] || ''}
-                                            onChange={(e) => handlePromiseChange(p.id, e.target.value)}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
-                                            placeholder="0"
-                                            className="w-20 px-2 py-1 rounded mono text-sm text-right"
-                                            style={{
-                                                border: '2px solid ' + (isPromiseCorrect(p.id) ? colors.success : isPromiseWrong(p.id) ? colors.error : colors.earthLight),
-                                                backgroundColor: 'white',
-                                                color: colors.earthDark,
-                                                fontSize: '16px',
-                                            }}
-                                        />
+                    {/* Bike-repair card balance — Anna's focus (Smith's $220 is already on the list from 1.1) */}
+                    {(() => {
+                        const cc = promises.find(p => p.id === 'cc');
+                        return (
+                            <div className="rounded-lg overflow-hidden mb-4"
+                                 style={{ border: `2px solid ${colors.earthDark}`, backgroundColor: 'white' }}>
+                                <div className="px-4 py-2 border-b-2"
+                                     style={{ borderColor: colors.earthDark, backgroundColor: '#fafaf7' }}>
+                                    <p className="text-sm font-bold tracking-tight" style={{ color: colors.earthDark }}>
+                                        BIKE-REPAIR CREDIT CARD &mdash; WHAT YOU OWE
+                                    </p>
+                                    <p className="text-xs italic" style={{ color: colors.earth }}>look at the statement, find the balance</p>
+                                </div>
+                                <div className="p-3">
+                                    <div className="flex items-start justify-between gap-3 py-2 px-2 rounded"
+                                         style={{ backgroundColor: '#fafaf7' }}>
+                                        <span className="text-sm italic flex-1" style={{ color: colors.earthDark }}>{cc.text}</span>
+                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                            <span className="text-sm mono" style={{ color: colors.earth }}>$</span>
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={promiseValues[cc.id] || ''}
+                                                onChange={(e) => handlePromiseChange(cc.id, e.target.value)}
+                                                onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+                                                placeholder="0"
+                                                className="w-20 px-2 py-1 rounded mono text-sm text-right"
+                                                style={{
+                                                    border: '2px solid ' + (isPromiseCorrect(cc.id) ? colors.success : isPromiseWrong(cc.id) ? colors.error : colors.earthLight),
+                                                    backgroundColor: 'white',
+                                                    color: colors.earthDark,
+                                                    fontSize: '16px',
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                            ))}
-                            <div className="flex justify-between pt-3 mt-3 border-t-2"
-                                 style={{ borderColor: colors.earthDark }}>
-                                <span className="font-bold text-sm" style={{ color: colors.earthDark }}>TOTAL</span>
-                                <span className="font-bold text-sm mono" style={{ color: colors.earthDark }}>{fmt(totalLiabilities)}</span>
                             </div>
-                        </div>
-                    </div>
+                        );
+                    })()}
 
                     {allPromisesValued && allExtrasValued && (
                         <>
                             <AnnaBox>
-                                &ldquo;Fifty in the drawer. Two-twenty for Smith. Five hundred on the card. That&rsquo;s the picture.&rdquo;
+                                &ldquo;Fifty in the drawer. Seven-fifty on the card. Plus the two-twenty Smith
+                                paid up front from before. That&rsquo;s the picture.&rdquo;
                             </AnnaBox>
 
                             <NarrativeBlock>
@@ -1611,11 +1854,11 @@
                                 accountants&rsquo; word. The Assets tab stays as it is.
                             </InsightPanel>
                             <AnnaBox>
-                                &ldquo;One more thing before you turn the page. That Parts entry &mdash; $300 on the
-                                shelves, but $500 you paid for the lot on the credit card. The $200 between them is
-                                parts that went into customer jobs over the past few months. Real cost.
-                                Next time we&rsquo;ll look at what those jobs brought in. See if you came out
-                                ahead.&rdquo;
+                                &ldquo;One more thing before you turn the page. That Supplies total &mdash;
+                                $200 on the shelves now &mdash; but you paid $500 for the lot of parts on
+                                the credit card. The $300 difference is what went into customer jobs over
+                                the past few months. Real cost. Next time we&rsquo;ll look at what those
+                                jobs brought in. See if you came out ahead.&rdquo;
                             </AnnaBox>
                             <ContinueButton onClick={() => setPhase('complete')}>Finish up</ContinueButton>
                         </>
