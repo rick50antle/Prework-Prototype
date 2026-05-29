@@ -36,7 +36,7 @@
          *   through last month's personal bank statement, which has shop activity
          *   mixed in. The student classifies shop vs. personal, then Anna probes
          *   three transactions in turn (rent, parts, customer deposits) using
-         *   supporting evidence (invoice, packing slip + shelf check, notebook).
+         *   supporting evidence (lease, packing slip + shelf check, customer receipts).
          *   Closes with a meta-reflection: record reasons as they happen, or lose
          *   them. Sets up Tutorial 1.4 (Keeping the Reasons).
          */
@@ -115,65 +115,231 @@
         // ============================================================
         // DATA
         // ============================================================
+        // Bank statement transactions — sourced from Source-Documents/source-documents.html (Doc 7).
+        // Elm City Bank Personal Checking •••• 8814, May 1 – May 31, 2026.
+        // Beginning balance $2,500.00, ending balance $3,274.00.
         const txns = [
-            { id: 't01', date: 'May 2',  desc: 'Check #1042 — Hartley Properties LLC',         w: 1300, d:    0, bal: 2200.00, cat: 'shop',
-              info: 'Hartley Properties is the landlord for the shop space. This is a rent payment.' },
-            { id: 't02', date: 'May 3',  desc: 'Stop & Shop #2104',                            w:  185, d:    0, bal: 2015.00, cat: 'personal',
+            { id: 't01', date: 'May 1',  desc: 'Payroll deposit — employer',                   w:    0, d: 1800, bal: 4300.00, cat: 'personal',
+              info: 'Your full-time job paycheck — direct-deposited twice a month.' },
+            { id: 't02', date: 'May 1',  desc: 'Check #1041 — rent',                           w: 1300, d:    0, bal: 3000.00, cat: 'shop',
+              info: 'Lease check for the new bike-repair space. First month\'s rent ($650) plus last month\'s rent held by the landlord ($650). Paid May 1.' },
+            { id: 't03', date: 'May 3',  desc: 'Debit — Cyclesport Supply',                    w:  200, d:    0, bal: 2800.00, cat: 'shop',
+              info: 'Park Tool PRS-25 repair stand. Paid from personal debit, not the bike-repair credit card.' },
+            { id: 't04', date: 'May 5',  desc: 'Apartment rent — autopay',                     w: 1400, d:    0, bal: 1400.00, cat: 'personal',
+              info: 'Monthly rent on your apartment.' },
+            { id: 't05', date: 'May 7',  desc: 'Venmo deposit',                                w:    0, d:  340, bal: 1740.00, cat: 'shop',
+              info: 'Customer payments at the shop, deposited via Venmo. Saturday — brake job, tune-up, two tire mountings.' },
+            { id: 't06', date: 'May 9',  desc: 'Groceries — Stop & Shop',                      w:  135, d:    0, bal: 1605.00, cat: 'personal',
               info: 'Groceries for the week.' },
-            { id: 't03', date: 'May 5',  desc: 'EFT — Park Tool Co.',                          w:  200, d:    0, bal: 1815.00, cat: 'shop',
-              info: 'Park Tool Co. makes specialty bicycle repair tools. You bought a couple of new wrenches for the shop.' },
-            { id: 't04', date: 'May 7',  desc: 'Mobile deposit',                               w:    0, d:  340, bal: 2155.00, cat: 'shop',
-              info: 'Money customers paid you at the shop. You deposited it at the bank.' },
-            { id: 't05', date: 'May 8',  desc: 'ACH credit — Yale University Payroll',         w:    0, d: 2400, bal: 4555.00, cat: 'personal',
-              info: 'Your paycheck from your teaching job at Yale, direct-deposited.' },
-            { id: 't06', date: 'May 10', desc: 'Mobile deposit',                               w:    0, d:  180, bal: 4735.00, cat: 'shop',
-              info: 'More money customers paid you at the shop, deposited at the bank.' },
-            { id: 't07', date: 'May 11', desc: 'Shell #4022',                                  w:   45, d:    0, bal: 4690.00, cat: 'personal',
-              info: 'Gas for your car.' },
-            { id: 't08', date: 'May 12', desc: 'Check #1043 — Yale Press',                     w:   80, d:    0, bal: 4610.00, cat: 'shop',
-              info: 'Yale Press printed a batch of business cards and a small flyer for the shop.' },
-            { id: 't09', date: 'May 14', desc: 'Eli\'s Restaurant',                            w:   62, d:    0, bal: 4548.00, cat: 'personal',
-              info: 'Dinner with a friend.' },
-            { id: 't10', date: 'May 15', desc: 'Check #1044 — QBP Distributing',               w:  500, d:    0, bal: 4048.00, cat: 'shop',
-              info: 'QBP Distributing is a wholesale bike parts supplier. You paid for a parts order they shipped.' },
-            { id: 't11', date: 'May 16', desc: 'ATM withdrawal — Main St',                     w:  200, d:    0, bal: 3848.00, cat: 'personal',
-              info: 'Cash you took out for your own walking-around money.' },
-            { id: 't12', date: 'May 18', desc: 'ATM withdrawal — Main St',                     w:   50, d:    0, bal: 3798.00, cat: 'shop',
-              info: 'Cash you took out and put in the cash box at the shop, so you\'d have change on hand for customers.' },
-            { id: 't13', date: 'May 22', desc: 'Mobile deposit',                               w:    0, d:  220, bal: 4018.00, cat: 'shop',
-              info: 'A customer paid you at the shop. You deposited the money at the bank.' },
-            { id: 't14', date: 'May 25', desc: 'ACH debit — Wells Fargo Home Mortgage',        w: 1200, d:    0, bal: 2818.00, cat: 'personal',
-              info: 'Monthly mortgage payment on your apartment.' },
-            { id: 't15', date: 'May 28', desc: 'Comcast Cable',                                w:   95, d:    0, bal: 2723.00, cat: 'personal',
-              info: 'Cable and internet for your apartment.' },
+            { id: 't07', date: 'May 10', desc: 'Venmo deposit',                                w:    0, d:  180, bal: 1785.00, cat: 'shop',
+              info: 'More customer payments via Venmo. Walk-ins — mixed work, no itemization on the receipt.' },
+            { id: 't08', date: 'May 11', desc: 'Utilities — UI',                               w:  120, d:    0, bal: 1665.00, cat: 'personal',
+              info: 'Electric bill — United Illuminating.' },
+            { id: 't09', date: 'May 12', desc: 'Venmo deposit',                                w:    0, d:   80, bal: 1745.00, cat: 'shop',
+              info: 'Customer payment — tune-up.' },
+            { id: 't10', date: 'May 14', desc: 'Venmo deposit',                                w:    0, d:  140, bal: 1885.00, cat: 'shop',
+              info: 'Customer payment — brake overhaul.' },
+            { id: 't11', date: 'May 15', desc: 'Payroll deposit — employer',                   w:    0, d: 1800, bal: 3685.00, cat: 'personal',
+              info: 'Second paycheck of the month.' },
+            { id: 't12', date: 'May 16', desc: 'ACH — Harborline Visa payment',                w:  400, d:    0, bal: 3285.00, cat: 'shop',
+              info: 'Paydown on the bike-repair credit card. First of two ACH transfers from this account to the Harborline Visa during May.' },
+            { id: 't13', date: 'May 18', desc: 'ATM cash withdrawal',                          w:   50, d:    0, bal: 3235.00, cat: 'personal',
+              info: 'Personal walking-around money.' },
+            { id: 't14', date: 'May 19', desc: 'Venmo deposit',                                w:    0, d:  130, bal: 3365.00, cat: 'shop',
+              info: 'Customer payment — chain and cassette replacement.' },
+            { id: 't15', date: 'May 20', desc: 'Streaming subscription',                       w:   16, d:    0, bal: 3349.00, cat: 'personal',
+              info: 'Streaming service for your apartment.' },
+            { id: 't16', date: 'May 22', desc: 'Check deposit — Smith',                        w:    0, d:  220, bal: 3569.00, cat: 'shop',
+              info: 'Smith\'s deposit on the custom frame build. Notebook says: "deposit, frame build, 4-6 weeks."' },
+            { id: 't17', date: 'May 23', desc: 'Venmo deposit',                                w:    0, d:  100, bal: 3669.00, cat: 'shop',
+              info: 'Customer payment — tune-up and minor repair.' },
+            { id: 't18', date: 'May 24', desc: 'Groceries — Stop & Shop',                      w:  145, d:    0, bal: 3524.00, cat: 'personal',
+              info: 'Groceries for the week.' },
+            { id: 't19', date: 'May 27', desc: 'Venmo deposit',                                w:    0, d:  150, bal: 3674.00, cat: 'shop',
+              info: 'Customer payment — custom wheel work, new spokes.' },
+            { id: 't20', date: 'May 28', desc: 'ACH — Harborline Visa payment',                w:  400, d:    0, bal: 3274.00, cat: 'shop',
+              info: 'Second ACH paydown to the bike-repair credit card.' },
         ];
 
-        // Phase 7 — customer deposit probes
+        // Phase 7 — customer deposit probes.
+        // Eight deposits matching every customer deposit on the bank statement,
+        // mirroring Source-Documents/source-documents.html (Doc 8 — Customer Receipts).
+        // Seven Venmo deposits = work done (earnings). One check deposit (Smith) = work to come.
         const deposits = [
-            { id: 'd1', date: 'May 7',  amount: 340, txId: 't04',
-              note: "Saturday. Brake job for Lopez. Tune-up on the green Trek. Couple of tire mountings. $340 total.",
+            { id: 'd1', date: 'May 7',  amount: 340, txId: 't05',
+              receiptNum: '#001', payment: 'Venmo',
+              lineItems: [
+                  { name: 'Brake job', amount: 120 },
+                  { name: 'Tune-up', amount: 80 },
+                  { name: 'Tire mounting (×2)', amount: 140 },
+              ],
+              note: null,
               correct: 'done',
               annaSays: {
-                  done:   "Right. The notebook is clear — multiple completed repairs. That's money you earned.",
-                  tocome: "Hmm — look at the notebook again. Brake job, tune-up, tire mountings. All things you already finished. That's earnings, not a deposit.",
+                  done:   "Right. The receipt is clear — multiple completed repairs. That's money you earned.",
+                  tocome: "Hmm — look at the receipt again. Brake job, tune-up, tire mountings. All work you already finished. You earned it — not a deposit on future work.",
                   notsure:"You actually have enough to know on this one. Brake job, tune-up, tire mountings — work you finished. Try again."
               } },
-            { id: 'd2', date: 'May 10', amount: 180, txId: 't06',
-              note: "$180. ?",
+            { id: 'd2', date: 'May 10', amount: 180, txId: 't07',
+              receiptNum: '#002', payment: 'Venmo',
+              lineItems: [
+                  { name: 'Walk-ins — mixed work', amount: 180 },
+              ],
+              note: 'No itemization on this one.',
               correct: 'done',
               annaSays: {
-                  done:   "Best guess — and a defensible one. The notebook is no help. But think about your other lists: the only outstanding work-to-come you have right now is Smith's frame, and you've identified that as the May 22 deposit. If this $180 had been another deposit on future work, you'd have another open obligation. You don't. So by elimination, this had to be for work you'd already done — probably a small repair you didn't write down.",
-                  tocome: "Hmm — but your only outstanding future-work obligation right now is Smith's frame, and that's the May 22 deposit. If this $180 were also a deposit on future work, you'd have another open promise to deliver. You don't. So this almost certainly isn't another deposit.",
-                  notsure:"You can actually narrow it down with what you already know. What other future work do you owe? Just Smith's frame — and that's the May 22 deposit. If this $180 were also a future-work deposit, you'd have another open obligation. Since you don't, this has to be for work already done."
+                  done:   "Best guess — and a defensible one. The receipt doesn't itemize. But your only outstanding future-work obligation is Smith's frame, and that's the May 22 deposit. By elimination, this had to be for work you'd already done — small repairs you didn't break out.",
+                  tocome: "Hmm — but your only outstanding future-work obligation is Smith's frame, and that's the May 22 deposit. If this $180 were also a deposit on future work, you'd have another open promise to deliver. You don't. So this almost certainly isn't another deposit.",
+                  notsure:"You can narrow it down. What other future work do you owe? Just Smith's frame — and that's the May 22 deposit. If this $180 were also a future-work deposit, you'd have another open obligation. Since you don't, this has to be for work already done."
               } },
-            { id: 'd3', date: 'May 22', amount: 220, txId: 't13',
-              note: "Smith — deposit, $220, frame build. Said 4-6 weeks.",
+            { id: 'd3', date: 'May 12', amount: 80, txId: 't09',
+              receiptNum: '#003', payment: 'Venmo',
+              lineItems: [
+                  { name: 'Tune-up', amount: 80 },
+              ],
+              note: null,
+              correct: 'done',
+              annaSays: {
+                  done:   "Right — tune-up, done. Earnings.",
+                  tocome: "Hmm — a finished tune-up isn't a deposit on future work. You earned it.",
+                  notsure:"The receipt says the tune-up is done. You earned it."
+              } },
+            { id: 'd4', date: 'May 14', amount: 140, txId: 't10',
+              receiptNum: '#004', payment: 'Venmo',
+              lineItems: [
+                  { name: 'Brake overhaul', amount: 140 },
+              ],
+              note: null,
+              correct: 'done',
+              annaSays: {
+                  done:   "Right — brake overhaul, finished. Earnings.",
+                  tocome: "The overhaul is on the receipt as completed work. Not a deposit.",
+                  notsure:"The receipt is clear — brake overhaul done. You earned it."
+              } },
+            { id: 'd5', date: 'May 19', amount: 130, txId: 't14',
+              receiptNum: '#005', payment: 'Venmo',
+              lineItems: [
+                  { name: 'Chain + cassette replacement', amount: 130 },
+              ],
+              note: null,
+              correct: 'done',
+              annaSays: {
+                  done:   "Right — chain and cassette swap, done.",
+                  tocome: "The chain and cassette went on the customer's bike. Finished work, not a deposit.",
+                  notsure:"Receipt says it's done. Earnings."
+              } },
+            { id: 'd6', date: 'May 22', amount: 220, txId: 't16',
+              receiptNum: '#008', payment: 'Check',
+              lineItems: [
+                  { name: 'Custom frame build — deposit', amount: 220 },
+              ],
+              note: 'Balance due on delivery (~Jul 3).',
               correct: 'tocome',
               annaSays: {
-                  done:   "Look at the notebook — 'deposit, frame build, 4-6 weeks.' Smith hasn't gotten his frame yet. You owe him work. That's not earnings.",
+                  done:   "Look at the receipt — 'deposit, balance due on delivery.' Smith hasn't gotten his frame yet. You owe him work. That's not earnings.",
                   tocome: "Yes. Smith paid you, but you owe him a frame. The money is in your account but it comes with a debt — work you still have to do.",
-                  notsure:"You actually do know this one — the notebook says 'deposit, frame build, 4-6 weeks.' That's work to come."
+                  notsure:"You actually do know this one — the receipt says 'deposit, balance due on delivery (~Jul 3).' That's work to come."
               } },
+            { id: 'd7', date: 'May 23', amount: 100, txId: 't17',
+              receiptNum: '#006', payment: 'Venmo',
+              lineItems: [
+                  { name: 'Tune-up + minor repair', amount: 100 },
+              ],
+              note: null,
+              correct: 'done',
+              annaSays: {
+                  done:   "Right — tune-up plus a small fix. Done. Earnings.",
+                  tocome: "Both items are finished work. Not a deposit.",
+                  notsure:"Receipt is clear — finished work. Earnings."
+              } },
+            { id: 'd8', date: 'May 27', amount: 150, txId: 't19',
+              receiptNum: '#007', payment: 'Venmo',
+              lineItems: [
+                  { name: 'Custom wheel work + new spokes', amount: 150 },
+              ],
+              note: null,
+              correct: 'done',
+              annaSays: {
+                  done:   "Right — wheel work and spokes, completed. Earnings.",
+                  tocome: "The wheel is back on the customer's bike. Done work, not a deposit.",
+                  notsure:"Receipt says the wheel work is finished. Earnings."
+              } },
+        ];
+
+        // Bike-repair cash flows — the shop-flagged rows of the bank statement.
+        // Anna pulls these into a separate Cash tab right after the sort so the
+        // bike-repair activity can be seen on its own (sets up the separate-bank-
+        // account observation).
+        // Snapshot of the Assets and Liabilities tabs at the end of 1.2's anna-arrives
+        // spreadsheet beat. Mirrors 1.2's items array verbatim so totals line up:
+        // Equipment $2,035, Supplies $715, Fixtures $830 — TOTAL ASSETS $3,580.
+        // Liabilities: Smith $220, bike-repair card $750 — TOTAL $970.
+        const ASSETS_SNAPSHOT = [
+            {
+                cat: 'EQUIPMENT',
+                items: [
+                    { name: 'Park Tool repair stand', amount: 200 },
+                    { name: 'Cone wrench set',        amount: 65  },
+                    { name: 'Wheel truing stand',     amount: 130 },
+                    { name: 'Air compressor',         amount: 320 },
+                    { name: 'Shop vacuum',            amount: 80  },
+                    { name: 'Parts washer',           amount: 180 },
+                    { name: 'Headset press',          amount: 90  },
+                    { name: 'Bench grinder',          amount: 120 },
+                    { name: 'Torque wrench',          amount: 80  },
+                    { name: 'Hex / Allen key set',    amount: 60  },
+                    { name: 'Cable cutters',          amount: 40  },
+                    { name: 'Chain breaker',          amount: 30  },
+                    { name: 'Tire levers',            amount: 10  },
+                    { name: 'Pedal wrench',           amount: 20  },
+                    { name: 'Laptop',                 amount: 610 },
+                ],
+            },
+            {
+                cat: 'SUPPLIES',
+                items: [
+                    { name: 'Box of derailleur cables', amount: 25  },
+                    { name: 'Box of chains',            amount: 50  },
+                    { name: 'Crate of tires',           amount: 240 },
+                    { name: 'Box of brake pads',        amount: 140 },
+                    { name: 'Stack of saddles',         amount: 120 },
+                    { name: 'Box of bottom brackets',   amount: 90  },
+                    { name: 'First-aid kit',            amount: 50  },
+                ],
+            },
+            {
+                cat: 'FIXTURES',
+                items: [
+                    { name: 'Pegboard panel + hook set', amount: 120 },
+                    { name: 'Workbench',                 amount: 80  },
+                    { name: 'Shelving units',            amount: 180 },
+                    { name: 'Display rack',              amount: 100 },
+                    { name: 'Painted sign',              amount: 150 },
+                    { name: 'Desk',                      amount: 200 },
+                ],
+            },
+        ].map(c => ({ ...c, subtotal: c.items.reduce((s, i) => s + i.amount, 0) }));
+        const ASSETS_TOTAL = ASSETS_SNAPSHOT.reduce((s, c) => s + c.subtotal, 0); // 3580
+
+        const LIABILITIES_SNAPSHOT = [
+            { text: 'Promised to build a custom frame for Smith. He paid me $220 up front for it.', amount: 220 },
+            { text: 'What you owe on the bike-repair credit card.',                                  amount: 750 },
+        ];
+        const LIABILITIES_TOTAL = LIABILITIES_SNAPSHOT.reduce((s, l) => s + l.amount, 0); // 970
+
+        const bikeRepairCashFlows = [
+            { date: 'May 1',  desc: 'Rent check — Westville Properties',    amount: -1300 },
+            { date: 'May 3',  desc: 'Park Tool stand — Cyclesport Supply',  amount:  -200 },
+            { date: 'May 7',  desc: 'Customer payment — Venmo',             amount:   340 },
+            { date: 'May 10', desc: 'Customer payment — Venmo',             amount:   180 },
+            { date: 'May 12', desc: 'Customer payment — Venmo',             amount:    80 },
+            { date: 'May 14', desc: 'Customer payment — Venmo',             amount:   140 },
+            { date: 'May 16', desc: 'Card paydown — Harborline Visa',       amount:  -400 },
+            { date: 'May 19', desc: 'Customer payment — Venmo',             amount:   130 },
+            { date: 'May 22', desc: 'Smith deposit — frame build',          amount:   220 },
+            { date: 'May 23', desc: 'Customer payment — Venmo',             amount:   100 },
+            { date: 'May 27', desc: 'Customer payment — Venmo',             amount:   150 },
+            { date: 'May 28', desc: 'Card paydown — Harborline Visa',       amount:  -400 },
         ];
 
         const optionLabels = {
@@ -200,6 +366,12 @@
 
             // Phase 3: sort (shop vs personal)
             const [expandedDescId, setExpandedDescId] = useState(null);
+            // Cash-records phase: which workbook tab is active + which Assets categories are expanded
+            const [activeCashTab, setActiveCashTab] = useState('cash');
+            const [expandedCashCats, setExpandedCashCats] = useState({ EQUIPMENT: false, SUPPLIES: false, FIXTURES: false });
+            // Cash-records phase: "was this a losing business?" exchange before the probes
+            const [cashLossSelected, setCashLossSelected] = useState(null);
+            const [cashLossCorrect,  setCashLossCorrect]  = useState(false);
             const [classifications, setClassifications] = useState({});
             const [sortChecked, setSortChecked] = useState(false);
             // Autocomplete after the rule is clear — matches 1.1 v3 / 1.2 sheet 1.
@@ -226,10 +398,13 @@
 
             // Phase 7: probe-customers
             const [notebookShown, setNotebookShown] = useState(false);
-            const [depositAnswers, setDepositAnswers] = useState({ d1: null, d2: null, d3: null });
+            const [depositsAutoActive, setDepositsAutoActive] = useState(false);
+            const [depositsAutoDone,   setDepositsAutoDone]   = useState(false);
+            const [autoFilledDeposits, setAutoFilledDeposits] = useState({}); // { d3: true, ... } — answers populated by autocomplete (suppresses verbose Anna commentary)
+            const [depositAnswers, setDepositAnswers] = useState({ d1: null, d2: null, d3: null, d4: null, d5: null, d6: null, d7: null, d8: null });
 
             // ============================================================
-            const phaseOrder = ['welcome', 'statement-view', 'sort', 'probe-rent', 'probe-parts', 'probe-cashbox', 'probe-customers', 'wrap-up', 'complete'];
+            const phaseOrder = ['welcome', 'sort', 'cash-records', 'probe-rent', 'probe-parts', 'probe-customers', 'wrap-up', 'complete'];
 
             // Derived state
             const progress = Math.round((phaseOrder.indexOf(phase) / (phaseOrder.length - 1)) * 100);
@@ -242,6 +417,17 @@
                 .map(tx => tx.id);
             const sortAllCorrect = sortChecked && wrongSortIds.length === 0;
             const allDepositsCorrect = deposits.every(d => depositAnswers[d.id] === d.correct);
+
+            // Per-receipt autocomplete trigger — once the student has classified a few
+            // correctly AND has surfaced both categories (the lesson: not all receipts
+            // tell the same story), they can fill in the rest.
+            const correctDeposits        = deposits.filter(d => depositAnswers[d.id] === d.correct);
+            const depHasDoneCorrect      = correctDeposits.some(d => d.correct === 'done');
+            const depHasTocomeCorrect    = correctDeposits.some(d => d.correct === 'tocome');
+            const depositsTriggerMet     =
+                correctDeposits.length >= 3 &&
+                depHasDoneCorrect && depHasTocomeCorrect &&
+                !allDepositsCorrect && !depositsAutoActive && !depositsAutoDone;
             // Sort autocomplete trigger (5 correct + 1 of each category)
             const correctClassifiedTxns = txns.filter(tx => classifications[tx.id] === tx.cat);
             const sortHasShop     = correctClassifiedTxns.some(tx => tx.cat === 'shop');
@@ -270,7 +456,31 @@
                 setQ2Selected(null); setQ2Correct(false);
                 setQ3Selected(null); setQ3Correct(false);
                 setNotebookShown(false);
-                setDepositAnswers({ d1: null, d2: null, d3: null });
+                setDepositAnswers({ d1: null, d2: null, d3: null, d4: null, d5: null, d6: null, d7: null, d8: null });
+                setDepositsAutoActive(false); setDepositsAutoDone(false); setAutoFilledDeposits({});
+                setActiveCashTab('cash');
+                setCashLossSelected(null); setCashLossCorrect(false);
+            };
+
+            // Deposit autocomplete — fill in the receipts the student hasn't classified yet.
+            const handleDepositsAutocomplete = () => {
+                if (depositsAutoActive || depositsAutoDone) return;
+                playContinueClick();
+                setDepositsAutoActive(true);
+                const remaining = deposits.filter(d => depositAnswers[d.id] !== d.correct);
+                remaining.forEach((dep, i) => {
+                    setTimeout(() => {
+                        setDepositAnswers(prev => ({ ...prev, [dep.id]: dep.correct }));
+                        setAutoFilledDeposits(prev => ({ ...prev, [dep.id]: true }));
+                        if (i === remaining.length - 1) {
+                            setTimeout(() => {
+                                setDepositsAutoActive(false);
+                                setDepositsAutoDone(true);
+                                playSuccessTone();
+                            }, 250);
+                        }
+                    }, i * 120);
+                });
             };
 
             // Autocomplete handler — stream remaining unclassified txns into their
@@ -312,6 +522,13 @@
                 if (q1Correct) return;
                 setQ1Selected(id);
                 if (id === 'b') { playSuccessTone(); setQ1Correct(true); }
+                else playSoftNope();
+            };
+
+            const handleCashLoss = (id) => {
+                if (cashLossCorrect) return;
+                setCashLossSelected(id);
+                if (id === 'c') { playSuccessTone(); setCashLossCorrect(true); }
                 else playSoftNope();
             };
 
@@ -476,8 +693,8 @@
                 <div className="rounded-lg overflow-hidden mb-4" style={{ border: `1px solid ${colors.earthLight}`, backgroundColor: 'white' }}>
                     <div className="flex justify-between items-end p-5 border-b-2" style={{ borderColor: colors.primary }}>
                         <div>
-                            <h1 className="text-xl font-bold tracking-tight" style={{ color: colors.primary }}>BLUE OAK BANK</h1>
-                            <p className="text-xs mt-1" style={{ color: colors.earth }}>Personal Checking &middot; Statement</p>
+                            <h1 className="text-xl font-bold tracking-tight" style={{ color: colors.primary }}>ELM CITY BANK</h1>
+                            <p className="text-xs mt-1" style={{ color: colors.earth }}>Personal Checking &middot; account ending &bull;&bull;&bull;&bull; 8814</p>
                         </div>
                         <div className="text-right">
                             <p className="text-xs" style={{ color: colors.earth }}>Statement period</p>
@@ -487,7 +704,7 @@
                     <div className="flex justify-between px-5 py-3 text-sm border-b"
                          style={{ borderColor: colors.earthLight, backgroundColor: colors.sand }}>
                         <span style={{ color: colors.earthDark }}>Beginning balance (May 1)</span>
-                        <span className="mono font-medium" style={{ color: colors.earthDark }}>$3,500.00</span>
+                        <span className="mono font-medium" style={{ color: colors.earthDark }}>$2,500.00</span>
                     </div>
                     <div>
                         <div className="grid items-center text-xs uppercase tracking-wide font-semibold px-3 py-2 border-b"
@@ -590,7 +807,7 @@
                     <div className="flex justify-between px-5 py-3 text-sm border-t-2"
                          style={{ borderColor: colors.primary, backgroundColor: colors.sand }}>
                         <span className="font-bold" style={{ color: colors.earthDark }}>Ending balance (May 31)</span>
-                        <span className="mono font-bold" style={{ color: colors.earthDark }}>$2,723.00</span>
+                        <span className="mono font-bold" style={{ color: colors.earthDark }}>$3,274.00</span>
                     </div>
                 </div>
             );
@@ -648,14 +865,15 @@
                                 </li>
                             </ul>
                         </div>
-                        <ContinueButton onClick={() => { setStep(0); setPhase('statement-view'); }}>
+                        <ContinueButton onClick={() => { setStep(0); setPhase('sort'); }}>
                             Begin Tutorial
                         </ContinueButton>
                     </div>
                 </div>
             );
 
-            const renderStatementView = () => (
+            // Merged statement-view + sort: one page that reads and sorts at the same time.
+            const renderSort = () => (
                 <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
                     <div className="p-4 max-w-3xl mx-auto">
                         <Header />
@@ -664,25 +882,12 @@
                             arrived. Anna sits down at the workbench with you to look it over.
                         </NarrativeBlock>
                         <AnnaBox>
-                            "First thing: there's a lot in here that has nothing to do with the shop. Mortgage, groceries,
-                            your Yale paycheck, that sort of thing. Let's pull out only the shop-related transactions
-                            so we can look at them clearly."
+                            "First thing: there's a lot in here that has nothing to do with the shop. Apartment rent,
+                            groceries, your paycheck, that sort of thing. Let's pull out only the shop-related
+                            transactions so we can look at them clearly. Click <strong>ⓘ</strong> on any row to see what
+                            it was, then classify it as <em>shop-related</em> or <em>personal</em>. Sorted rows show a
+                            colored stripe on the left."
                         </AnnaBox>
-                        <BankStatementTable interactive={false} />
-                        <ContinueButton onClick={() => { setStep(0); setPhase('sort'); }}>
-                            Sort it out
-                        </ContinueButton>
-                    </div>
-                </div>
-            );
-
-            const renderSort = () => (
-                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
-                    <div className="p-4 max-w-3xl mx-auto">
-                        <Header />
-                        <NarrativeBlock>
-                            Click <strong>ⓘ</strong> on any row to see info and classify it as <em>shop-related</em> or <em>personal</em>. Sorted rows show a colored stripe on the left.
-                        </NarrativeBlock>
                         <BankStatementTable interactive={true} />
                         <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
                             <p className="text-sm font-bold mb-2" style={{ color: colors.primary }}>Sort progress</p>
@@ -743,10 +948,10 @@
                         {allClassified && sortChecked && sortAllCorrect && (
                             <>
                                 <InsightPanel>
-                                    Nicely sorted. Eight shop-related transactions to dig into.
+                                    Nicely sorted. Twelve shop-related transactions to dig into.
                                 </InsightPanel>
-                                <ContinueButton onClick={() => { setStep(0); setPhase('probe-rent'); }}>
-                                    Bring Anna in on the rent
+                                <ContinueButton onClick={() => { setStep(0); setPhase('cash-records'); }}>
+                                    Pull the shop cash flows together
                                 </ContinueButton>
                             </>
                         )}
@@ -766,24 +971,328 @@
                 </div>
             );
 
+            // Cash records page — added after the sort. Anna pulls every shop-flagged
+            // bank transaction into a new Cash tab in the workbook the student opened
+            // back in 1.2, separating the bike-repair cash flows from personal.
+            // The Assets and Liabilities tabs are clickable here too, showing the
+            // snapshot of the spreadsheet as 1.2 left it.
+            const renderCashRecords = () => {
+                const inflows  = bikeRepairCashFlows.filter(f => f.amount > 0);
+                const outflows = bikeRepairCashFlows.filter(f => f.amount < 0);
+                const totalIn  = inflows.reduce((s, f) => s + f.amount, 0);
+                const totalOut = outflows.reduce((s, f) => s + f.amount, 0);
+                const netCash  = totalIn + totalOut;
+                const dollarFmt = (n) => '$' + Number(n).toLocaleString('en-US');
+
+                const cashTabConfig = [
+                    { id: 'things',   label: 'Assets',      color: colors.primary   },
+                    { id: 'promises', label: 'Liabilities', color: colors.earthDark },
+                    { id: 'cash',     label: 'Cash',        color: '#0e6b3a',       isNew: true },
+                ];
+                const activeTabMeta = cashTabConfig.find(t => t.id === activeCashTab) || cashTabConfig[2];
+
+                const toggleCashCat = (catName) =>
+                    setExpandedCashCats(prev => ({ ...prev, [catName]: !prev[catName] }));
+
+                const renderAssetsSheet = () => (
+                    <div className="p-1">
+                        {ASSETS_SNAPSHOT.map(cat => {
+                            const expanded = expandedCashCats[cat.cat];
+                            return (
+                                <React.Fragment key={cat.cat}>
+                                    <div onClick={() => { playContinueClick(); toggleCashCat(cat.cat); }}
+                                         className="flex justify-between items-center py-2 px-3 cursor-pointer"
+                                         style={{
+                                             borderBottom: `1px solid ${colors.earthLight}`,
+                                             backgroundColor: expanded ? '#fafaf7' : 'white',
+                                         }}
+                                         aria-expanded={expanded}>
+                                        <span className="font-bold text-sm" style={{ color: colors.earthDark }}>
+                                            <span className="inline-block w-4 mr-2 text-center" style={{ color: colors.earth }}>
+                                                {expanded ? '▼' : '▶'}
+                                            </span>
+                                            {cat.cat}
+                                        </span>
+                                        <span className="mono text-sm font-bold" style={{ color: colors.earthDark }}>
+                                            {dollarFmt(cat.subtotal)}
+                                        </span>
+                                    </div>
+                                    {expanded && cat.items.map((item, i) => (
+                                        <div key={i}
+                                             className="flex justify-between items-center py-1 px-3"
+                                             style={{
+                                                 borderBottom: `1px dashed ${colors.earthLight}`,
+                                                 backgroundColor: '#fdfaf2',
+                                             }}>
+                                            <span className="text-xs pl-6" style={{ color: colors.earthDark }}>
+                                                {item.name}
+                                            </span>
+                                            <span className="mono text-xs" style={{ color: colors.earth }}>
+                                                {dollarFmt(item.amount)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </React.Fragment>
+                            );
+                        })}
+                        <div className="flex justify-between items-center py-2 px-3"
+                             style={{ borderTop: `2px solid ${colors.earthDark}`, backgroundColor: colors.sand }}>
+                            <span className="font-bold text-sm" style={{ color: colors.primary }}>
+                                <span className="inline-block w-4 mr-2"></span>
+                                TOTAL
+                            </span>
+                            <span className="mono text-sm font-bold" style={{ color: colors.primary }}>
+                                {dollarFmt(ASSETS_TOTAL)}
+                            </span>
+                        </div>
+                    </div>
+                );
+
+                const renderLiabilitiesSheet = () => (
+                    <div className="p-1">
+                        {LIABILITIES_SNAPSHOT.map((l, i) => (
+                            <div key={i} className="flex justify-between items-start py-2 px-3 gap-3"
+                                 style={{ borderBottom: `1px solid ${colors.earthLight}` }}>
+                                <span className="text-xs italic flex-1" style={{ color: colors.earthDark }}>{l.text}</span>
+                                <span className="mono text-sm font-bold flex-shrink-0" style={{ color: colors.earthDark }}>{dollarFmt(l.amount)}</span>
+                            </div>
+                        ))}
+                        <div className="flex justify-between items-center py-2 px-3"
+                             style={{ borderTop: `2px solid ${colors.earthDark}`, backgroundColor: colors.sand }}>
+                            <span className="font-bold text-sm" style={{ color: colors.primary }}>TOTAL</span>
+                            <span className="mono text-sm font-bold" style={{ color: colors.primary }}>{dollarFmt(LIABILITIES_TOTAL)}</span>
+                        </div>
+                    </div>
+                );
+
+                const renderCashSheet = () => (
+                    <div>
+                        <div className="px-3 py-2 border-b" style={{ borderColor: colors.earthLight, backgroundColor: '#fafaf7' }}>
+                            <p className="text-xs uppercase tracking-wide font-bold" style={{ color: colors.earth }}>
+                                Bike-repair cash flows &mdash; May
+                            </p>
+                            <p className="text-xs italic" style={{ color: colors.earth }}>
+                                Pulled from the shop-flagged rows of the personal bank statement.
+                            </p>
+                        </div>
+
+                        {/* Inflows */}
+                        <div className="px-3 pt-3">
+                            <p className="text-xs font-bold mb-1 tracking-wide" style={{ color: '#166534' }}>Cash in</p>
+                            {inflows.map((f, i) => (
+                                <div key={i} className="flex justify-between items-center py-1 px-1"
+                                     style={{ borderBottom: `1px dashed ${colors.earthLight}` }}>
+                                    <span className="text-xs" style={{ color: colors.earthDark }}>
+                                        <span className="mono inline-block w-14" style={{ color: colors.earth }}>{f.date}</span>
+                                        {f.desc}
+                                    </span>
+                                    <span className="mono text-xs font-semibold" style={{ color: '#166534' }}>
+                                        +{dollarFmt(f.amount)}
+                                    </span>
+                                </div>
+                            ))}
+                            <div className="flex justify-between items-center py-1 px-1"
+                                 style={{ borderTop: `1px solid ${colors.earthDark}` }}>
+                                <span className="text-xs font-bold" style={{ color: colors.earthDark }}>Total in</span>
+                                <span className="mono text-xs font-bold" style={{ color: '#166534' }}>{dollarFmt(totalIn)}</span>
+                            </div>
+                        </div>
+
+                        {/* Outflows */}
+                        <div className="px-3 pt-4">
+                            <p className="text-xs font-bold mb-1 tracking-wide" style={{ color: colors.error }}>Cash out</p>
+                            {outflows.map((f, i) => (
+                                <div key={i} className="flex justify-between items-center py-1 px-1"
+                                     style={{ borderBottom: `1px dashed ${colors.earthLight}` }}>
+                                    <span className="text-xs" style={{ color: colors.earthDark }}>
+                                        <span className="mono inline-block w-14" style={{ color: colors.earth }}>{f.date}</span>
+                                        {f.desc}
+                                    </span>
+                                    <span className="mono text-xs font-semibold" style={{ color: colors.error }}>
+                                        &minus;{dollarFmt(Math.abs(f.amount))}
+                                    </span>
+                                </div>
+                            ))}
+                            <div className="flex justify-between items-center py-1 px-1"
+                                 style={{ borderTop: `1px solid ${colors.earthDark}` }}>
+                                <span className="text-xs font-bold" style={{ color: colors.earthDark }}>Total out</span>
+                                <span className="mono text-xs font-bold" style={{ color: colors.error }}>&minus;{dollarFmt(Math.abs(totalOut))}</span>
+                            </div>
+                        </div>
+
+                        {/* Net */}
+                        <div className="flex justify-between items-center mx-3 mt-3 mb-3 px-3 py-2"
+                             style={{ backgroundColor: colors.sand, borderTop: `2px solid ${colors.earthDark}` }}>
+                            <span className="text-sm font-bold" style={{ color: colors.primary }}>NET CASH (May)</span>
+                            <span className="mono text-sm font-bold" style={{ color: netCash < 0 ? colors.error : '#166534' }}>
+                                {netCash < 0 ? '−' : '+'}{dollarFmt(Math.abs(netCash))}
+                            </span>
+                        </div>
+                    </div>
+                );
+
+                return (
+                <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
+                    <div className="p-4 max-w-3xl mx-auto">
+                        <Header />
+
+                        <AnnaBox>
+                            &ldquo;This cash situation is a mess. Let&rsquo;s add a Cash tab to the Excel
+                            workbook we opened and put all the bike-repair cash flows in that.&rdquo;
+                            <span className="block mt-2 italic" style={{ color: colors.earth }}>
+                                (You know, it would really be much simpler if you just had an entirely
+                                separate bank account for your bike-repair activities.)
+                            </span>
+                        </AnnaBox>
+
+                        {/* Excel-style workbook */}
+                        <div className="rounded-lg overflow-hidden mb-4"
+                             style={{
+                                 border: `2px solid ${activeTabMeta.color}`,
+                                 backgroundColor: 'white',
+                                 boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
+                             }}>
+                            {/* Excel title bar */}
+                            <div className="px-4 py-2 flex items-center justify-between"
+                                 style={{
+                                     background: 'linear-gradient(180deg, #138a4b 0%, #107C41 100%)',
+                                     borderBottom: `1px solid #0e6b3a`,
+                                     color: 'white',
+                                 }}>
+                                <span className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                                    <span style={{ fontSize: '15px' }}>▦</span>
+                                    <span className="mono">repair-lists.xlsx</span>
+                                    <span className="text-xs font-normal opacity-75">&mdash; Excel</span>
+                                </span>
+                                <span className="text-xs mono opacity-75">{activeTabMeta.label} sheet</span>
+                            </div>
+
+                            {/* Active sheet body */}
+                            <div style={{ minHeight: '280px', backgroundColor: 'white' }}>
+                                {activeCashTab === 'things'   && renderAssetsSheet()}
+                                {activeCashTab === 'promises' && renderLiabilitiesSheet()}
+                                {activeCashTab === 'cash'     && renderCashSheet()}
+                            </div>
+
+                            {/* Tab strip — clickable */}
+                            <div className="flex"
+                                 style={{ backgroundColor: '#e8e8e8', borderTop: `1px solid #c8c8c8` }}>
+                                {cashTabConfig.map(t => {
+                                    const isActive = activeCashTab === t.id;
+                                    return (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => { playContinueClick(); setActiveCashTab(t.id); }}
+                                            className="px-4 py-2 text-sm font-medium border-0 cursor-pointer"
+                                            style={{
+                                                backgroundColor: isActive ? 'white' : 'transparent',
+                                                color: isActive ? t.color : colors.earth,
+                                                borderTop: isActive ? `2px solid ${t.color}` : '2px solid transparent',
+                                                borderRight: `1px solid #c8c8c8`,
+                                                borderBottom: isActive ? '1px solid white' : 'none',
+                                                marginBottom: isActive ? '-1px' : '0',
+                                                position: 'relative',
+                                            }}>
+                                            {t.label}
+                                            {t.isNew && (
+                                                <span className="ml-2 text-xs" style={{ color: '#0e6b3a' }}>(new)</span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <AnnaBox>
+                            &ldquo;Twelve lines. {dollarFmt(totalIn)} in, &minus;{dollarFmt(Math.abs(totalOut))} out.
+                            Net <strong>&minus;{dollarFmt(Math.abs(netCash))}</strong> for May.&rdquo;
+                            <span className="block mt-2">
+                                &ldquo;So &mdash; was the bike-repair activity a losing business this month?&rdquo;
+                            </span>
+                        </AnnaBox>
+
+                        <div className="rounded-lg p-4 mb-3 border-2"
+                             style={{ borderColor: colors.clayDark, backgroundColor: 'white' }}>
+                            <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.primary }}>YOU</p>
+                            <p className="text-sm italic mb-3" style={{ color: colors.earthDark }}>
+                                What do you think?
+                            </p>
+                            <div className="space-y-2">
+                                {[
+                                    { id: 'a', text: 'Yes &mdash; $960 out the door is a loss.' },
+                                    { id: 'b', text: 'No &mdash; the customer deposits show I made money.' },
+                                    { id: 'c', text: "Can't tell from cash alone &mdash; it depends on what each line was for." },
+                                ].map(opt => {
+                                    const isSelected = cashLossSelected === opt.id;
+                                    const showAsCorrect = cashLossCorrect && opt.id === 'c';
+                                    const showAsWrong = (cashLossCorrect && isSelected && opt.id !== 'c') ||
+                                                        (!cashLossCorrect && isSelected);
+                                    let borderColor = colors.earthLight, bg = 'white';
+                                    if (showAsCorrect) { borderColor = colors.success; bg = colors.successBg; }
+                                    else if (showAsWrong) { borderColor = colors.error; bg = colors.errorBg; }
+                                    return (
+                                        <button key={opt.id} onClick={() => handleCashLoss(opt.id)} disabled={cashLossCorrect}
+                                                className="w-full p-3 rounded-lg border-2 text-left cursor-pointer disabled:cursor-default text-sm"
+                                                style={{ borderColor, backgroundColor: bg, color: colors.earthDark }}>
+                                            <span className="font-bold mr-2" style={{ color: colors.primary }}>{opt.id.toUpperCase()}.</span>
+                                            <span dangerouslySetInnerHTML={{ __html: opt.text }} />
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {!cashLossCorrect && cashLossSelected === 'a' && (
+                                <div className="p-3 rounded-lg mt-3" style={{ backgroundColor: colors.warningBg }}>
+                                    <p className="text-sm" style={{ color: '#92400e' }}>
+                                        Anna: "Maybe. But some of what you spent bought you things you still have &mdash; a stand, fixtures, parts on the shelf. Those aren't losses. Look again."
+                                    </p>
+                                </div>
+                            )}
+                            {!cashLossCorrect && cashLossSelected === 'b' && (
+                                <div className="p-3 rounded-lg mt-3" style={{ backgroundColor: colors.warningBg }}>
+                                    <p className="text-sm" style={{ color: '#92400e' }}>
+                                        Anna: "Hmm &mdash; net was &minus;{dollarFmt(Math.abs(netCash))}. And some of that money in came with strings &mdash; Smith's $220 is a deposit, not earnings. Look again."
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {cashLossCorrect && (
+                            <>
+                                <AnnaBox>
+                                    "Right. Cash isn't the whole story. Some of what went out bought you things
+                                    you still have. Some of what came in came with obligations attached. We can't
+                                    answer the question from this tab. We have to get into the details &mdash;
+                                    line by line."
+                                </AnnaBox>
+
+                                <ContinueButton onClick={() => { setStep(0); setPhase('probe-rent'); }}>
+                                    Start with the rent
+                                </ContinueButton>
+                            </>
+                        )}
+                    </div>
+                </div>
+                );
+            };
+
             const renderProbeRent = () => (
                 <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
                     <div className="p-4 max-w-3xl mx-auto">
                         <Header />
                         <NarrativeBlock>
-                            You showed Anna the eight shop-related transactions you'd picked out. She nodded, then
-                            ran her finger down the list and stopped at the top.
+                            You showed Anna the thirteen shop-related transactions you'd picked out. She nodded, then
+                            ran her finger down the list and stopped near the top.
                         </NarrativeBlock>
-                        <TxCard txId="t01" gold />
+                        <TxCard txId="t02" gold />
                         <AnnaBox>
                             "$1,300 for rent is a lot for one month around here. The bank statement only tells us
-                            it was paid to Hartley Properties — it doesn't say what for. Got the rent invoice handy?"
+                            it was paid to Westville Properties &mdash; it doesn't say what for. Got the lease handy?"
                         </AnnaBox>
                         {!invoiceShown && (
                             <button onClick={() => setInvoiceShown(true)}
                                     className="w-full py-3 rounded-lg font-bold border-2 cursor-pointer mb-4"
                                     style={{ backgroundColor: 'white', borderColor: colors.primary, color: colors.primary }}>
-                                📄  Pull out the rent invoice
+                                📄  Pull out the rental agreement
                             </button>
                         )}
                         {invoiceShown && (
@@ -792,24 +1301,20 @@
                                 <div className="px-5 py-4 border-b-2" style={{ borderColor: colors.earthDark, backgroundColor: '#fafaf7' }}>
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <p className="text-base font-bold tracking-tight" style={{ color: colors.earthDark }}>HARTLEY PROPERTIES LLC</p>
-                                            <p className="text-xs mt-0.5" style={{ color: colors.earth }}>Commercial property management</p>
+                                            <p className="text-base font-bold tracking-tight" style={{ color: colors.earthDark }}>WESTVILLE PROPERTIES LLC</p>
+                                            <p className="text-xs mt-0.5" style={{ color: colors.earth }}>Commercial Lease Agreement</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-xs uppercase tracking-wide" style={{ color: colors.earth }}>Invoice</p>
-                                            <p className="text-sm mono" style={{ color: colors.earthDark }}>#2026-0427</p>
+                                            <p className="text-xs uppercase tracking-wide" style={{ color: colors.earth }}>Dated</p>
+                                            <p className="text-sm mono" style={{ color: colors.earthDark }}>May 1, 2026</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 px-5 py-3 text-xs border-b" style={{ borderColor: colors.earthLight }}>
-                                    <div>
-                                        <p className="uppercase tracking-wide" style={{ color: colors.earth }}>Tenant</p>
-                                        <p className="font-medium mt-0.5" style={{ color: colors.earthDark }}>You — Shop Space B</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="uppercase tracking-wide" style={{ color: colors.earth }}>Date issued</p>
-                                        <p className="font-medium mt-0.5" style={{ color: colors.earthDark }}>April 27, 2026</p>
-                                    </div>
+                                <div className="px-5 py-3 text-xs border-b" style={{ borderColor: colors.earthLight, color: colors.earthDark }}>
+                                    <p><strong>Premises.</strong> Ground-floor commercial unit (~600 sq ft) at 142 Whalley Avenue, Unit B, for use as a bicycle repair workspace.</p>
+                                    <p className="mt-1"><strong>Term.</strong> Month-to-month, commencing May 1, 2026.</p>
+                                    <p className="mt-1"><strong>Rent.</strong> $650.00 per month, due on the first of each month.</p>
+                                    <p className="mt-1"><strong>Payment due at signing.</strong> First month&rsquo;s rent + last month&rsquo;s rent, held by Landlord and applied to the final month of tenancy.</p>
                                 </div>
                                 <div className="px-5 py-4">
                                     <table className="w-full text-sm">
@@ -822,33 +1327,36 @@
                                         <tbody className="mono">
                                             <tr>
                                                 <td className="py-2" style={{ color: colors.earthDark }}>
-                                                    <span className="font-medium">April rent</span>
-                                                    <span className="ml-2 text-xs italic" style={{ color: colors.error }}>(overdue from April 1)</span>
+                                                    <span className="font-medium">First month&rsquo;s rent (May)</span>
                                                 </td>
                                                 <td className="py-2 text-right" style={{ color: colors.earthDark }}>650.00</td>
                                             </tr>
                                             <tr>
                                                 <td className="py-2" style={{ color: colors.earthDark }}>
-                                                    <span className="font-medium">May rent</span>
-                                                    <span className="ml-2 text-xs" style={{ color: colors.earth }}>(current)</span>
+                                                    <span className="font-medium">Last month&rsquo;s rent (held)</span>
+                                                    <span className="ml-2 text-xs italic" style={{ color: colors.earth }}>applied to the final month of tenancy</span>
                                                 </td>
                                                 <td className="py-2 text-right" style={{ color: colors.earthDark }}>650.00</td>
                                             </tr>
                                             <tr style={{ borderTop: `2px solid ${colors.earthDark}` }}>
-                                                <td className="pt-2 font-bold" style={{ color: colors.earthDark }}>Total due</td>
+                                                <td className="pt-2 font-bold" style={{ color: colors.earthDark }}>Total due at signing</td>
                                                 <td className="pt-2 text-right font-bold" style={{ color: colors.earthDark }}>$1,300.00</td>
                                             </tr>
                                         </tbody>
                                     </table>
+                                    <p className="text-xs italic mt-3" style={{ color: colors.earth }}>
+                                        Paid by personal check (Check #1041) drawn on Tenant&rsquo;s personal bank account.
+                                    </p>
                                 </div>
                             </div>
                         )}
                         {invoiceShown && (
                             <AnnaBox>
-                                "OK — this is way more useful than the bank statement. Two line items.
-                                $650 for April back rent, marked overdue, and $650 for May. So one $1,300 line on
-                                your bank statement actually covered two months. And one of those months wasn't
-                                even the current month — it was settling something you'd let slide from April."
+                                "OK &mdash; this is the lease, not just a receipt. Two line items. $650 was rent for
+                                May &mdash; using the space this month, gone by month-end. The other $650 is the last
+                                month's rent &mdash; Westville's holding it. You've paid for it, but you haven't used
+                                it yet. You have a <em>present right</em> to a month of the shop space, sometime down
+                                the road."
                             </AnnaBox>
                         )}
                         {invoiceShown && (
@@ -856,13 +1364,13 @@
                                  style={{ borderColor: colors.clayDark, backgroundColor: 'white' }}>
                                 <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.primary }}>ANNA</p>
                                 <p className="text-sm italic mb-3" style={{ color: colors.earthDark }}>
-                                    "So what's the new thing this invoice tells us that the bank statement didn't?"
+                                    "So what's the new thing this lease tells us that the bank statement didn't?"
                                 </p>
                                 <div className="space-y-2">
                                     {[
                                         { id: 'a', text: 'The exact dollar amount that was paid.' },
-                                        { id: 'b', text: 'That part of this payment settled an old promise from April.' },
-                                        { id: 'c', text: 'That Hartley Properties is the landlord.' },
+                                        { id: 'b', text: 'That half of this payment is a present right to use the shop in a future month.' },
+                                        { id: 'c', text: 'That Westville Properties is the landlord.' },
                                         { id: 'd', text: 'That the payment went out by check.' },
                                     ].map(opt => {
                                         const isSelected = q1Selected === opt.id;
@@ -885,7 +1393,7 @@
                                 {!q1Correct && q1Selected && q1Selected !== 'b' && (
                                     <div className="p-3 rounded-lg mt-3" style={{ backgroundColor: colors.warningBg }}>
                                         <p className="text-sm" style={{ color: '#92400e' }}>
-                                            Anna: "Hmm — that was already on the bank statement. Look at what's new in the invoice."
+                                            Anna: "Hmm &mdash; that was already on the bank statement. Look at what's new in the lease."
                                         </p>
                                     </div>
                                 )}
@@ -895,9 +1403,12 @@
                             <>
                                 <KeyInsightBox>
                                     <p className="font-semibold mb-2">One bank line, two reasons.</p>
-                                    <p>The bank statement showed one $1,300 line. The invoice showed two: $650 was
-                                       settling a back-rent promise from April, and $650 was for using the shop space
-                                       this month. Same payment, two different reasons.</p>
+                                    <p>The bank statement showed one $1,300 line. The lease showed two: $650 was used
+                                       up paying for May &mdash; an expense, gone. The other $650 you've already paid,
+                                       but you haven't used yet. The landlord holds it; you have a present right to a
+                                       future month of the space. The first $650 is gone. The second $650 is still
+                                       yours &mdash; an asset, your first non-tangible one. Accountants call it
+                                       <strong> prepaid rent</strong>.</p>
                                 </KeyInsightBox>
                                 <ContinueButton onClick={() => { setStep(0); setPhase('probe-parts'); }}>
                                     Anna's next question
@@ -916,7 +1427,8 @@
                             Anna moved her finger down the list. The next transaction was the parts order — a $500
                             payment to QBP Distributing on May 15.
                         </NarrativeBlock>
-                        <TxCard txId="t10" gold />
+                        {/* TODO: probe-parts content was built around a $500 QBP check from the personal bank; in the source-doc statement, QBP is on the credit card, not the bank. Pointing at the May 16 ACH paydown so the page renders — narrative below still says "$500 to QBP" and will need a rework. */}
+                        <TxCard txId="t12" gold />
                         <AnnaBox>
                             "$500 in parts. Did you use all of them, or are some still here on the shelf? It matters.
                             Got the packing slip?"
@@ -1062,7 +1574,7 @@
                                        bikes. About $200 is still here as parts on the shelf, ready for future repairs.
                                        The bank statement showed one line; the story is two pieces.</p>
                                 </KeyInsightBox>
-                                <ContinueButton onClick={() => { setStep(0); setPhase('probe-cashbox'); }}>
+                                <ContinueButton onClick={() => { setStep(0); setPhase('probe-customers'); }}>
                                     Anna's next question
                                 </ContinueButton>
                             </>
@@ -1071,14 +1583,15 @@
                 </div>
             );
 
-            const renderProbeCashbox = () => (
+            // probe-cashbox dropped — the May 18 ATM withdrawal is now personal walking-around money.
+            const renderProbeCashbox_REMOVED = () => (
                 <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
                     <div className="p-4 max-w-3xl mx-auto">
                         <Header />
                         <NarrativeBlock>
                             Anna's finger ran further down the list and stopped on May 18 — the $50 ATM withdrawal.
                         </NarrativeBlock>
-                        <TxCard txId="t12" gold />
+                        <TxCard txId="t13" gold />
                         <AnnaBox>
                             "$50 cash, out of your bank account. The bank statement only tells us the money left.
                             Where did it actually go?"
@@ -1150,10 +1663,10 @@
                     <div className="p-4 max-w-3xl mx-auto">
                         <Header />
                         <NarrativeBlock>
-                            Anna stopped on the three mobile deposits — money coming in from customers. The bank
-                            statement showed them as money in, nothing more. But what were they for?
+                            Anna stopped on the eight customer deposits — money coming in from customers across the
+                            month. The bank statement showed them as money in, nothing more. But what were they for?
                         </NarrativeBlock>
-                        <div className="grid grid-cols-3 gap-2 mb-4">
+                        <div className="grid grid-cols-4 gap-2 mb-4">
                             {deposits.map(dep => (
                                 <div key={dep.id} className="rounded-lg border-2 px-3 py-2 text-center"
                                      style={{ borderColor: colors.accent, backgroundColor: 'white' }}>
@@ -1163,42 +1676,62 @@
                             ))}
                         </div>
                         <AnnaBox>
-                            "These are different from the others. Some of these deposits might be money for work
-                            you already did — that's <em>earnings</em>. Others might be deposits on work you owe
-                            but haven't done yet — that's not earnings, that's an obligation. The bank statement
-                            doesn't tell us which is which. What did you write down?"
+                            "So these deposits are from cash you got from customers, but why did they give it to
+                            you? Let's check the receipts."
                         </AnnaBox>
                         {!notebookShown && (
                             <button onClick={() => setNotebookShown(true)}
                                     className="w-full py-3 rounded-lg font-bold border-2 cursor-pointer mb-4"
                                     style={{ backgroundColor: 'white', borderColor: colors.primary, color: colors.primary }}>
-                                📓  Look in your notebook
+                                🧾  Pull out the customer receipts
                             </button>
                         )}
                         {notebookShown && (
                             <>
                                 <div className="rounded-lg p-3 mb-4 italic text-sm"
                                      style={{ backgroundColor: colors.warningBg, color: '#92400e', border: `1px solid ${colors.warning}` }}>
-                                    Some entries are clearer than others. For each deposit, decide what it was — or
+                                    Some receipts are clearer than others. For each deposit, decide what it was — or
                                     whether you can tell at all.
                                 </div>
                                 {deposits.map(dep => {
                                     const myAnswer = depositAnswers[dep.id];
                                     const locked = myAnswer === dep.correct;
+                                    const autoFilled = autoFilledDeposits[dep.id];
                                     return (
                                         <div key={dep.id} className="rounded-lg border-2 p-4 mb-3"
                                              style={{ borderColor: locked ? colors.success : colors.earthLight, backgroundColor: 'white' }}>
                                             <div className="flex items-center justify-between mb-3">
                                                 <div>
-                                                    <p className="text-xs mono" style={{ color: colors.earth }}>{dep.date} &middot; Mobile deposit</p>
+                                                    <p className="text-xs mono" style={{ color: colors.earth }}>{dep.date} &middot; {dep.payment} deposit</p>
                                                     <p className="text-sm font-medium" style={{ color: colors.primary }}>Customer payment</p>
                                                 </div>
                                                 <p className="text-base font-bold mono" style={{ color: colors.success }}>+${dep.amount}.00</p>
                                             </div>
                                             <div className="rounded p-3 mb-3"
                                                  style={{ backgroundColor: '#fffbe6', border: `1px solid ${colors.earthLight}` }}>
-                                                <p className="text-xs uppercase tracking-wide mb-1" style={{ color: colors.earth }}>From your notebook:</p>
-                                                <p className="handwritten text-lg" style={{ color: colors.earthDark, lineHeight: '1.3' }}>{dep.note}</p>
+                                                <div className="flex justify-between items-baseline mb-2">
+                                                    <p className="text-xs uppercase tracking-wide font-bold" style={{ color: colors.earth }}>
+                                                        Customer receipt {dep.receiptNum}
+                                                    </p>
+                                                    <p className="text-xs mono" style={{ color: colors.earth }}>{dep.date}, 2026 &middot; {dep.payment}</p>
+                                                </div>
+                                                <table className="w-full text-sm">
+                                                    <tbody>
+                                                        {dep.lineItems.map((li, i) => (
+                                                            <tr key={i} style={{ borderBottom: `1px solid ${colors.earthLight}` }}>
+                                                                <td className="py-1" style={{ color: colors.earthDark }}>{li.name}</td>
+                                                                <td className="py-1 text-right mono" style={{ color: colors.earthDark }}>${li.amount}.00</td>
+                                                            </tr>
+                                                        ))}
+                                                        <tr style={{ borderTop: `2px solid ${colors.earthDark}` }}>
+                                                            <td className="pt-1 font-bold" style={{ color: colors.earthDark }}>Total</td>
+                                                            <td className="pt-1 text-right font-bold mono" style={{ color: colors.earthDark }}>${dep.amount}.00</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                                {dep.note && (
+                                                    <p className="text-xs italic mt-2" style={{ color: colors.earth }}>{dep.note}</p>
+                                                )}
                                             </div>
                                             <div className="grid grid-cols-3 gap-2 mb-2">
                                                 {['done', 'tocome', 'notsure'].map(choice => {
@@ -1221,7 +1754,7 @@
                                                     );
                                                 })}
                                             </div>
-                                            {myAnswer && (
+                                            {myAnswer && !autoFilled && (
                                                 <div className="rounded p-3 mt-2"
                                                      style={{
                                                          backgroundColor: locked ? colors.successBg : colors.warningBg,
@@ -1233,25 +1766,64 @@
                                                     </p>
                                                 </div>
                                             )}
+                                            {autoFilled && locked && (
+                                                <div className="rounded p-2 mt-2 flex items-center gap-2"
+                                                     style={{ backgroundColor: colors.successBg, border: `1px solid ${colors.success}` }}>
+                                                    <span style={{ color: colors.success }}>✓</span>
+                                                    <span className="text-xs font-semibold" style={{ color: '#166534' }}>
+                                                        {dep.correct === 'tocome' ? 'Work to come — deposit on an obligation.' : 'Same shape as the others — work done, earnings.'}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
+
+                                {/* Per-receipt autocomplete trigger */}
+                                {depositsTriggerMet && (
+                                    <div className="rounded-lg p-3 mb-4 border-2"
+                                         style={{ backgroundColor: '#fef9e7', borderColor: colors.accent }}>
+                                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                                            <strong>You've got the rule.</strong> Most of these are work done. The
+                                            one outlier is Smith's deposit. Apply it to the rest of the receipts.
+                                        </p>
+                                        <button onClick={handleDepositsAutocomplete}
+                                                className="w-full py-3 rounded-lg font-bold text-white border-0 cursor-pointer"
+                                                style={{ backgroundColor: colors.primary }}>
+                                            Sort the rest →
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Autocomplete-in-progress beat */}
+                                {depositsAutoActive && (
+                                    <div className="rounded-lg p-4 mb-4 system-sorting"
+                                         style={{ backgroundColor: colors.primary, color: 'white', textAlign: 'center' }}>
+                                        <p className="text-base font-bold">⚙ Working through the rest of the receipts&hellip;</p>
+                                        <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.8)' }}>
+                                            Applying the work-done vs. work-to-come rule.
+                                        </p>
+                                    </div>
+                                )}
                             </>
                         )}
                         {allDepositsCorrect && (
                             <>
                                 <AnnaBox>
-                                    "So two of these are earnings — money for work done. One is a deposit on work
-                                    to come, which means you owe Smith his frame. One of them took reasoning to
-                                    figure out — but the other lists got you there. Three lines on the bank statement,
-                                    three different stories."
+                                    "So you found two kinds. Most of these were <strong>compensation for services
+                                    you'd already given</strong> &mdash; seven Venmo deposits, money for work
+                                    you'd already done. Smith's check is the odd one. He paid you, but you haven't
+                                    built his frame yet. That deposit <strong>creates an obligation for you to
+                                    fulfill in the future</strong>. One of them &mdash; the $180 &mdash; you had
+                                    to reason out, because the receipt didn't itemize."
                                 </AnnaBox>
                                 <KeyInsightBox>
-                                    <p className="font-semibold mb-2">Three deposits, three different stories.</p>
-                                    <p>Two were earnings (money for work you finished). One was an obligation
-                                       (a deposit on work you still owe). And one of them — the $180 — required
-                                       reasoning to figure out: the notebook didn't say, but knowing what other
-                                       work was outstanding let you narrow it down. A best guess, not a record.</p>
+                                    <p className="font-semibold mb-2">Eight deposits, two different stories.</p>
+                                    <p>Most were compensation for services you'd already given &mdash; cash for
+                                       work already done. One created an obligation &mdash; Smith's deposit, paid
+                                       before the work. And one of them &mdash; the $180 &mdash; required reasoning:
+                                       the receipt didn't itemize, but knowing what other future-work obligations
+                                       you had let you narrow it down. A best guess, not a record.</p>
                                 </KeyInsightBox>
                                 <ContinueButton onClick={() => { setStep(0); setPhase('wrap-up'); }}>
                                     Anna's wrap-up
@@ -1264,34 +1836,39 @@
 
             const renderWrapUp = () => {
                 const summary = [
-                    { tx: 'May 2 — Hartley Properties rent ($1,300)', evidence: 'Rent invoice',
-                      recovered: 'Two months: $650 April back rent + $650 May current.', status: 'recovered' },
+                    { tx: 'May 1 — Westville Properties lease ($1,300)', evidence: 'Rental agreement',
+                      recovered: 'Two pieces: $650 May rent (used up) + $650 prepaid for the final month (still yours).', status: 'recovered' },
                     { tx: 'May 15 — QBP Distributing parts ($500)', evidence: 'Packing slip + shelf check',
                       recovered: '~$300 used on customer bikes; ~$200 still on the shelf.', status: 'recovered' },
-                    { tx: 'May 18 — ATM withdrawal ($50)', evidence: 'What you did with it',
-                      recovered: '$50 moved from your bank account to the cash box at the shop — still here as cash on hand.', status: 'recovered' },
-                    { tx: 'May 7 — Customer deposit ($340)', evidence: 'Notebook entry',
-                      recovered: 'Earnings — brake job, tune-up, tire mountings (work done).', status: 'recovered' },
-                    { tx: 'May 22 — Customer deposit ($220)', evidence: 'Notebook entry',
-                      recovered: 'Deposit for a frame build (work you still owe Smith).', status: 'recovered' },
-                    { tx: 'May 10 — Customer deposit ($180)', evidence: 'Notebook entry: "$180. ?" + reasoning',
-                      recovered: 'Best guess: earnings. Only one outstanding future-work obligation (Smith), already accounted for elsewhere.', status: 'recovered' },
+                    { tx: 'Seven Venmo customer deposits ($1,120 total)', evidence: 'Customer receipts #001–#007',
+                      recovered: 'Earnings — completed repairs (one took reasoning: #002 had no itemization, but Smith was the only outstanding future-work obligation).', status: 'recovered' },
+                    { tx: 'May 22 — Smith check deposit ($220)', evidence: 'Customer receipt #008',
+                      recovered: 'Deposit for a frame build — work you still owe Smith (~Jul 3 delivery).', status: 'recovered' },
                 ];
                 return (
                     <div className="min-h-screen" style={{ backgroundColor: colors.sand }}>
                         <div className="p-4 max-w-3xl mx-auto">
                             <Header />
-                            <NarrativeBlock>
-                                You and Anna spent the afternoon at the workbench, going through every shop-related
-                                transaction from May. Each one had a story. Some you recovered from invoices and packing
-                                slips. One you just knew, because you'd done it yourself. Some from rough notes. One took
-                                reasoning from your other lists.
-                            </NarrativeBlock>
+                            <AnnaBox>
+                                <p className="mb-2">
+                                    "OK &mdash; that took us most of the afternoon. Some of it was easy: you had the
+                                    lease, the packing slip. Most came off the customer receipts. And that $180
+                                    deposit? We couldn't recover it directly &mdash; we had to reason it out from your
+                                    other lists. We got there, but it was a best guess, not a record."
+                                </p>
+                                <p>
+                                    "Here's the thing. Every transaction had a reason at the time you made it. You
+                                    <em> knew</em> the reason when it happened. The hard part isn't knowing the
+                                    reasons &mdash; it's that you didn't <em>write them down</em> at the time. The
+                                    elimination worked on the $180 only because your situation was simple. If you'd
+                                    had three open frame deposits instead of one, we'd be stuck."
+                                </p>
+                            </AnnaBox>
                             <div className="rounded-lg mb-4 overflow-hidden"
                                  style={{ border: `1px solid ${colors.earthLight}`, backgroundColor: 'white' }}>
                                 <div className="px-4 py-2"
                                      style={{ backgroundColor: '#fafaf7', borderBottom: `1px solid ${colors.earthLight}` }}>
-                                    <p className="text-sm font-bold" style={{ color: colors.primary }}>What you recovered</p>
+                                    <p className="text-sm font-bold" style={{ color: colors.primary }}>The reasons behind each transaction</p>
                                 </div>
                                 {summary.map((row, i) => (
                                     <div key={i} className="px-4 py-3"
@@ -1312,37 +1889,22 @@
                                 ))}
                             </div>
                             <AnnaBox>
-                                <p className="mb-2">
-                                    "OK — that took us most of the afternoon. Some of it was easy: you had invoices,
-                                    packing slips. One you just knew — the $50 you took to the cash box; you remembered
-                                    doing it. Some of it took real digging. And that $180 deposit? We couldn't recover
-                                    it directly — we had to reason it out from your other lists. We got there, but it
-                                    was a best guess, not a record."
-                                </p>
-                                <p>
-                                    "Here's the thing. Every transaction had a reason at the time you made it. You
-                                    <em> knew</em> the reason when it happened. The hard part isn't knowing the
-                                    reasons — it's that you didn't <em>write them down</em> at the time. The
-                                    elimination worked on the $180 only because your situation was simple. If you'd
-                                    had three open frame deposits instead of one, we'd be stuck."
-                                </p>
-                            </AnnaBox>
-                            <AnnaBox>
                                 "If you'd written the reason down next to each transaction <em>as it was happening</em>
                                 — even just a few words — we'd have done all of this in five minutes. That's what
                                 bookkeeping is, really. Recording the reasons alongside the amounts, as you go."
                             </AnnaBox>
                             <KeyInsightBox>
-                                <p className="font-semibold mb-2">Record the reasons as they happen.</p>
+                                <p className="font-semibold mb-2">Track what happened &mdash; and why.</p>
                                 <p className="mb-2">
-                                    The bank records the amounts. You're the only one who knows the reasons. If you
-                                    write them down at the time, recovering the story later is easy. If you don't,
-                                    you end up reasoning your way to best guesses — and best guesses only work when
-                                    the situation is simple enough to reason about.
+                                    You would like to know not only what happened &mdash; cash was paid, cash was
+                                    received, parts were purchased, and so on &mdash; you would also like to know
+                                    why things happened. Did you collect cash for work done, or for work promised?
+                                    Did you pay rent for the use of the space this month, or did you pay for the
+                                    right to use it in the future?
                                 </p>
                                 <p>
-                                    That's what bookkeeping does: keeps a record of the <em>why</em> alongside the
-                                    bank's record of the <em>what</em>, transaction by transaction, as they happen.
+                                    That is what an accounting system is for &mdash; to keep track of what happened
+                                    and why it happened.
                                 </p>
                             </KeyInsightBox>
                             <ContinueButton onClick={() => { setStep(0); setPhase('complete'); }} />
@@ -1427,11 +1989,10 @@
             // ============================================================
             const renderPhase = () => {
                 if (phase === 'welcome') return renderWelcome();
-                if (phase === 'statement-view') return renderStatementView();
                 if (phase === 'sort') return renderSort();
+                if (phase === 'cash-records') return renderCashRecords();
                 if (phase === 'probe-rent') return renderProbeRent();
                 if (phase === 'probe-parts') return renderProbeParts();
-                if (phase === 'probe-cashbox') return renderProbeCashbox();
                 if (phase === 'probe-customers') return renderProbeCustomers();
                 if (phase === 'wrap-up') return renderWrapUp();
                 if (phase === 'complete') return renderComplete();

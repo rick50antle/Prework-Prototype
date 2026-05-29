@@ -224,15 +224,14 @@
             { id: 'sign',      name: 'Painted sign',             category: 'fixtures',  cost: 150, sourced: 'estimate'     },
             { id: 'desk',      name: 'Desk',                     category: 'fixtures',  cost: 200, sourced: 'estimate'     },
 
-            // NOT ON MARIA'S FORM — still a 1.1 list item, but doesn't fit the
-            // insurance form. Trying it is optional, not required.
-            { id: 'cash',      name: 'Cash in the cash drawer',  category: null, cost: 50,   rejectType: 'not-insurable' },
+            // (The May-18 ATM $50 is now personal walking-around money — no longer a
+            // shop item, so it doesn't appear in 1.2.)
         ];
 
         // Items the student sees in the sidebar during sheet 1 — all from the
         // 1.1 Things list. Cash is included (it's on that list) but doesn't fit
         // the insurance form; trying it is optional, not a required step.
-        const visibleIds = ['stand', 'chains', 'pegboard', 'wrenches', 'tires', 'workbench', 'cash'];
+        const visibleIds = ['stand', 'chains', 'pegboard', 'wrenches', 'tires', 'workbench'];
 
         // The 6 Things the welcome screen displays. A subset of the sheet 1
         // sidebar (without the not-on-form items, so the welcome doesn't
@@ -1553,17 +1552,6 @@
                                 </React.Fragment>
                             );
                         })}
-                        {/* Cash row — single item, no chevron */}
-                        <div className="flex justify-between items-center py-2 px-3"
-                             style={{ borderBottom: `1px solid ${colors.earthLight}` }}>
-                            <span className="text-sm" style={{ color: colors.earthDark }}>
-                                <span className="inline-block w-4 mr-2"></span>
-                                Cash in cash drawer
-                            </span>
-                            <span className="mono text-sm font-bold" style={{ color: colors.earthDark }}>
-                                {fmt(cashAmount)}
-                            </span>
-                        </div>
                         {/* Total */}
                         <div className="flex justify-between items-center py-2 px-3"
                              style={{
@@ -1688,52 +1676,13 @@
                     </NarrativeBlock>
 
                     <AnnaBox>
-                        &ldquo;She left the cash in the drawer off her form. How much&rsquo;s in there now
-                        &mdash; fifty bucks, from when you seeded it a couple weeks back? Put it on the
-                        broader list. And the promises &mdash; those aren&rsquo;t her side at all, but
-                        they&rsquo;re still on the wall. The credit card bill&rsquo;s right there. Let&rsquo;s
-                        get numbers on what&rsquo;s missing.&rdquo;
+                        &ldquo;The promises aren&rsquo;t on her form at all, but they&rsquo;re still on the
+                        wall. The credit card bill&rsquo;s right there. Let&rsquo;s get numbers on what&rsquo;s
+                        missing.&rdquo;
                     </AnnaBox>
 
                     {!spreadsheetOpened && (
                         <>
-                    {/* Extras (cash) */}
-                    <div className="rounded-lg overflow-hidden mb-4"
-                         style={{ border: `2px solid ${colors.earthDark}`, backgroundColor: 'white' }}>
-                        <div className="px-4 py-2 border-b-2"
-                             style={{ borderColor: colors.earthDark, backgroundColor: '#fafaf7' }}>
-                            <p className="text-sm font-bold tracking-tight" style={{ color: colors.earthDark }}>
-                                NOT ON MARIA&rsquo;S FORM &mdash; STILL YOURS
-                            </p>
-                        </div>
-                        <div className="p-3">
-                            {extras.map(item => (
-                                <div key={item.id}
-                                     className="flex items-center justify-between gap-3 py-2 px-2 rounded mb-1"
-                                     style={{ backgroundColor: '#fafaf7' }}>
-                                    <span className="text-sm" style={{ color: colors.earthDark }}>{item.name}</span>
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-sm mono" style={{ color: colors.earth }}>$</span>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            value={extraValues[item.id] || ''}
-                                            onChange={(e) => handleExtraChange(item.id, e.target.value)}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
-                                            placeholder="0"
-                                            className="w-20 px-2 py-1 rounded mono text-sm text-right"
-                                            style={{
-                                                border: '2px solid ' + (isExtraCorrect(item.id) ? colors.success : isExtraWrong(item.id) ? colors.error : colors.earthLight),
-                                                backgroundColor: 'white',
-                                                color: colors.earthDark,
-                                                fontSize: '16px',
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
 
                     {/* Still on the workbench: credit card statement (summary card) */}
                     <div className="rounded-lg p-3 mb-3"
@@ -1802,20 +1751,19 @@
                     {allPromisesValued && allExtrasValued && (
                         <>
                             <AnnaBox>
-                                &ldquo;Fifty in the drawer. Seven-fifty on the card. Plus the two-twenty Smith
-                                paid up front from before. That&rsquo;s the picture.&rdquo;
+                                &ldquo;Seven-fifty on the card. Plus the two-twenty Smith paid up front from
+                                before. That&rsquo;s the picture.&rdquo;
                             </AnnaBox>
 
                             <NarrativeBlock>
-                                You look at the form, the cash on the bench, the promises pinned on the wall.
-                                If this is going to keep going week to week, paper isn&rsquo;t the right place for it.
+                                You look at the form, the promises pinned on the wall. If this is going to keep
+                                going week to week, paper isn&rsquo;t the right place for it.
                                 <br /><br />
                                 You picture it in Excel. <strong>One workbook, two tabs.</strong> One tab
                                 for the <strong>Assets</strong> &mdash; that&rsquo;s the word Maria used on her form,
                                 and her three categories organized everything better than your original list did.
-                                Borrow them, and add the cash back in too &mdash; she didn&rsquo;t want it, but
-                                you still have it. The second tab for the <strong>Promises</strong> &mdash; a
-                                simple list there, just the two of them.
+                                The second tab for the <strong>Promises</strong> &mdash; a simple list there, just
+                                the two of them.
                             </NarrativeBlock>
 
                             <button onClick={() => { playContinueClick(); setSpreadsheetOpened(true); }}

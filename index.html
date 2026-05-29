@@ -87,8 +87,8 @@
                 title: 'Reading CVS Health and Yale University',
                 desc: 'Same architecture, two customizations — one for-profit, one nonprofit',
                 activities: [
-                    { num: '4.1', title: 'Reading CVS Health', href: 'module-4/cvs-bs-split-mockup.html', tag: 'mockup' },
-                    { num: '4.2', title: 'Reading Yale University', href: 'module-4/yale-bs-split-mockup.html', tag: 'mockup' },
+                    { num: '4.1', title: 'Reading CVS Health', href: 'module-4/cvs-bs-split-mockup.html', tag: null },
+                    { num: '4.2', title: 'Reading Yale University', href: 'module-4/yale-bs-split-mockup.html', tag: null },
                 ],
             },
             {
@@ -130,9 +130,7 @@
             const TagPill = ({ kind }) => {
                 if (!kind) return null;
                 const styles = {
-                    coming:    { bg: '#f0e9d8', border: '#e0d3a8', color: '#8a6a1f', label: 'In progress' },
-                    mockup:    { bg: '#e6efff', border: '#b8cce6', color: '#1e4d8a', label: 'Mockup' },
-                    redesign:  { bg: '#fffaf3', border: '#f0dcc0', color: colors.accent, label: 'Redesign' },
+                    coming: { bg: '#f0e9d8', border: '#e0d3a8', color: '#8a6a1f', label: 'In progress' },
                 };
                 const s = styles[kind];
                 if (!s) return null;
@@ -162,15 +160,6 @@
                                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>William S. Beinecke Professor of Accounting</p>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Mockup banner */}
-                        <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#fef9e7', border: `2px solid ${colors.accent}` }}>
-                            <p className="text-sm" style={{ color: colors.earthDark }}>
-                                <strong>Mockup of the redesigned welcome page,</strong> built to match the tutorials’ visual
-                                language (Inter font, sand background, Yale blue + gold accents). Activity links navigate
-                                to the live mockups and the current activity files.
-                            </p>
                         </div>
 
                         {/* $25k hook — styled as a KeyInsightBox-shape */}
@@ -368,17 +357,6 @@
                            style={{ backgroundColor: colors.primary }}>
                             Begin Module 1 &rarr; Activity 1.1: Getting Organized
                         </a>
-
-                        <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
-                            <p className="text-sm font-bold mb-2" style={{ color: colors.primary }}>Notes on this mockup</p>
-                            <ul className="text-sm space-y-1 list-disc list-inside" style={{ color: colors.earthDark }}>
-                                <li>Visual language matches the tutorials: Inter, sand background, Yale Blue + gold accents.</li>
-                                <li>Rick’s intro video placeholder + 7-beat transcript are preserved from the original index.html.</li>
-                                <li>Module 1 activity list reflects the redesign sequence. Tags: <strong>Redesign</strong> = current v1 plus mockups underway. <strong>Mockup</strong> = mockup only, no v1. <strong>In progress</strong> = not built.</li>
-                                <li>Module 2 collapses what used to live in the prework-intro submodule (Three Businesses, Three Nonprofits, Decision).</li>
-                                <li>The original Module 2 (“Using the Identity” — Where the Line Falls, third bucket change, operating piece, cash story) needs a home. Suggest folding into a later module or breaking out separately.</li>
-                            </ul>
-                        </div>
 
                     </div>
                 </div>

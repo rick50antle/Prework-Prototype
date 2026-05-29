@@ -33,7 +33,7 @@
             const [devMode, setDevMode] = useState(false);
             const [headerClickCount, setHeaderClickCount] = useState(0);
 
-            const TOTAL_STEPS = 7;
+            const TOTAL_STEPS = 8;
             const progress = Math.round((step / TOTAL_STEPS) * 100);
 
             const handleHeaderClick = () => {
@@ -49,13 +49,6 @@
                 <div className="p-4 rounded-lg mb-4 italic"
                      style={{ backgroundColor: colors.sand, borderLeft: `4px solid ${colors.accent}`, color: '#374151' }}>
                     {children}
-                </div>
-            );
-            const AnnaBox = ({ children }) => (
-                <div className="rounded-lg p-4 mb-3 border-2"
-                     style={{ borderColor: colors.clayDark, backgroundColor: 'white' }}>
-                    <p className="text-xs font-bold mb-2 tracking-wide" style={{ color: colors.primary }}>ANNA</p>
-                    <div className="text-sm italic" style={{ color: colors.earthDark }}>{children}</div>
                 </div>
             );
             const KeyInsightBox = ({ children }) => (
@@ -80,15 +73,13 @@
             // ============================================================
             const renderWelcome = () => (
                 <>
-                    <NarrativeBlock>
-                        Step out of the shop for a minute. Anna leans back at the workbench.
-                    </NarrativeBlock>
-                    <AnnaBox>
-                        "What you just built — Things, Promises, the surviving Reasons — has a long history.
-                        Longer than you'd think. And modern names that mostly fit, plus one that doesn't really.
-                        Let me walk you through both. Quickly. Because the words matter when you start reading
-                        statements other people prepared."
-                    </AnnaBox>
+                    <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            What you just built &mdash; Things, Promises, the surviving Reasons &mdash; has a long
+                            history. Longer than you'd think. And modern names that mostly fit, plus one that doesn't
+                            really. The words matter when you start reading statements other people prepared.
+                        </p>
+                    </div>
                     <ContinueButton onClick={advance}>Start with the history</ContinueButton>
                 </>
             );
@@ -112,11 +103,13 @@
                         <p>30 measures of barley · owed by Ur-Nammu, to be paid at harvest</p>
                         <p>20 measures of grain · owed by the temple, due next moon</p>
                     </div>
-                    <AnnaBox>
-                        "Look at it. It's a list of things — barley, sheep — and a list of promises — who owes
-                        what, when. They had two tabs. Things and Promises. By 5,000 years ago, people had
-                        figured this much out. That part of what you just built isn't new."
-                    </AnnaBox>
+                    <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            Look at it. A list of things &mdash; barley, sheep &mdash; and a list of promises
+                            &mdash; who owes what, when. Two tabs. Things and Promises. By 5,000 years ago,
+                            people had figured this much out. That part of what you just built isn't new.
+                        </p>
+                    </div>
                     <ContinueButton onClick={advance}>What was missing</ContinueButton>
                 </>
             );
@@ -134,11 +127,14 @@
                             had been doing it for two centuries already. He wrote it down so apprentices could learn it.
                         </p>
                     </NarrativeBlock>
-                    <AnnaBox>
-                        "Pacioli's contribution: he closed the system. Every transaction touches exactly two sides.
-                        Things, Promises, and a third tab — Reasons — for whatever's left. The Reasons you would have
-                        kept after the prune. The system you just built? That's what's in Pacioli."
-                    </AnnaBox>
+                    <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            Pacioli's contribution: he closed the system. Every transaction touches exactly two
+                            sides. Things, Promises, and a third tab &mdash; Reasons &mdash; for whatever's left.
+                            The Reasons you would have kept after the prune. The system you just built is what's
+                            in Pacioli.
+                        </p>
+                    </div>
                     <KeyInsightBox>
                         <p className="font-semibold mb-2">Four and a half thousand years between the tablets and the friar.</p>
                         <p>
@@ -156,12 +152,14 @@
                     <NarrativeBlock>
                         Before Pacioli's two-sided rule can run, one thing has to be settled.
                     </NarrativeBlock>
-                    <AnnaBox>
-                        "Whose books? You can't keep track of Things and Promises until you know which Things and
-                        whose Promises. Your shop. Your apartment. A guild. A charity. A church. Each one its
-                        own subject. The first move in any system of books is to name the subject. The convention
-                        calls it the <strong>entity</strong>."
-                    </AnnaBox>
+                    <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            Whose books? You can't keep track of Things and Promises until you know which Things
+                            and whose Promises. Your shop. Your apartment. A guild. A charity. A church. Each one
+                            its own subject. The first move in any system of books is to name the subject. The
+                            convention calls it the <strong>entity</strong>.
+                        </p>
+                    </div>
                     <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
                         <p className="text-sm font-bold mb-3" style={{ color: colors.primary }}>What gets to be an entity?</p>
                         <p className="text-sm mb-3" style={{ color: colors.earthDark }}>
@@ -171,7 +169,7 @@
                         <div className="grid grid-cols-2 gap-2 text-sm">
                             <div className="p-2 rounded" style={{ backgroundColor: colors.successBg, border: `1px solid ${colors.success}`, color: '#166534' }}>
                                 <p className="font-bold mb-1">✓ Entity</p>
-                                <p className="text-xs">Your bike shop. Anna. Yale University. A neighborhood food bank.</p>
+                                <p className="text-xs">Your bike shop. A specific person. Yale University. A neighborhood food bank.</p>
                             </div>
                             <div className="p-2 rounded" style={{ backgroundColor: colors.errorBg, border: `1px solid ${colors.error}`, color: '#991b1b' }}>
                                 <p className="font-bold mb-1">✗ Not an entity</p>
@@ -179,12 +177,15 @@
                             </div>
                         </div>
                     </div>
-                    <AnnaBox>
-                        "The not-entity examples? Industries are too aggregated — they're made up of entities, not
-                        one of them. Transactions and physical objects are things that happen <em>to</em> an entity,
-                        not entities themselves. Time periods aren't entities either; they're slices of an entity's life.
-                        Naming the entity is harder than it sounds — and getting it wrong messes up everything that follows."
-                    </AnnaBox>
+                    <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            The not-entity examples? Industries are too aggregated &mdash; they're made up of
+                            entities, not one of them. Transactions and physical objects are things that happen
+                            <em> to</em> an entity, not entities themselves. Time periods aren't entities either;
+                            they're slices of an entity's life. Naming the entity is harder than it sounds &mdash;
+                            and getting it wrong messes up everything that follows.
+                        </p>
+                    </div>
                     <ContinueButton onClick={advance}>Now the renaming</ContinueButton>
                 </>
             );
@@ -225,46 +226,51 @@
                         </div>
 
                         {renameStage === 0 && (
-                            <AnnaBox>
-                                "Three substitutions. Click through and I'll tell you about each one."
-                            </AnnaBox>
+                            <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                                <p className="text-sm" style={{ color: colors.earthDark }}>
+                                    Three substitutions. Reveal them one at a time.
+                                </p>
+                            </div>
                         )}
                         {renameStage === 1 && (
-                            <AnnaBox>
-                                <p className="mb-2">
-                                    "<strong>Things</strong> become <strong>Assets</strong>. The convention's definition is
-                                    'a present right to an economic benefit.' That's the same idea as <em>things that
-                                    benefit the entity</em> — same content, more formal phrasing. Notice what it doesn't say:
-                                    it doesn't say <em>owns</em>. It says <em>has a present right to</em>. That's deliberate —
-                                    a leased forklift is an asset (right to use it) even if title is somewhere else."
+                            <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                                <p className="text-sm" style={{ color: colors.earthDark }}>
+                                    <strong>Things</strong> become <strong>Assets</strong>. The convention's
+                                    definition is "a present right to an economic benefit." That's the same idea
+                                    as <em>things that benefit the entity</em> &mdash; same content, more formal
+                                    phrasing. Notice what it doesn't say: it doesn't say <em>owns</em>. It says
+                                    <em> has a present right to</em>. That's deliberate &mdash; a leased forklift
+                                    is an asset (right to use it) even if title is somewhere else.
                                 </p>
-                            </AnnaBox>
+                            </div>
                         )}
                         {renameStage === 2 && (
-                            <AnnaBox>
-                                <p className="mb-2">
-                                    "<strong>Promises</strong> become <strong>Liabilities</strong>. Same definition shape —
-                                    'a present obligation to transfer an economic benefit.' Promises of the entity. Whatever
-                                    you've committed to deliver later — cash, work, parts, something. The word changes;
-                                    the idea doesn't."
+                            <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                                <p className="text-sm" style={{ color: colors.earthDark }}>
+                                    <strong>Promises</strong> become <strong>Liabilities</strong>. Same definition
+                                    shape &mdash; "a present obligation to transfer an economic benefit." Promises
+                                    of the entity. Whatever you've committed to deliver later &mdash; cash, work,
+                                    parts, something. The word changes; the idea doesn't.
                                 </p>
-                            </AnnaBox>
+                            </div>
                         )}
                         {renameStage === 3 && (
                             <>
-                                <AnnaBox>
-                                    <p className="mb-2">
-                                        "Now the awkward one. The surviving Reasons — the ones that didn't get pruned —
-                                        sum to Assets minus Liabilities. The convention calls this the <strong>residual</strong>.
-                                        It's a definitional difference, not a thing you can point at. The for-profit name for
-                                        it is <em>Equity</em>. Singular. As if it were one coherent thing the owners have."
+                                <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                                    <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                                        Now the awkward one. The surviving Reasons &mdash; the ones that didn't
+                                        get pruned &mdash; sum to Assets minus Liabilities. The convention calls
+                                        this the <strong>residual</strong>. It's a definitional difference, not
+                                        a thing you can point at. The for-profit name for it is <em>Equity</em>.
+                                        Singular. As if it were one coherent thing the owners have.
                                     </p>
-                                    <p className="mb-2">
-                                        "But it isn't. It's the difference between two recorded lists — whatever the convention
-                                        let onto Assets minus whatever it let onto Liabilities. We'll write <strong>Equities</strong>,
-                                        plural, to keep that straight. Same arithmetic; better name."
+                                    <p className="text-sm" style={{ color: colors.earthDark }}>
+                                        But it isn't. It's the difference between two recorded lists &mdash;
+                                        whatever the convention let onto Assets minus whatever it let onto
+                                        Liabilities. We'll write <strong>Equities</strong>, plural, to keep that
+                                        straight. Same arithmetic; better name.
                                     </p>
-                                </AnnaBox>
+                                </div>
                                 <KeyInsightBox>
                                     <p className="font-semibold mb-2">Equities is what's left, by definition.</p>
                                     <p>
@@ -305,18 +311,19 @@
                             A − L = E. By construction. Holds in every set of books, on every balance sheet, for every entity.
                         </p>
                     </div>
-                    <AnnaBox>
-                        <p className="mb-2">
-                            "It's called the accounting <strong>identity</strong> — not equation. An equation is something
-                            you solve. An identity is something that holds by definition, every time, no exceptions.
-                            Equities <em>is</em> A minus L. That's its definition."
+                    <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            It's called the accounting <strong>identity</strong> &mdash; not equation. An
+                            equation is something you solve. An identity is something that holds by definition,
+                            every time, no exceptions. Equities <em>is</em> A minus L. That's its definition.
                         </p>
-                        <p>
-                            "The balance sheet is built around the identity, not assembled to satisfy one. You list
-                            Assets on the left, Liabilities on the right (top), and Equities falls out on the right (bottom)
-                            as the difference. The fact that it balances isn't a result — it's the construction."
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            The balance sheet is built around the identity, not assembled to satisfy one. You
+                            list Assets on the left, Liabilities on the right (top), and Equities falls out on
+                            the right (bottom) as the difference. The fact that it balances isn't a result
+                            &mdash; it's the construction.
                         </p>
-                    </AnnaBox>
+                    </div>
                     <KeyInsightBox>
                         <p className="font-semibold mb-2">Inside Equities — two sub-stories.</p>
                         <p className="mb-2">
@@ -343,26 +350,26 @@
                     <NarrativeBlock>
                         One last move before we stop. What if no one owns the entity?
                     </NarrativeBlock>
-                    <AnnaBox>
-                        <p className="mb-2">
-                            "Your shop is owned — by you. Equities makes some sense there, even if 'Equity' singular is
-                            a sloppy label. But there are entities no one owns. A charity. A museum. A university.
-                            A church. A homeless shelter. Real entities, real books, real Assets and Liabilities.
-                            Same arithmetic: A − L = the residual."
+                    <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            Your shop is owned &mdash; by you. Equities makes some sense there, even if "Equity"
+                            singular is a sloppy label. But there are entities no one owns. A charity. A museum.
+                            A university. A church. A homeless shelter. Real entities, real books, real Assets
+                            and Liabilities. Same arithmetic: A &minus; L = the residual.
                         </p>
-                        <p className="mb-2">
-                            "Different label, though. For an unowned entity the convention writes
-                            <strong> Net Assets</strong>, not Equities. The math is identical; the word changes because
-                            the accountability structure does. The shop is accountable to you. A charity is accountable
-                            to its donors and its mission. There's nobody to call an owner, so the residual gets a
-                            different name to make that clear."
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            Different label, though. For an unowned entity the convention writes
+                            <strong> Net Assets</strong>, not Equities. The math is identical; the word changes
+                            because the accountability structure does. The shop is accountable to you. A charity
+                            is accountable to its donors and its mission. There's nobody to call an owner, so the
+                            residual gets a different name to make that clear.
                         </p>
-                        <p>
-                            "You'll meet Net Assets head-on in Module 3, when you read a real nonprofit's statements.
-                            For now: same residual, same identity, different label depending on who the entity is
-                            accountable to."
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            You'll meet Net Assets head-on in Module 3, when you read a real nonprofit's
+                            statements. For now: same residual, same identity, different label depending on who
+                            the entity is accountable to.
                         </p>
-                    </AnnaBox>
+                    </div>
                     <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: '#fafaf7', border: `1px solid ${colors.earthLight}` }}>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
@@ -377,6 +384,92 @@
                             </div>
                         </div>
                     </div>
+                    <ContinueButton onClick={advance}>What this would look like for a nonprofit</ContinueButton>
+                </>
+            );
+
+            const renderNonprofitReasons = () => (
+                <>
+                    <NarrativeBlock>
+                        The same exercise &mdash; Things, Promises, Reasons &mdash; would work for a nonprofit.
+                        Same identity. The same pairs cancel. What's left looks different, in one specific way.
+                    </NarrativeBlock>
+
+                    <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            A nonprofit has Assets and Liabilities just like a for-profit. Cash, equipment,
+                            supplies. Vendor bills, wages owed. The accounting identity holds:
+                            A &minus; L = Net Assets.
+                        </p>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            Run the Keeping the Reasons exercise on a nonprofit's books and most reasons would
+                            cancel out, same as they did for the shop. The same three patterns:
+                        </p>
+                        <ul className="text-sm mt-2 space-y-1 list-disc list-inside" style={{ color: colors.earthDark }}>
+                            <li>Acquiring an asset by expending another asset (buying supplies with cash) &mdash; paired, cancels.</li>
+                            <li>Acquiring an asset by incurring a liability (buying equipment on account) &mdash; paired, cancels.</li>
+                            <li>Reducing a liability by sacrificing an asset (paying a vendor with cash) &mdash; paired, cancels.</li>
+                        </ul>
+                        <p className="text-sm mt-2" style={{ color: colors.earthDark }}>
+                            What's left: the unpaired reasons. The changes that don't cancel within Assets and
+                            Liabilities.
+                        </p>
+                    </div>
+
+                    <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            For the for-profit shop, those unpaired reasons sorted into
+                            <strong> Contributed</strong> (resources brought in from owners) and
+                            <strong> Earned</strong> (changes from running the business). For a nonprofit,
+                            the same kinds of unpaired reasons appear &mdash; contributions from donors, plus
+                            everything operations produced. But with a twist.
+                        </p>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            The twist is <strong>donor restrictions</strong>. When someone donates to a
+                            nonprofit, they can attach strings: <em>this money is for the after-school program;
+                            this gift is to build a new wing; this endowment must remain intact, and only the
+                            earnings can be spent.</em> These restrictions are not liabilities &mdash; the
+                            nonprofit doesn't owe the money back. It owes the donor that the resources be used
+                            as specified. The convention puts that responsibility inside <strong>Net Assets</strong>,
+                            not in Liabilities.
+                        </p>
+                    </div>
+
+                    <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-sm mb-2" style={{ color: colors.earthDark }}>
+                            So sorting the unpaired reasons for a nonprofit doesn't split them by Contributed
+                            vs Earned. It splits them by <strong>restriction status</strong>:
+                        </p>
+                        <ul className="text-sm mt-2 space-y-1 list-disc list-inside" style={{ color: colors.earthDark }}>
+                            <li><strong>Net Assets WITH Donor Restrictions</strong> &mdash; contributions that came with strings.</li>
+                            <li><strong>Net Assets WITHOUT Donor Restrictions</strong> &mdash; contributions given without strings, plus everything operations generated. (Operations can't create restrictions; only donors can.)</li>
+                        </ul>
+                        <p className="text-sm mt-2" style={{ color: colors.earthDark }}>
+                            Same arithmetic as the for-profit. Different category labels. Different accountability
+                            question &mdash; accountability to donors and their restrictions, instead of to owners.
+                        </p>
+                    </div>
+
+                    {/* Side-by-side comparison */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="rounded-lg p-3" style={{ backgroundColor: '#fafaf7', border: `1px solid ${colors.earthLight}` }}>
+                            <p className="text-xs uppercase tracking-wide font-bold mb-2" style={{ color: colors.earth }}>For-profit residual</p>
+                            <p className="text-sm font-bold mono mb-2" style={{ color: colors.primary }}>A &minus; L = Equities</p>
+                            <ul className="text-xs space-y-1" style={{ color: colors.earthDark }}>
+                                <li>• Contributed Capital</li>
+                                <li>• Retained Earnings</li>
+                            </ul>
+                        </div>
+                        <div className="rounded-lg p-3" style={{ backgroundColor: '#fafaf7', border: `1px solid ${colors.earthLight}` }}>
+                            <p className="text-xs uppercase tracking-wide font-bold mb-2" style={{ color: colors.earth }}>Nonprofit residual</p>
+                            <p className="text-sm font-bold mono mb-2" style={{ color: colors.primary }}>A &minus; L = Net Assets</p>
+                            <ul className="text-xs space-y-1" style={{ color: colors.earthDark }}>
+                                <li>• Net Assets WITH Donor Restrictions</li>
+                                <li>• Net Assets WITHOUT Donor Restrictions</li>
+                            </ul>
+                        </div>
+                    </div>
+
                     <ContinueButton onClick={advance}>Bring it back to your spreadsheet</ContinueButton>
                 </>
             );
@@ -436,10 +529,12 @@
                             Pacioli wrote it down in 1494. You worked it out at the workbench in May.
                         </p>
                     </KeyInsightBox>
-                    <AnnaBox>
-                        "Next: back to the $25k decision in the present. Now you have tools for reading what
-                        other people prepared. Module 1 closes; Module 2 starts with the six options."
-                    </AnnaBox>
+                    <div className="rounded-lg p-4 mb-3" style={{ backgroundColor: 'white', border: `1px solid ${colors.earthLight}` }}>
+                        <p className="text-sm" style={{ color: colors.earthDark }}>
+                            Next: back to the $25k decision in the present. Now you have tools for reading what
+                            other people prepared. Module 1 closes; Module 2 starts with the six options.
+                        </p>
+                    </div>
                     <a href="../index.html"
                        className="block w-full py-3 rounded-lg font-bold text-white text-center no-underline mb-4"
                        style={{ backgroundColor: colors.primary }}>
@@ -456,7 +551,8 @@
                 if (step === 4) return renderRenaming();
                 if (step === 5) return renderIdentity();
                 if (step === 6) return renderNetAssets();
-                if (step === 7) return renderComplete();
+                if (step === 7) return renderNonprofitReasons();
+                if (step === 8) return renderComplete();
                 return null;
             };
 
@@ -495,14 +591,14 @@
                             <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
                                 <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>Dev: skip to step</p>
                                 <div className="flex flex-wrap gap-1">
-                                    {[0,1,2,3,4,5,6,7].map(s => (
+                                    {[0,1,2,3,4,5,6,7,8].map(s => (
                                         <button key={s} onClick={() => { setStep(s); setRenameStage(s === 4 ? 0 : s > 4 ? 3 : 0); }}
                                                 className="px-2 py-1 rounded text-xs border-0 cursor-pointer"
                                                 style={{
                                                     backgroundColor: step === s ? 'white' : 'rgba(255,255,255,0.2)',
                                                     color: step === s ? colors.primary : 'white'
                                                 }}>
-                                            {['welcome','Babylonians','Pacioli','entity','renaming','identity','net assets','complete'][s]}
+                                            {['welcome','Babylonians','Pacioli','entity','renaming','identity','net assets','nonprofit','complete'][s]}
                                         </button>
                                     ))}
                                 </div>
@@ -510,39 +606,8 @@
                         )}
                     </div>
 
-                    {/* Mockup banner */}
-                    <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#fef9e7', border: `2px solid ${colors.accent}` }}>
-                        <p className="text-sm" style={{ color: colors.earthDark }}>
-                            <strong>Mockup:</strong> Tutorial 1.5 ("Naming What You Built"). Short reflective interlude.
-                            Bridges from the intuitive 3-bucket system the student just built (1.1–1.4) to the modern vocabulary:
-                            entity, Assets, Liabilities, Equities (plural, with critique of the singular convention), and a brief
-                            mention of Net Assets for unowned entities. Introduces the accounting <em>identity</em> A − L = E and
-                            names the two sub-components of Equities (Contributed Capital, Retained Earnings). Light interaction:
-                            step-through reveal of the three renames. Closes Module 1's flashback; Tutorial 1.6 will exit back
-                            to the $25k decision.
-                        </p>
-                    </div>
-
                     {/* Step content */}
                     {renderStep()}
-
-                    {/* For refinement notes */}
-                    <div className="mt-6 p-4 rounded-lg bg-white" style={{ border: `1px solid ${colors.earthLight}` }}>
-                        <div className="flex justify-between items-start mb-2">
-                            <p className="text-sm font-bold" style={{ color: colors.primary }}>For refinement</p>
-                            <button onClick={reset} className="text-xs underline border-0 bg-transparent cursor-pointer" style={{ color: colors.earth }}>Reset</button>
-                        </div>
-                        <ul className="text-sm space-y-1 list-disc list-inside" style={{ color: colors.earthDark }}>
-                            <li>Eight steps: welcome → Babylonians → Pacioli → identify the entity → renaming (interactive reveal) → identity (A − L = E + sub-names) → Net Assets footnote → synthesis/complete.</li>
-                            <li><strong>Pedagogy-skill compliance:</strong> uses "accounting identity" never "equation"; "Equities" plural with explicit critique of the singular convention; A − L = E form throughout (never rearranged); Equities framed as definitional residual, never as "what owners get."</li>
-                            <li><strong>NFP-skill compliance:</strong> Net Assets named briefly (one step) with the accountability-structure rationale (mission/donors vs. owners). Same arithmetic, different label. Internal structure of Net Assets (donor restrictions) deferred to Module 3.</li>
-                            <li><strong>Renaming step interaction:</strong> staged reveal — three clicks unfold Things→Assets, Promises→Liabilities, Reasons→Equities one at a time with Anna's commentary between. The "Equities is awkward, we use the plural" beat lives on the third reveal.</li>
-                            <li><strong>Identity step</strong> introduces the two sub-components of Equities by their plain-English glosses ("from contributions of owners" / "from running the business") before naming Contributed Capital and Retained Earnings. Setup for Module 2/3.</li>
-                            <li><strong>Synthesis</strong> applies the new vocabulary to the spreadsheet from 1.4 — same numbers ($240 = $240), new column labels. Connects the formal vocabulary back to what the student built.</li>
-                            <li>Anna remains the voice; she's the continuity thread from 1.1 through 1.5. 1.5 is also Module 1's closing beat — its opening line ("step out of the shop for a minute") breaks the flashback frame and the synthesis closer hands directly to Module 2 ("back to the $25k decision"). No separate exit-the-flashback tutorial is needed; Module 2's opening (2.1) picks up the present-tense re-anchoring.</li>
-                            <li>Recognition test not yet named here — could be added as a footnote callback to 1.3 (the evidence-test work with invoices, packing slips, notebook) but kept implicit for now to avoid overloading 1.5.</li>
-                        </ul>
-                    </div>
                 </div>
             );
         };
