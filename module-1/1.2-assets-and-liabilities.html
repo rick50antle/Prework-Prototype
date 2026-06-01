@@ -1499,8 +1499,15 @@
                 // used in sheet 2 + Maria readback would compute $0 if the
                 // student reached Anna via dev mode without completing the
                 // estimate-the-rest beat — producing a $50 grand total.)
-                const sheetSubtotal = (catId) =>
-                    placeable.filter(i => i.category === catId).reduce((s, i) => s + (i.cost || 0), 0);
+                // Anna-phase Assets tab shows the on-hand asset valuation that
+                // matches the end of Maria's form (the sheet-2 CATEGORY_TARGETS):
+                // Supplies is the $200 on-shelf value, not the $715 of line-item
+                // costs; Equipment $685 and Fixtures $1,265 likewise reflect the
+                // agreed category totals. The per-item `cost` list is illustrative
+                // detail (only a few shown, the rest elided with "…"), so the
+                // displayed items need not sum to the subtotal.
+                const ANNA_TARGETS = { equipment: 685, supplies: 200, fixtures: 1265 };
+                const sheetSubtotal = (catId) => ANNA_TARGETS[catId] || 0;
                 const sheetInsurable = categoryDefs.reduce((s, c) => s + sheetSubtotal(c.id), 0);
                 const sheetTotalAssets = sheetInsurable + cashAmount;
 
@@ -1514,7 +1521,22 @@
                         {categoryDefs.map(cat => {
                             const expanded = expandedCats[cat.id];
                             const itemsInCat = placeable.filter(i => i.category === cat.id);
-                            const subtotal = itemsInCat.reduce((s, i) => s + (i.cost || 0), 0);
+                            const subtotal = sheetSubtotal(cat.id);
+                            // Show up to 4 leading items, but never so many that the
+                            // visible line items meet or exceed the category subtotal.
+                            // The remainder is carried by the "… +N more" row, so a
+                            // student adding up the shown numbers always lands strictly
+                            // below the total (the on-hand value is less than the sum of
+                            // original line-item costs).
+                            const shownItems = [];
+                            let shownSum = 0;
+                            for (const it of itemsInCat) {
+                                if (shownItems.length >= 4) break;
+                                if (shownSum + (it.cost || 0) >= subtotal) break;
+                                shownItems.push(it);
+                                shownSum += (it.cost || 0);
+                            }
+                            const hiddenCount = itemsInCat.length - shownItems.length;
                             return (
                                 <React.Fragment key={cat.id}>
                                     <div onClick={() => { playContinueClick(); toggleCat(cat.id); }}
@@ -1534,7 +1556,7 @@
                                             {fmt(subtotal)}
                                         </span>
                                     </div>
-                                    {expanded && itemsInCat.map(item => (
+                                    {expanded && shownItems.map(item => (
                                         <div key={item.id}
                                              className="flex justify-between items-center py-1 px-3"
                                              style={{
@@ -1549,6 +1571,20 @@
                                             </span>
                                         </div>
                                     ))}
+                                    {expanded && hiddenCount > 0 && (
+                                        <div className="flex justify-between items-center py-1 px-3"
+                                             style={{
+                                                 borderBottom: `1px dashed ${colors.earthLight}`,
+                                                 backgroundColor: '#fdfaf2',
+                                             }}>
+                                            <span className="text-xs pl-6 italic" style={{ color: colors.earth }}>
+                                                … +{hiddenCount} more
+                                            </span>
+                                            <span className="mono text-xs" style={{ color: colors.earth }}>
+                                                …
+                                            </span>
+                                        </div>
+                                    )}
                                 </React.Fragment>
                             );
                         })}
@@ -1816,16 +1852,25 @@
             };
 
             const renderComplete = () => {
-                const onFormItems = placeable
-                    .filter(i => i.sourced !== 'estimate')
-                    .map(i => ({ name: i.name, amount: Number(s2Values[i.id]) || 0, label: i.sourced === 'receipt' ? 'receipt' : 'credit card' }));
-                const estByCat = categoryDefs.map(c => {
-                    const r = estimateRowFor(c.id);
-                    return { name: `+ ${r.count} more ${c.label.toLowerCase()} items`, amount: r.amount, label: 'estimate' };
-                });
-                const cashExtras = extras.map(i => ({ name: i.name, amount: Number(extraValues[i.id]) || 0, label: 'cash' }));
-                const allAssets = [...onFormItems, ...estByCat, ...cashExtras];
-                const allLiabilities = promises.map(p => ({ text: p.text, amount: Number(promiseValues[p.id]) || 0 }));
+                // Deterministic end-of-tutorial summary, independent of the staged
+                // sheet-2 entry state: a few real asset lines plus a rollup so the
+                // displayed Assets total the on-hand value of $2,150, and the
+                // Liabilities total $970 (Smith $220 + credit card $750).
+                const ctSummaryAssets = [
+                    { name: 'Park Tool repair stand',      amount: 200 },
+                    { name: 'Cone wrench set',             amount: 65  },
+                    { name: 'Box of derailleur cables',    amount: 25  },
+                    { name: 'Box of chains',               amount: 50  },
+                    { name: 'Pegboard panel + hook set',   amount: 120 },
+                ];
+                const completeTotalAssets = 2150;
+                const ctShownSum = ctSummaryAssets.reduce((s, a) => s + a.amount, 0);
+                const allAssets = [
+                    ...ctSummaryAssets,
+                    { name: '+ more items', amount: completeTotalAssets - ctShownSum, label: 'estimate' },
+                ];
+                const allLiabilities = promises.map(p => ({ text: p.text, amount: p.expected }));
+                const completeTotalLiabilities = promises.reduce((s, p) => s + p.expected, 0);
 
                 return (
                     <div className="p-4 max-w-2xl mx-auto">
@@ -1856,7 +1901,7 @@
                                     <li className="flex justify-between gap-2 pt-1 mt-1 font-bold border-t"
                                         style={{ borderColor: colors.earthLight }}>
                                         <span>Total</span>
-                                        <span className="mono">{fmt(totalAssets)}</span>
+                                        <span className="mono">{fmt(completeTotalAssets)}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -1874,7 +1919,7 @@
                                     <li className="flex justify-between gap-2 pt-1 mt-1 font-bold border-t"
                                         style={{ borderColor: colors.earthLight }}>
                                         <span>Total</span>
-                                        <span className="mono">{fmt(totalLiabilities)}</span>
+                                        <span className="mono">{fmt(completeTotalLiabilities)}</span>
                                     </li>
                                 </ul>
                             </div>
